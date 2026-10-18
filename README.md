@@ -545,24 +545,23 @@ TermPocket implements one protocol version and refuses JSON-RPC batches.
 
 #### Connect Codex
 
-In **Settings → AI connections → How to connect an AI app → Codex**, copy the command or TOML configuration with your deployment's endpoint already filled in. Codex uses the same three read-only tools and personal access tokens described above.
+Open **Settings → AI connections → Setup guide → Codex** for a command with your endpoint filled in. Codex uses the same three read-only tools above.
 
-Make your TermPocket token available as `TERMPOCKET_TOKEN` in the process that starts Codex. Use the raw token, without a `Bearer ` prefix. For Bash or Zsh, read it privately in your terminal (the input is hidden and the token is not part of the command history):
+Set `TERMPOCKET_TOKEN` to your token, without `Bearer`. In Bash/Zsh, run the first line, paste the token into the hidden input and press Enter, then run the second:
 
 ```bash
 read -r -s TERMPOCKET_TOKEN
 export TERMPOCKET_TOKEN
 ```
 
-After running the first line, paste your token and press Enter; then run the second line. Register the server and start Codex from that terminal:
+Add TermPocket and start Codex from that terminal:
 
 ```bash
 codex mcp add termpocket --url "https://<your-api-host>/mcp" --bearer-token-env-var TERMPOCKET_TOKEN
-codex mcp get termpocket
 codex
 ```
 
-Alternatively, add this to `~/.codex/config.toml` instead of running `mcp add`:
+Or add this to `~/.codex/config.toml` instead of running `mcp add`:
 
 ```toml
 [mcp_servers.termpocket]
@@ -570,11 +569,11 @@ url = "https://<your-api-host>/mcp"
 bearer_token_env_var = "TERMPOCKET_TOKEN"
 ```
 
-The configuration contains the environment variable's **name**, not the token. Keep the token out of shared files. The app or IDE extension must also inherit that variable; setting it in an unrelated terminal does not set it in an already-running application. Restart the relevant client after configuring its environment.
+Keep tokens out of shared files. App/IDE users must make `TERMPOCKET_TOKEN` available to the application's process, then restart it.
 
-`codex mcp get termpocket` checks configuration only. In an interactive Codex CLI session, use `/mcp` to check the connection and available tools, then ask it to use TermPocket to summarize your current term. No `codex mcp login` or OAuth setup is needed. See the [official Codex MCP documentation](https://developers.openai.com/codex/mcp/).
+In Codex CLI, use `/mcp` to check the connection, then ask about your term spending. `codex mcp get termpocket` checks configuration only. No OAuth login needed. [Codex documentation](https://developers.openai.com/codex/mcp/).
 
-Verified on 2026-10-18 with **Codex CLI 0.162.1**: its app-server authenticated to the real TermPocket router on loopback using a fictional bearer token, initialized the connection and discovered all three tools. A wrong token was rejected and exposed no tools. Database responses were stubbed; this check did not run a paid model turn or verify a hosted deployment. The existing 16 MCP tests also passed, including tool results and read-only behavior.
+Verified locally on 2026-10-18 with **Codex CLI 0.162.1**: authenticated discovery of all three tools and rejection of an invalid token against the real router with stubbed data. All 16 MCP tests passed. No paid model turn or hosted-deployment check was performed.
 
 #### Other clients (not verified)
 

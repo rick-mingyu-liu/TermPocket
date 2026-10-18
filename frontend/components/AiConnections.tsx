@@ -452,9 +452,9 @@ export default function AiConnections() {
                 <TabsTrigger value="other">{t('Other apps')}</TabsTrigger>
               </TabsList>
               <TabsContent value="codex" className="space-y-3">
-                <p>{t('In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.')}</p>
-                <p className="text-muted-foreground">{t('In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.')}</p>
-                <p>{t('Run this in a terminal. The endpoint is already filled in for this site.')}</p>
+                <p>{t('Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.')}</p>
+                <p className="text-muted-foreground">{t('Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.')}</p>
+                <p>{t('Run this command:')}</p>
                 <div className="flex items-stretch gap-2">
                   <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
                   <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
@@ -463,7 +463,7 @@ export default function AiConnections() {
                     {copyIcon('codex-cmd')}
                   </Button>
                 </div>
-                <p>{t('Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.')}</p>
+                <p>{t('Or add this to ~/.codex/config.toml:')}</p>
                 <div className="flex items-stretch gap-2">
                   <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
                   <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
@@ -472,12 +472,10 @@ export default function AiConnections() {
                     {copyIcon('codex-toml')}
                   </Button>
                 </div>
-                <p>{t('Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.')}</p>
-                <p>{t('Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.')}</p>
-                <p>{t('The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.')}</p>
-                <p className="text-muted-foreground">{t('No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.')}</p>
+                <p>{t('Start Codex from the same terminal. For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.')}</p>
+                <p>{t('In Codex CLI, use /mcp to check the connection, then ask about your term spending. No OAuth login needed.')}</p>
                 <a href="https://developers.openai.com/codex/mcp/" target="_blank" rel="noopener noreferrer" className="inline-block underline underline-offset-4">
-                  {t('Official Codex MCP documentation')}
+                  {t('Codex documentation')}
                 </a>
               </TabsContent>
               <TabsContent value="claude-code" className="space-y-3">

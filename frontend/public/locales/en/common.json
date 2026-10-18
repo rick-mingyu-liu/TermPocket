@@ -36,13 +36,11 @@
   "Copied to clipboard": "Copied to clipboard",
   "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.": "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.",
   "Connection details": "Connection details",
-  "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.": "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.",
-  "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.": "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.",
-  "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.": "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.",
-  "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.": "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.",
-  "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.": "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.",
-  "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.": "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.",
-  "Official Codex MCP documentation": "Official Codex MCP documentation",
+  "Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.": "Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.",
+  "Or add this to ~/.codex/config.toml:": "Or add this to ~/.codex/config.toml:",
+  "Start Codex from the same terminal. For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.": "Start Codex from the same terminal. For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.",
+  "In Codex CLI, use /mcp to check the connection, then ask about your term spending. No OAuth login needed.": "In Codex CLI, use /mcp to check the connection, then ask about your term spending. No OAuth login needed.",
+  "Codex documentation": "Codex documentation",
   "Claude (claude.ai)": "Claude (claude.ai)",
   "Other apps": "Other apps",
   "Run this in a terminal. The endpoint is already filled in for this site.": "Run this in a terminal. The endpoint is already filled in for this site.",
@@ -714,5 +712,6 @@
     "error": "Could not delete your account. Please try again.",
     "done": "Your account has been deleted."
   },
-  "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.": "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN."
+  "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.": "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.",
+  "Run this command:": "Run this command:"
 }
