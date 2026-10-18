@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { BookOpen, Check, ChevronRight, Copy, EyeOff, KeyRound, PlugZap, ShieldCheck, Trash2 } from 'lucide-react'
+import { BookOpen, Check, Copy, KeyRound, PlugZap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'next-i18next'
 import { AccessToken, MCP_ENDPOINT_URL, accessTokenAPI } from '@/utils/api'
@@ -222,75 +222,35 @@ export default function AiConnections() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300" aria-hidden>
-            <PlugZap className="h-5 w-5" />
-          </span>
+        <CardTitle className="flex items-center gap-2">
+          <PlugZap className="h-5 w-5" />
           {t('AI connections')}
         </CardTitle>
         <CardDescription>
-          {t('Let an AI assistant you use read your TermPocket summaries, with a personal access token you can revoke at any time.')}
+          {t('Let an AI app read your summaries with a token you can revoke at any time.')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <p className="sr-only" aria-live="polite" role="status">{announcement}</p>
-
-        <section aria-labelledby="ai-share-heading" className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 space-y-3 dark:border-emerald-900/60 dark:bg-emerald-950/30">
-          <h3 id="ai-share-heading" className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
-            {t('What a connected app can read')}
-          </h3>
-          <ul className="text-sm space-y-1.5">
-            {[
-              'Income and spending totals for a term, and your top spending categories',
-              'How this term’s spending pace compares with last term',
-              'Monthly income and spending for the past 12 months',
-              'Your savings goals, including their names, target and saved amounts, and dates',
-            ].map((item) => (
-              <li key={item} className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                <span>{t(item)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="flex gap-2 text-sm">
-            <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-            <span>{t('It never sees individual transactions, their descriptions or merchants. Access is read-only: a connected app cannot add, change or delete anything.')}</span>
+        <div className="space-y-0.5">
+          <Label className="text-base">{t('What it can read')}</Label>
+          <p className="text-sm text-muted-foreground">
+            {t('Term and monthly totals, top categories, spending pace and savings goals. Never individual transactions. Read-only: it cannot change anything.')}
           </p>
           <p className="text-sm text-muted-foreground">
-            {t('Summaries reflect what you have recorded in TermPocket, not verified bank balances. The AI service you connect receives these numbers and handles them under its own privacy terms.')}
+            {t('The AI app handles these numbers under its own privacy terms.')}
           </p>
-        </section>
+        </div>
 
-        <section aria-labelledby="ai-setup-heading" className="space-y-3">
-          <h3 id="ai-setup-heading" className="text-base font-medium">{t('Connect your AI client')}</h3>
-          <ol className="grid gap-2 sm:grid-cols-3">
-            {[
-              'Create a token below and copy it. It is shown only once.',
-              'Add TermPocket to your AI app with the guide.',
-              'Ask it about your term spending or savings goals.',
-            ].map((step, index) => (
-              <li key={step} className="flex gap-3 rounded-lg border bg-card p-3 text-sm">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white dark:bg-emerald-500 dark:text-emerald-950" aria-hidden>{index + 1}</span>
-                <span>{t(step)}</span>
-              </li>
-            ))}
-          </ol>
-          <button
-            type="button"
-            onClick={() => setGuideOpen(true)}
-            className="group flex w-full items-center gap-3 rounded-lg border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 p-3 text-left transition-colors hover:from-emerald-100 hover:to-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-emerald-800 dark:from-emerald-950/50 dark:to-teal-950/40 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/40"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950" aria-hidden>
-              <BookOpen className="h-4 w-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-emerald-950 dark:text-emerald-100">{t('How to connect an AI app')}</span>
-              <span className="block text-sm text-emerald-800/80 dark:text-emerald-200/70">{t('Endpoint, header and step-by-step setup for Codex, Claude Code, Claude and other apps')}</span>
-            </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-emerald-700 transition-transform group-hover:translate-x-0.5 dark:text-emerald-300" aria-hidden />
-          </button>
-        </section>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="space-y-0.5">
+            <Label className="text-base">{t('Set up an AI app')}</Label>
+            <p className="text-sm text-muted-foreground">{t('Create a token below, then follow the guide for your app.')}</p>
+          </div>
+          <Button type="button" variant="outline" className="shrink-0 self-start sm:self-auto" onClick={() => setGuideOpen(true)}>
+            <BookOpen className="w-4 h-4 mr-2" aria-hidden />
+            {t('Setup guide')}
+          </Button>
+        </div>
 
         {secret && (
           <div
@@ -386,10 +346,7 @@ export default function AiConnections() {
             <ul className="divide-y rounded-lg border">
               {active.map((token) => (
                 <li key={token.id} className="flex items-center justify-between gap-3 p-4">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300" aria-hidden>
-                    <KeyRound className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <p className="font-medium break-words">{token.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {t('Created {{date}}', { date: formatInstant(token.created_at, locale, false) })}
@@ -432,6 +389,7 @@ export default function AiConnections() {
             </details>
           )}
         </section>
+        <p className="sr-only" aria-live="polite" role="status">{announcement}</p>
       </CardContent>
 
       <Dialog open={revoking !== null} onOpenChange={(open) => !open && !revokeBusy && setRevoking(null)}>
@@ -455,18 +413,18 @@ export default function AiConnections() {
       <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
         <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl flex-col overflow-hidden">
           <DialogHeader className="pr-6">
-            <DialogTitle>{t('How to connect an AI app')}</DialogTitle>
+            <DialogTitle>{t('Set up an AI app')}</DialogTitle>
             <DialogDescription>
-              {t('Read-only: a connected app sees totals and savings goals, never transaction descriptions. Revoke it here at any time.')}
+              {t('Use your token with the endpoint and header below.')}
             </DialogDescription>
           </DialogHeader>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden break-words text-sm">
-            <section aria-labelledby="ai-details-heading" className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/30">
-              <h4 id="ai-details-heading" className="font-medium text-emerald-900 dark:text-emerald-200">{t('Connection details')}</h4>
+            <section aria-labelledby="ai-details-heading" className="space-y-3 rounded-lg border p-3">
+              <h4 id="ai-details-heading" className="font-medium">{t('Connection details')}</h4>
               <div className="space-y-1.5">
                 <p className="text-muted-foreground">{t('MCP endpoint')}</p>
                 <div className="flex items-stretch gap-2">
-                  <code ref={endpointCodeRef} className="flex-1 min-w-0 break-all rounded-md border bg-background px-3 py-2 font-mono text-xs">{MCP_ENDPOINT_URL}</code>
+                  <code ref={endpointCodeRef} className="flex-1 min-w-0 break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs">{MCP_ENDPOINT_URL}</code>
                   <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
                     onClick={() => copy('endpoint', MCP_ENDPOINT_URL, endpointCodeRef.current)}
                     aria-label={copied === 'endpoint' ? t('Copied') : t('Copy endpoint URL')}>
@@ -477,7 +435,7 @@ export default function AiConnections() {
               <div className="space-y-1.5">
                 <p className="text-muted-foreground">{t('Request header')}</p>
                 <div className="flex items-stretch gap-2">
-                  <code ref={headerCodeRef} className="flex-1 min-w-0 break-words rounded-md border bg-background px-3 py-2 font-mono text-xs">Authorization: Bearer &lt;token&gt;</code>
+                  <code ref={headerCodeRef} className="flex-1 min-w-0 break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs">Authorization: Bearer &lt;token&gt;</code>
                   <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
                     onClick={() => copy('header', 'Authorization: Bearer <token>', headerCodeRef.current)}
                     aria-label={copied === 'header' ? t('Copied') : t('Copy header format')}>
