@@ -69,6 +69,8 @@ export interface EvalCase {
   today?: string;
   timezone?: string;
   currency?: string;
+  /** 'voice' runs the case as a dictated message (context.input = "dictated"); absent means typed. */
+  input?: 'voice';
   expect: Expectations;
 }
 export interface CaseFile { defaults: { today: string; timezone: string; currency: string }; cases: EvalCase[] }
@@ -110,7 +112,8 @@ export function validateCaseFile(raw: unknown): CaseFile {
   raw.cases.forEach((c: unknown, index: number) => {
     const at = isObject(c) && typeof c.id === 'string' ? c.id : `#${index}`;
     if (!isObject(c)) { problems.push(`${at}: not an object`); return; }
-    for (const k of unknownKeys(c, ['id', 'language', 'message', 'history', 'pendingRows', 'today', 'timezone', 'currency', 'expect', 'note'])) problems.push(`${at}: unknown key ${k}`);
+    for (const k of unknownKeys(c, ['id', 'language', 'message', 'history', 'pendingRows', 'today', 'timezone', 'currency', 'input', 'expect', 'note'])) problems.push(`${at}: unknown key ${k}`);
+    if (c.input !== undefined && c.input !== 'voice') problems.push(`${at}: input must be "voice" when set`);
     if (typeof c.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(c.id)) problems.push(`${at}: id must be lowercase kebab-case`);
     else if (ids.has(c.id)) problems.push(`${at}: duplicate id`);
     else ids.add(c.id);
@@ -522,7 +525,7 @@ export async function runCase(c: EvalCase, file: CaseFile, fixture: Fixture, run
     const result = await runtime({
       content: c.message, history: c.history ?? [], pendingRows: c.pendingRows ?? [],
       today: c.today ?? file.defaults.today, timezone: c.timezone ?? file.defaults.timezone,
-      currency: c.currency ?? file.defaults.currency, language: c.language,
+      currency: c.currency ?? file.defaults.currency, language: c.language, dictated: c.input === 'voice',
       signal: new AbortController().signal, records: trackRecords(recordsFor(fixture.userId), calls),
     });
     outcome = { result, calls };

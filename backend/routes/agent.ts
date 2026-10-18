@@ -62,7 +62,9 @@ router.delete('/conversations/:id',route(async(req,res)=>{
 }));
 router.post('/conversations/:id/messages',route(async(req,res)=>{
   const conversationId=validateUuid(req.params.id);const userId=req.user.userId;
-  const body=object(req.body,['requestId','content','currency','timezone','language']);
+  const body=object(req.body,['requestId','content','currency','timezone','language','input']);
+  // How the message was entered: absent or 'typed' by default, 'voice' for the composer's dictation (docs/VOICE.md).
+  if(body.input!==undefined && body.input!=='typed' && body.input!=='voice') throw new AgentError('agent_invalid_input');
   const input={requestId:validateUuid(body.requestId),content:validateMessage(body.content),...validateSettings(body)};
   // Every slot in this process is taken. When one of them is this user's own
   // turn (a second tab, a double send) that is agent_busy, as beginTurn would
@@ -84,7 +86,7 @@ router.post('/conversations/:id/messages',route(async(req,res)=>{
     const result=await runtime.runAgent({
       content:input.content,history:begin.history,pendingRows:begin.pendingRows,
       currency:input.currency,timezone:input.timezone,language:input.language,
-      today:dayInZone(input.timezone),signal:controller.signal,
+      today:dayInZone(input.timezone),dictated:body.input==='voice',signal:controller.signal,
       assertActive:()=>store.assertRunActive(userId,conversationId,input.requestId),
       // Bound to the authenticated user here; no tool argument can name another.
       records:recordsFor(userId),

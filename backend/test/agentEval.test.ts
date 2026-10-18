@@ -5,7 +5,7 @@ import exchangeRateService = require('../services/exchangeRateService');
 import { recordsFor } from '../services/agent/investigation';
 import type { AgentResult } from '../services/agent/runtime';
 import { AgentError, type DraftRow } from '../services/agent/types';
-import { fixtureQuery, installFixture, loadJson, main, monthlyExpenses, normalizeText, findNeedle, parseArgs, scoreRun, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
+import { fixtureQuery, installFixture, loadJson, main, monthlyExpenses, normalizeText, findNeedle, parseArgs, runCase, scoreRun, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
 
 const file = validateCaseFile(loadJson('agent-cases.json'));
 const fixture = loadJson('agent-fixture.json') as Fixture;
@@ -257,6 +257,15 @@ describe('CLI orchestration without provider or database', () => {
   test('rejects invalid goal assertions, malformed fixtures and duplicate IDs', async () => {
     assert.throws(() => validateCaseFile({ ...file, cases: [file.cases[0], file.cases[0]] }), /duplicate/);
     assert.throws(() => validateCaseFile({ defaults: file.defaults, cases: [evalCase({ goalProposal: { action: 'update', goal_id: -1 } })] }), /goal_id/);
+  });
+  test('a case may run as dictated input, and the flag reaches the runtime', async () => {
+    const voice = { ...evalCase({}), input: 'voice' as const };
+    assert.equal(validateCaseFile({ defaults: file.defaults, cases: [voice] }).cases[0]!.input, 'voice');
+    for (const input of ['typed', 'dictated', true]) assert.throws(() => validateCaseFile({ defaults: file.defaults, cases: [{ ...evalCase({}), input }] }), /input must be "voice"/);
+    const seen: unknown[] = [];
+    const runtime = async (i: { dictated?: boolean }) => { seen.push(i.dictated); return { text: 'Fictional reply', usage: { inputTokens: 0, outputTokens: 0 }, toolCalls: 0 }; };
+    await runCase(voice, file, fixture, runtime); await runCase(evalCase({}), file, fixture, runtime);
+    assert.deepEqual(seen, [true, false]);
   });
   test('rejects ill-typed goal fields and contradictory tool expectations', () => {
     for (const expect of [
