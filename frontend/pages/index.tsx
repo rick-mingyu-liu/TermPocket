@@ -826,7 +826,7 @@ export default function Dashboard() {
                         className="relative rounded-full p-1.5 text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                        <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-card" aria-hidden="true" />
+                        <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-card" aria-hidden="true" />
                       </button>
                     )}
                     <Button
