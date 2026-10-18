@@ -20,7 +20,7 @@
 
 Personal finance for students, organised by school term. Record spending by chatting with Pocky (English or 中文), import bank, Uber and WeChat Pay screenshots read entirely on-device, and track savings goals.
 
-TermPocket is built around the **Waterloo term** (Winter Jan–Apr, Spring May–Aug, Fall Sep–Dec), not the calendar month. A study term and a co-op term are both four months, and that is the unit students actually budget in: a co-op term earns, a study term spends down. (The repository is still named MindGo in places.)
+TermPocket is built around the **Waterloo term** (Winter Jan–Apr, Spring May–Aug, Fall Sep–Dec), not the calendar month. A study term and a co-op term are both four months, and that is the unit students actually budget in: a co-op term earns, a study term spends down.
 
 **Try it:** **[www.termpocket.com](https://www.termpocket.com)** — sign in as `john.doe@example.com` / `password123`. Where your data goes: see the [Privacy Policy](https://www.termpocket.com/privacy).
 
@@ -165,7 +165,7 @@ cd <repository-folder>
 `backend/.env` — see [`backend/.env.example`](backend/.env.example) for the annotated full list.
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/mindgo
+DATABASE_URL=postgresql://user:password@localhost:5432/termpocket
 JWT_SECRET=<at least 32 characters>
 CORS_ORIGIN=http://localhost:3000   # one origin, or several separated by commas
 
@@ -379,7 +379,7 @@ docker compose -f docker-compose.test.yml down
 Any other PostgreSQL 15+ works too (013 needs 15):
 
 ```bash
-TEST_DATABASE_URL=postgresql://user@localhost:5432/mindgo_test npm test
+TEST_DATABASE_URL=postgresql://user@localhost:5432/termpocket_test npm test
 ```
 
 It creates and deletes users, which is why opting in is deliberate. **Never point it at production.**
@@ -600,7 +600,7 @@ Verified on 2026-10-18 with **Codex CLI 0.162.1**: its app-server authenticated 
 
 Current production setup: [STATUS.md](STATUS.md). To self-host you need a Node 22 host for the backend, a Next.js host for the frontend, and PostgreSQL 15+.
 
-The frontend is built with `next build`, which first downloads the OCR model from a pinned commit and verifies its checksums; set `NEXT_PUBLIC_API_URL` to the backend's public URL. [`frontend/vercel.json`](frontend/vercel.json) skips a build when nothing under `frontend/` changed (`git diff --quiet HEAD^ HEAD -- .`, run from the project's root directory, `frontend`); to change anything the frontend build reads from outside `frontend/`, widen the command first.
+The frontend is built with `next build`, which first downloads the OCR model from a pinned commit and verifies its checksums; set `NEXT_PUBLIC_API_URL` to the backend's public URL. [`frontend/vercel.json`](frontend/vercel.json) makes the hosted build skip when nothing under `frontend/` changed (`git diff --quiet HEAD^ HEAD -- .`, run from the project's root directory, `frontend`); to change anything the frontend build reads from outside `frontend/`, widen the command first.
 
 The backend is built with `tsc` during the host's build (`npm ci --include=dev`, which runs the `prepare` script), and `npm start` runs `node dist/app.js`. Set `DATABASE_URL`, `JWT_SECRET` and `CORS_ORIGIN` (see [Configure](#configure)). In production, database connections use SSL (`ssl: { rejectUnauthorized: false }`). Every query names tables unqualified, so `db/connection.ts` issues `SET search_path` on each new connection. Use a direct (non-pooled) connection for `pg_dump`/restore and migrations.
 
