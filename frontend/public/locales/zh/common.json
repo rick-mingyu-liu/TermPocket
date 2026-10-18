@@ -36,13 +36,11 @@
   "Copied to clipboard": "已复制到剪贴板",
   "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.": "无法自动复制。文本已选中，请按 Ctrl+C 或 ⌘C。",
   "Connection details": "连接信息",
-  "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.": "在用于启动 Codex 的终端中，将 TERMPOCKET_TOKEN 环境变量设为你复制的 TermPocket 令牌，不要加 Bearer 前缀。不要将令牌写入共享文件。",
-  "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.": "也可以将以下内容添加到 ~/.codex/config.toml。上面的命令会创建相同的配置，选择一种方式即可。",
-  "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.": "从该终端启动 Codex。如果使用桌面应用或 IDE 扩展，请确保相应进程也能读取 TERMPOCKET_TOKEN，然后重启应用。其他终端中设置的变量不一定能被它读取。",
-  "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.": "运行 codex mcp get termpocket 查看已保存的配置。在 Codex CLI 中使用 /mcp 检查连接和工具；配置存在并不代表连接成功。",
-  "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.": "可用工具为 money_term_summary、money_baseline 和 money_goals。你可以让 Codex 使用 TermPocket 总结本学期的收支。",
-  "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.": "无需 OAuth 登录。如果 Codex 提示缺少环境变量，请在启动 Codex 的环境中设置 TERMPOCKET_TOKEN。",
-  "Official Codex MCP documentation": "Codex 官方 MCP 文档",
+  "Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.": "将 TERMPOCKET_TOKEN 设为你的令牌（不加 Bearer），不要写入共享文件。",
+  "Or add this to ~/.codex/config.toml:": "或将以下配置添加到 ~/.codex/config.toml：",
+  "Start Codex from the same terminal. For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.": "从同一终端启动 Codex。桌面应用或 IDE 需能读取 TERMPOCKET_TOKEN，设置后重启。",
+  "In Codex CLI, use /mcp to check the connection, then ask about your term spending. No OAuth login needed.": "在 Codex CLI 中用 /mcp 检查连接，然后询问本学期收支。无需 OAuth 登录。",
+  "Codex documentation": "Codex 文档",
   "Claude (claude.ai)": "Claude（claude.ai）",
   "Other apps": "其他应用",
   "Run this in a terminal. The endpoint is already filled in for this site.": "在终端中运行下面的命令，端点已按本站填好。",
@@ -711,5 +709,6 @@
     "error": "无法删除您的账户，请重试。",
     "done": "您的账户已删除。"
   },
-  "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.": "在 Bash 或 Zsh 中，运行 read -r -s TERMPOCKET_TOKEN，将令牌粘贴到隐藏输入中并按回车，然后运行 export TERMPOCKET_TOKEN。"
+  "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.": "Bash/Zsh：运行 read -r -s TERMPOCKET_TOKEN，粘贴令牌并回车，再运行 export TERMPOCKET_TOKEN。",
+  "Run this command:": "运行以下命令："
 }
