@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-TermPocket (the repo and its infrastructure — Vercel, Render, Neon, the `mindgo` database names — are still named MindGo) is a personal finance app: an Express/PostgreSQL REST API (`backend/`), and a Next.js/TypeScript frontend (`frontend/`). The two are separate npm projects with independent `package.json` files — run commands from within the relevant subdirectory. They are deliberately *not* npm workspaces: workspaces consolidate every lockfile at the repo root, which breaks `npm ci` for both deploys, since Render builds with root directory `backend` and Vercel with `frontend`.
+TermPocket (the repo and its infrastructure — Render, Neon, the `mindgo` database names — are still named MindGo; the Vercel project was renamed to `termpocket`, so its preview URLs start `termpocket-git-`) is a personal finance app: an Express/PostgreSQL REST API (`backend/`), and a Next.js/TypeScript frontend (`frontend/`). The two are separate npm projects with independent `package.json` files — run commands from within the relevant subdirectory. They are deliberately *not* npm workspaces: workspaces consolidate every lockfile at the repo root, which breaks `npm ci` for both deploys, since Render builds with root directory `backend` and Vercel with `frontend`.
 
 ## Commands
 

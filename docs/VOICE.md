@@ -112,7 +112,7 @@ There were 20 phrases, all fictional, each spoken by 3 voices (en-US Samantha, e
 
 ### 5. iOS Safari: not measured
 
-This needs a real device. Open `/voice-spike` on the PR's Vercel preview on an iPhone, load `base.en` (WASM), record an entry, and note:
+This needs a real device. Open `/voice-spike` on the PR's preview deployment on an iPhone, load `base.en` (WASM), record an entry, and note:
 
 - the reported `audio/mp4` type
 - whether decoding and resampling succeed
@@ -160,7 +160,7 @@ Phrases (unchanged from round 1): lunch fifteen dollars · uber twenty three for
 
 ### A. Pocky on the real `w2` transcripts
 
-Nine cases (`voice-words-*` in `backend/eval/agent-cases.json`) use `w2` output verbatim. Direct runtime, `deepseek-flash`, typed path (no flag):
+Nine cases (`voice-words-*` in `backend/eval/agent-cases.json`) use `w2` output verbatim. Direct runtime, typed path (no flag):
 
 | Transcript | Result |
 | --- | --- |
@@ -196,7 +196,7 @@ That's 26/28 over both versions of the prompt sentence. As a control, the three 
 
 ### Cost
 
-DeepSeek `deepseek-flash`, direct runtime, 73 eval runs in total: **524,620 input and 8,698 output tokens**. Every run sent the roughly 4.3k-token system prompt, and most made one tool round trip. The billed amount is on the DeepSeek dashboard. At deepseek-flash's list rates this is cents, well under the $0.50 budget. The full suite was not run.
+DeepSeek, direct runtime, 73 eval runs in total: **524,620 input and 8,698 output tokens**. Every run sent the roughly 4.3k-token system prompt, and most made one tool round trip. The billed amount is on the DeepSeek dashboard. At the model's list rates this is cents, well under the $0.50 budget. The full suite was not run.
 
 ### What's left before building
 
@@ -212,14 +212,14 @@ The owner opened `/voice-spike` on the round 2 preview on an iPhone in Safari an
 
 What shipped, on `feat/voice-input`:
 
-- **Assets, self-hosted.** `frontend/scripts/voice-assets.js` runs before `dev` and `build` (after `ocr-assets`; 120 s timeout and 3 attempts per file, written through a `.tmp` rename) and puts, pinned by version or Hugging Face commit and SHA-256, under `frontend/public/voice/` (gitignored like the OCR assets): `transformers-4.3.1/transformers.min.js` (586 KB); `ort-1.31.0-dev.20260914-8d85527a0/` with the asyncify and plain `ort-wasm-simd-threaded` `.mjs`/`.wasm` pairs (26.9 MB and 14.3 MB raw, about 6.6 MB and 3.7 MB gzipped; a browser downloads one pair); and `whisper-base.en-51eefc0/` with the 8-bit encoder (23.2 MB) and merged decoder (53.7 MB), `tokenizer.json`, `tokenizer_config.json`, `config.json`, `generation_config.json` and `preprocessor_config.json`. About 116 MB on disk. Vercel sets no limit on build output files (its 100 MB limit is for CLI source uploads), so the cost is a download of about 160 MB (with OCR's) per build and the bandwidth of each first use.
+- **Assets, self-hosted.** `frontend/scripts/voice-assets.js` runs before `dev` and `build` (after `ocr-assets`; 120 s timeout and 3 attempts per file, written through a `.tmp` rename) and puts, pinned by version or Hugging Face commit and SHA-256, under `frontend/public/voice/` (gitignored like the OCR assets): `transformers-4.3.1/transformers.min.js` (586 KB); `ort-1.31.0-dev.20260914-8d85527a0/` with the asyncify and plain `ort-wasm-simd-threaded` `.mjs`/`.wasm` pairs (26.9 MB and 14.3 MB raw, about 6.6 MB and 3.7 MB gzipped; a browser downloads one pair); and `whisper-base.en-51eefc0/` with the 8-bit encoder (23.2 MB) and merged decoder (53.7 MB), `tokenizer.json`, `tokenizer_config.json`, `config.json`, `generation_config.json` and `preprocessor_config.json`. About 116 MB on disk. The host sets no limit on build output files, so the cost is a download of about 160 MB (with OCR's) per build and the bandwidth of each first use.
 - **Worker.** `frontend/public/voice/worker.js`, a static module worker, so webpack never sees it: `env.allowRemoteModels=false`, `env.localModelPath='/voice/'`, and ONNX Runtime's file paths rewritten from jsDelivr to `/voice/ort-<version>/`, keeping Transformers.js's own choice between the asyncify and plain builds, and refusing any other runtime version. Nothing is fetched from a CDN or Hugging Face at runtime. OCR's alias and `/ort/` are untouched. Whisper's non-speech markers (`[BLANK_AUDIO]`, `(silence)`) are stripped.
 - **Client.** `frontend/lib/voice/useDictation.ts`: creates the worker on first tap and loads the model with approximate byte progress (a second tap cancels; 5 minutes without progress fails), then stops at "ready" rather than starting to record, so the microphone and the `AudioContext` always start inside a tap (iOS). Once loaded, a tap records with `MediaRecorder`, stops itself at 15 s, releases every track (the browser's mic indicator goes off), abandons a recording when the page is hidden, decodes and resamples to 16 kHz mono, treats a recording under 1 KB, or one whose peak is below 0.01, as no speech without running the model, and terminates the worker on unmount.
 - **UI.** A mic button beside Send in the `/agent` composer: idle → loading (about x of y MB; Send stays usable) → ready (tap again) → recording (elapsed / 15 s, tap the square to stop) → transcribing → text inserted at the cursor for review, never sent automatically. While the text came from dictation, even if edited, the send carries `input: "voice"`: the flag holds while at least half of an inserted transcript's words remain, so clearing the box or typing over it resets it. New and conversation switching are disabled while recording or transcribing. Messages clear on typing, New and a successful send. Inline messages for denied permission, no microphone, no speech, model load failure and other failures keep the composer's text. The button is hidden without a secure context, `getUserMedia`, `MediaRecorder` or Web Audio, disabled while a run is pending, and Send is disabled while recording or transcribing. The tooltip says English only in both languages.
 - **Backend.** Round 2's B, unchanged: the `input` field, the envelope's `context.input = "dictated"`, the prompt paragraph, eval support and the 70 cases.
 - **Privacy policy.** One sentence (both languages): dictation runs in the browser, the recording never leaves the device and is not stored, only the transcript is sent; and the DeepSeek list now says whether a message was dictated.
 
-Checked in headless Chrome against `next dev` with a fake microphone playing a `say` clip ("uber twenty three forty yesterday"): first model load 24 s from a cold dev server, then about 1.2 s, ending at "ready" without recording; stop to text about 2.1 s for a 4 s recording; the transcript was `over twenty three forty yesterday`, the send carried `input: "voice"` after an edit and no `input` when typed; denied permission, silence, a missing model file and a missing worker each showed their message; the button was hidden over plain HTTP on a LAN address; the only origins requested were the site itself, the mocked API and the existing Vercel analytics script. **Still needs a phone check:** tap the mic on the PR's Vercel preview on an iPhone.
+Checked in headless Chrome against `next dev` with a fake microphone playing a `say` clip ("uber twenty three forty yesterday"): first model load 24 s from a cold dev server, then about 1.2 s, ending at "ready" without recording; stop to text about 2.1 s for a 4 s recording; the transcript was `over twenty three forty yesterday`, the send carried `input: "voice"` after an edit and no `input` when typed; denied permission, silence, a missing model file and a missing worker each showed their message; the button was hidden over plain HTTP on a LAN address; the only origins requested were the site itself, the mocked API and the existing analytics script. **Still needs a phone check:** tap the mic on the PR's preview deployment on an iPhone.
 
 ## Original build plan (2–3 days)
 
