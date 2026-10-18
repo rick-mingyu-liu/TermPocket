@@ -421,7 +421,7 @@ export default function AgentPage() {
                   </Button>}
                   <Button type="submit" disabled={sendDisabled}><Send />{t('agent.send')}</Button></div></div>
               </form>
-              {state && <div className="border-t pt-3"><Button variant="ghost" size="sm" disabled={locked || unresolved} onClick={() => setDeleteOpen(true)}><Trash2 />{t('agent.deleteConversation')}</Button></div>}
+              {state && <div className="border-t pt-3"><Button variant="ghost" size="sm" disabled={locked || unresolved || dictating} onClick={() => setDeleteOpen(true)}><Trash2 />{t('agent.deleteConversation')}</Button></div>}
             </CardContent></Card>
             {state?.draft?.status === 'expired' && <p className="rounded-lg border p-4 text-sm">{t('agent.expired')}</p>}
             {pendingDraft && <Card><CardHeader><CardTitle>{t('agent.review')}</CardTitle><p className="text-sm text-muted-foreground">{t('agent.version', { version: state.draft?.version })} · {expired ? t('agent.expired') : t('agent.expires', { date: dateTime(state.draft!.expires_at, true) })}</p></CardHeader><CardContent className="space-y-4">
