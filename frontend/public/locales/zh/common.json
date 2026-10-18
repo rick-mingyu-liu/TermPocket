@@ -544,6 +544,26 @@
     "compose": "输入消息",
     "placeholder": "描述收支，询问已有记录，或更正待确认账目……",
     "enterHint": "Enter 发送 · Shift+Enter 换行",
+    "voice": {
+      "start": "语音输入（仅支持英语）",
+      "stop": "停止录音",
+      "cancelLoad": "取消下载语音模型",
+      "preparing": "正在准备语音识别……",
+      "loading": "正在下载语音模型（仅首次）：约 {{loaded}} / {{total}} MB",
+      "ready": "语音模型已就绪。点击麦克风，用英语说话。",
+      "recording": "正在录音…… {{elapsed}} / {{limit}} 秒。说完后点击停止。",
+      "transcribing": "正在本机识别……",
+      "review": "以上为语音识别的文字：发送前请检查，尤其是金额。",
+      "ackTitle": "浏览器语音输入",
+      "ackText": "Pocky 的语音输入在你的浏览器中运行，使用 Transformers.js 和 ONNX Runtime，以及由 Hugging Face 社区转换为 ONNX 格式的 OpenAI Whisper base.en 模型（onnx-community/whisper-base.en）。模型链接标明了 TermPocket 所用的确切版本。",
+      "errors": {
+        "denied": "麦克风权限已被阻止。请在浏览器的网站设置中允许，或改为手动输入。",
+        "noMic": "未找到麦克风。请连接麦克风，或改为手动输入。",
+        "noSpeech": "没有听到语音。请靠近麦克风用英语再试一次。",
+        "loadFailed": "语音模型加载失败。请检查网络后重试，或改为手动输入。",
+        "failed": "这次语音输入没有成功。请重试，或改为手动输入。"
+      }
+    },
     "send": "发送",
     "deleteConversation": "删除对话",
     "deleteWarning": "这将永久删除本次对话及待确认草稿。已保存的账目仍会保留。删除对话无法撤销。",

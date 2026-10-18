@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { ArrowLeft, Loader2, MessageSquare, Plus, RefreshCw, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import DraftEditor, { currencies, selectClass } from '@/components/agent/DraftEditor'
 import GoalProposalCard from '@/components/agent/GoalProposalCard'
 import { readPreferences } from '@/lib/preferences'
+import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
 import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
 
 // Visiting or updating a conversation must not change its place in history.
@@ -22,6 +23,13 @@ const creationOrder = (items: Conversation[]) => [...items].sort((a, b) =>
 const DEFAULT_TITLE = 'New conversation'
 // Must equal the server's amount rule in services/agent/validation.ts.
 const AMOUNT_PATTERN = /^(0|[1-9]\d{0,7})\.\d{2}$/
+// A transcript still counts as in the composer while at least half of its
+// words are there: edits keep a dictated message flagged, typing over it does not.
+const holdsTranscript = (content: string, transcript: string) => {
+  const text = content.toLowerCase()
+  const words = transcript.toLowerCase().split(/\s+/).filter(Boolean)
+  return words.length > 0 && words.filter(word => text.includes(word)).length * 2 >= words.length
+}
 
 export default function AgentPage() {
   const { t, i18n } = useTranslation('common')
@@ -56,6 +64,32 @@ export default function AgentPage() {
   const activeRequest = useRef<{ conversationId: string; requestId: string } | null>(null)
   const generation = useRef(0)
   const [now, setNow] = useState(Date.now())
+  // Transcripts inserted into the composer since it was last empty. The text
+  // counts as dictated (edited or not) while it still holds one of them.
+  const [transcripts, setTranscripts] = useState<string[]>([])
+  const voiced = transcripts.some(transcript => holdsTranscript(content, transcript))
+  // Decided after mount: the server cannot know whether this browser can record.
+  const [canDictate, setCanDictate] = useState(false)
+  useEffect(() => { setCanDictate(dictationSupported()) }, [])
+  useEffect(() => { if (!content.trim()) setTranscripts([]) }, [content])
+  // Insert the transcript at the cursor (or append), never replacing what is there.
+  const dictation = useDictation(text => {
+    const box = composer.current
+    setContent(previous => {
+      // The textarea keeps its selection after the mic button takes focus.
+      const start = Math.min(box?.selectionStart ?? previous.length, previous.length)
+      const end = Math.min(box?.selectionEnd ?? previous.length, previous.length)
+      const before = previous.slice(0, start), after = previous.slice(end)
+      const insert = `${before && !/\s$/.test(before) ? ' ' : ''}${text}${after && !/^\s/.test(after) ? ' ' : ''}`
+      return (before + insert + after).slice(0, 4000)
+    })
+    setTranscripts(previous => [...previous, text])
+    box?.focus()
+  })
+  // Recording or transcribing: a transcript is on its way into this composer.
+  // Loading the model is not: Send stays usable while it downloads.
+  const dictating = dictation.state.status === 'recording' || dictation.state.status === 'transcribing'
+  const micLabel = dictation.state.status === 'recording' ? 'agent.voice.stop' : dictation.state.status === 'loading' ? 'agent.voice.cancelLoad' : 'agent.voice.start'
 
   const apply = (next: ConversationState) => {
     const pendingRows = next.draft?.status === 'pending' ? next.draft.rows : []
@@ -106,7 +140,7 @@ export default function AgentPage() {
   const running = sending || state?.run?.status === 'running'
   const locked = busy || Boolean(running) || cancelling
   const unresolved = Boolean(retry || confirmRetry || goalRetry)
-  const sendDisabled = locked || unresolved || dirty || available !== true || !content.trim()
+  const sendDisabled = locked || unresolved || dirty || available !== true || !content.trim() || dictating
   // Coarse pointer = phone/tablet: Enter stays a newline there and Send is the button.
   const [enterSends, setEnterSends] = useState(false)
   useEffect(() => { setEnterSends(!window.matchMedia('(pointer: coarse)').matches) }, [])
@@ -162,7 +196,7 @@ export default function AgentPage() {
   const send = async (attempt?: { conversationId: string; body: MessageRequest }) => {
     // A replay keeps its requestId, so it may go out without a provider: the
     // server answers an exact replay from saved state and refuses a new run.
-    if (locked || dirty || confirmRetry || (!available && !attempt) || (!attempt && !content.trim())) return
+    if (locked || dirty || confirmRetry || (!available && !attempt) || (!attempt && (!content.trim() || dictating))) return
     setBusy(true); setSending(true); setError(''); setNotice(''); setStaleDraft(false)
     const thisGeneration = ++generation.current
     const abort = new AbortController(); controller.current = abort
@@ -172,12 +206,12 @@ export default function AgentPage() {
       // Cancellation can happen while the initial conversation is being
       // created. Even if creation committed, never send its message afterward.
       if (generation.current !== thisGeneration || abort.signal.aborted) return
-      request = attempt || { conversationId, body: { ...context, content: content.trim(), requestId: crypto.randomUUID() } }
+      request = attempt || { conversationId, body: { ...context, content: content.trim(), requestId: crypto.randomUUID(), ...(voiced ? { input: 'voice' as const } : {}) } }
       activeRequest.current = { conversationId, requestId: request.body.requestId }
       setRetry(request)
       const next = await agentAPI.send(conversationId, request.body, abort.signal)
       if (generation.current !== thisGeneration) return
-      apply(next); setRetry(null); setContent(''); focusComposer.current = next.run?.status !== 'running'
+      apply(next); setRetry(null); setContent(''); dictation.clearError(); focusComposer.current = next.run?.status !== 'running'
       if (next.run?.error_code) setError(next.run.error_code)
     } catch (cause) {
       if (generation.current !== thisGeneration) return
@@ -337,10 +371,10 @@ export default function AgentPage() {
         {storage && available === false && <p className="rounded-lg border bg-muted p-4 text-sm">{t('agent.unavailable')}</p>}
         {storage !== false && <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="min-w-0 space-y-3">
-            <div className="flex flex-wrap gap-2"><Button disabled={locked || dirty || unresolved} onClick={() => { setState(null); setRows([]); setContent(''); setNotice(''); setError('') }}><Plus />{t('agent.new')}</Button><Button variant="outline" size="icon" aria-label={t('agent.refresh')} disabled={busy || (dirty && !staleDraft) || sending} onClick={refresh}><RefreshCw /></Button></div>
+            <div className="flex flex-wrap gap-2"><Button disabled={locked || dirty || unresolved || dictating} onClick={() => { setState(null); setRows([]); setContent(''); setNotice(''); setError(''); dictation.clearError() }}><Plus />{t('agent.new')}</Button><Button variant="outline" size="icon" aria-label={t('agent.refresh')} disabled={busy || (dirty && !staleDraft) || sending} onClick={refresh}><RefreshCw /></Button></div>
             <h2 className="text-sm font-semibold">{t('agent.history')}</h2>
             <div className="flex max-h-64 gap-2 overflow-auto lg:max-h-[65vh] lg:flex-col">
-              {conversations.map(item => <button key={item.id} disabled={locked || dirty || unresolved} onClick={() => load(item.id)} aria-current={state?.conversation.id === item.id ? 'page' : undefined} className={`min-w-40 rounded-lg border p-3 text-left text-sm hover:bg-muted disabled:opacity-50 lg:min-w-0 ${state?.conversation.id === item.id ? 'border-primary bg-primary/5' : ''}`}><span className="line-clamp-2 break-words">{!item.title || item.title === DEFAULT_TITLE ? t('agent.untitled') : item.title}</span><time dateTime={item.created_at} className="mt-1 block text-xs text-muted-foreground">{dateTime(item.created_at)}</time></button>)}
+              {conversations.map(item => <button key={item.id} disabled={locked || dirty || unresolved || dictating} onClick={() => load(item.id)} aria-current={state?.conversation.id === item.id ? 'page' : undefined} className={`min-w-40 rounded-lg border p-3 text-left text-sm hover:bg-muted disabled:opacity-50 lg:min-w-0 ${state?.conversation.id === item.id ? 'border-primary bg-primary/5' : ''}`}><span className="line-clamp-2 break-words">{!item.title || item.title === DEFAULT_TITLE ? t('agent.untitled') : item.title}</span><time dateTime={item.created_at} className="mt-1 block text-xs text-muted-foreground">{dateTime(item.created_at)}</time></button>)}
               {!conversations.length && <p className="text-sm text-muted-foreground">{t('agent.noHistory')}</p>}
             </div>
           </aside>
@@ -363,16 +397,31 @@ export default function AgentPage() {
                 if (previous) void send({ conversationId: state.conversation.id, body: { ...context, content: previous.content, requestId: crypto.randomUUID() } })
               }}>{t('agent.retryNew')}</Button></div>}
               <form onSubmit={event => { event.preventDefault(); void send() }} className="space-y-3">
-                <label className="block space-y-2 text-sm"><span className="font-medium">{t('agent.compose')}</span><Textarea ref={composer} rows={3} maxLength={4000} value={content} onChange={e => setContent(e.target.value)} onKeyDown={e => {
+                <label className="block space-y-2 text-sm"><span className="font-medium">{t('agent.compose')}</span><Textarea ref={composer} rows={3} maxLength={4000} value={content} onChange={e => { setContent(e.target.value); dictation.clearError() }} onKeyDown={e => {
                   if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing || e.keyCode === 229) return
                   // Plain Enter sends only with a fine pointer; Cmd/Ctrl+Enter always does.
                   if (!(e.metaKey || e.ctrlKey || enterSends)) return
                   e.preventDefault()
                   if (!sendDisabled) e.currentTarget.form?.requestSubmit()
                 }} disabled={locked || unresolved || available !== true} placeholder={t('agent.placeholder')} /></label>
-                <div className="flex items-center justify-between gap-3"><div className="space-y-1"><p className="text-xs text-muted-foreground">{t('agent.reviewHint')}</p>{enterSends && <p className="text-xs text-muted-foreground">{t('agent.enterHint')}</p>}</div><Button type="submit" disabled={sendDisabled}><Send />{t('agent.send')}</Button></div>
+                {canDictate && dictation.state.status === 'loading' && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{dictation.state.total ? t('agent.voice.loading', { loaded: (dictation.state.loaded / 1e6).toFixed(1), total: (dictation.state.total / 1e6).toFixed(1) }) : t('agent.voice.preparing')}</p>}
+                {canDictate && dictation.state.status === 'recording' && <p className="flex items-center gap-2 text-xs"><span className="h-2 w-2 animate-pulse rounded-full bg-red-600" aria-hidden />{t('agent.voice.recording', { elapsed: Math.min(Math.floor(dictation.state.elapsed / 1000), DICTATION_LIMIT_MS / 1000), limit: DICTATION_LIMIT_MS / 1000 })}</p>}
+                {canDictate && dictation.state.status === 'ready' && <p className="text-xs text-muted-foreground">{t('agent.voice.ready')}</p>}
+                {canDictate && dictation.state.status === 'transcribing' && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{t('agent.voice.transcribing')}</p>}
+                {canDictate && dictation.error && <p role="alert" className="text-xs text-destructive">{t(`agent.voice.errors.${dictation.error}`)}</p>}
+                {voiced && !dictating && <p className="text-xs text-muted-foreground">{t('agent.voice.review')}</p>}
+                <div className="flex items-center justify-between gap-3"><div className="space-y-1"><p className="text-xs text-muted-foreground">{t('agent.reviewHint')}</p>{enterSends && <p className="text-xs text-muted-foreground">{t('agent.enterHint')}</p>}</div><div className="flex shrink-0 items-center gap-2">
+                  {canDictate && <Button type="button" variant="outline" size="icon" aria-pressed={dictation.state.status === 'recording'}
+                    aria-label={t(micLabel)} title={t(micLabel)}
+                    // A recording can always be stopped and a download cancelled; starting one needs a usable composer and no pending run.
+                    disabled={dictation.state.status === 'recording' || dictation.state.status === 'loading' ? false
+                      : dictation.state.status === 'transcribing' || locked || unresolved || available !== true}
+                    onClick={() => void dictation.toggle()}>
+                    {dictation.state.status === 'recording' ? <Square className="fill-current text-red-600" /> : dictation.state.status === 'idle' || dictation.state.status === 'ready' ? <Mic /> : <Loader2 className="animate-spin" />}
+                  </Button>}
+                  <Button type="submit" disabled={sendDisabled}><Send />{t('agent.send')}</Button></div></div>
               </form>
-              {state && <div className="border-t pt-3"><Button variant="ghost" size="sm" disabled={locked || unresolved} onClick={() => setDeleteOpen(true)}><Trash2 />{t('agent.deleteConversation')}</Button></div>}
+              {state && <div className="border-t pt-3"><Button variant="ghost" size="sm" disabled={locked || unresolved || dictating} onClick={() => setDeleteOpen(true)}><Trash2 />{t('agent.deleteConversation')}</Button></div>}
             </CardContent></Card>
             {state?.draft?.status === 'expired' && <p className="rounded-lg border p-4 text-sm">{t('agent.expired')}</p>}
             {pendingDraft && <Card><CardHeader><CardTitle>{t('agent.review')}</CardTitle><p className="text-sm text-muted-foreground">{t('agent.version', { version: state.draft?.version })} · {expired ? t('agent.expired') : t('agent.expires', { date: dateTime(state.draft!.expires_at, true) })}</p></CardHeader><CardContent className="space-y-4">

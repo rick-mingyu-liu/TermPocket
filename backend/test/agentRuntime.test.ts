@@ -206,6 +206,16 @@ for (const kind of kinds) {
     assert.match(h.system(), /context\.reply_language/);
   });
 
+  test(`${kind}: a dictated message adds context.input; a typed one leaves the envelope unchanged`, async () => {
+    const typed = await harness(kind, async () => {});
+    await typed.runtime(input);
+    assert.equal('input' in (typed.prompt().context as Record<string, unknown>), false);
+    const voice = await harness(kind, async () => {});
+    await voice.runtime({ ...input, dictated: true });
+    assert.equal((voice.prompt().context as Record<string, unknown>).input, 'dictated');
+    assert.match(voice.system(), /context\.input is "dictated"/);
+  });
+
   test(`${kind}: read and proposal calls share the eight-call cap`, async () => {
     const fake = fakeRecords();
     const h = await harness(kind, async call => {

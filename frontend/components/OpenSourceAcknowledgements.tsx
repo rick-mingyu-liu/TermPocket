@@ -65,6 +65,14 @@ const ocrProjects: Project[] = [
   [ocrProfile.name, 'https://huggingface.co/snowfluke/ppu-paddle-ocr-models/tree/bf1d5edb0335d3262be7caf13f766ba274b4cadd']
 ]
 
+// Pinned by scripts/voice-assets.js; the model link names the exact commit shipped.
+const voiceProjects: Project[] = [
+  ['Transformers.js', 'https://github.com/huggingface/transformers.js'],
+  ['ONNX Runtime', 'https://github.com/microsoft/onnxruntime'],
+  ['Whisper', 'https://github.com/openai/whisper'],
+  ['whisper-base.en (ONNX)', 'https://huggingface.co/onnx-community/whisper-base.en/tree/51eefc0af78b103839eda9e7e4f4186acc6517fe']
+]
+
 function ProjectLinks({ projects }: { projects: Project[] }) {
   return (
     <ul className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
@@ -102,6 +110,11 @@ export default function OpenSourceAcknowledgements({ open, onOpenChange, classNa
             <h3 className="font-semibold">{t('Browser OCR')}</h3>
             <p className="text-sm text-muted-foreground">{t('Screenshot recognition runs in your browser with ppu-paddle-ocr and ONNX Runtime, using PaddleOCR models converted for ppu-paddle-ocr and published on Hugging Face (snowfluke/ppu-paddle-ocr-models). The model link identifies the exact version TermPocket ships.')}</p>
             <ProjectLinks projects={ocrProjects} />
+          </section>
+          <section className="space-y-3">
+            <h3 className="font-semibold">{t('agent.voice.ackTitle')}</h3>
+            <p className="text-sm text-muted-foreground">{t('agent.voice.ackText')}</p>
+            <ProjectLinks projects={voiceProjects} />
           </section>
           <section className="space-y-3 border-t pt-4">
             <h3 className="font-semibold">{t('agent.additionalSoftware')}</h3>

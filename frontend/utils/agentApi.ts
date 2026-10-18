@@ -34,7 +34,11 @@ export interface ConversationState {
   run: { id: string; status: 'running' | 'complete' | 'failed' | 'cancelled'; error_code: string | null } | null
   goalProposal: GoalProposal | null
 }
-export interface MessageRequest extends AgentContext { requestId: string; content: string }
+// input: 'voice' when the text came from dictation (edited or not), so Pocky
+// asks about amounts speech-to-text may have run together. Omitted when typed.
+// Deploy order: backend before frontend. A server predating the field rejects
+// unknown keys, so dictated sends would get a 400 (typed sends are unaffected).
+export interface MessageRequest extends AgentContext { requestId: string; content: string; input?: 'typed' | 'voice' }
 export interface ConfirmRequest { version: number; rowIds: string[]; requestId: string }
 export interface GoalConfirmRequest { proposalId: string; requestId: string }
 // storage: history, drafts, confirmation, undo and deletion work.

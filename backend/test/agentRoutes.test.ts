@@ -58,6 +58,14 @@ test('malformed IDs, preferences and messages fail before admission',async()=>{
   mock.method(store,'beginTurn',async()=>assert.fail('admitted invalid input'));
   for(const invalid of [{...body,requestId:'no'},{...body,content:''},{...body,content:'x'.repeat(4001)},{...body,timezone:'No/SuchZone'},{...body,currency:'XYZ'},{...body,language:'fr'}])assert.equal((await post(invalid)).status,400);
 });
+test('input is typed by default, voice only when asked, and anything else fails before admission',async()=>{
+  const seen:unknown[]=[];
+  mock.method(runtime,'runAgent',async(input:{dictated?:boolean})=>{seen.push(input.dictated);return {text:'Please review the draft.',usage:{inputTokens:1,outputTokens:1},toolCalls:0};});
+  for(const payload of [body,{...body,input:'typed'},{...body,input:'voice'}]) assert.equal((await post(payload)).status,200);
+  assert.deepEqual(seen,[false,false,true]);
+  mock.method(store,'beginTurn',async()=>assert.fail('admitted invalid input'));
+  for(const input of ['dictated','VOICE',true,null,1]) assert.equal((await post({...body,input})).status,400);
+});
 test('exact replay does not call provider again',async()=>{
   mock.method(store,'beginTurn',async()=>({started:false,state,history:[],pendingRows:[]}));
   mock.method(runtime,'runAgent',async()=>assert.fail('duplicate provider call'));

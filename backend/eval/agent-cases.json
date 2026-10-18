@@ -715,6 +715,192 @@
         "goalProposal": null,
         "reply": { "mustNotMatch": ["[\\u3400-\\u9fff]"] }
       }
+    },
+    {
+      "id": "voice-flag-squashed-uber",
+      "language": "en",
+      "input": "voice",
+      "message": "Uber 2340.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. Dollars and cents run together: 23.40 or 2,340.00. Pocky asks which, quoting both, and drafts nothing.",
+      "expect": {
+        "tools": { "exclude": ["propose_transactions", "propose_goal"] },
+        "draft": { "count": 0 },
+        "goalProposal": null,
+        "reply": { "mustContain": ["23.40"], "mustContainAny": [["?", "which"]], "mustNotContain": ["saved", "recorded"] }
+      }
+    },
+    {
+      "id": "voice-flag-squashed-bubble-tea",
+      "language": "en",
+      "input": "voice",
+      "message": "Spent $950 on bubble tea yesterday.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. Dollars and cents run together: 9.50 or 950.00. Pocky asks which, quoting both, and drafts nothing.",
+      "expect": {
+        "tools": { "exclude": ["propose_transactions", "propose_goal"] },
+        "draft": { "count": 0 },
+        "goalProposal": null,
+        "reply": { "mustContain": ["9.50"], "mustContainAny": [["?", "which"]], "mustNotContain": ["saved", "recorded"] }
+      }
+    },
+    {
+      "id": "voice-flag-squashed-shoppers",
+      "language": "en",
+      "input": "voice",
+      "message": "Shoppers drug mark 1249 today.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. Dollars and cents run together: 12.49 or 1,249.00. Pocky asks which, quoting both, and drafts nothing.",
+      "expect": {
+        "tools": { "exclude": ["propose_transactions", "propose_goal"] },
+        "draft": { "count": 0 },
+        "goalProposal": null,
+        "reply": { "mustContain": ["12.49"], "mustContainAny": [["?", "which"]], "mustNotContain": ["saved", "recorded"] }
+      }
+    },
+    {
+      "id": "voice-flag-clear-dinner",
+      "language": "en",
+      "input": "voice",
+      "message": "Dinner at the keg $84.20 last night.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. A decimal point: no question.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "84.20", "currency": "CAD", "category": "Dining Out", "date": "2026-10-13" }] }
+      }
+    },
+    {
+      "id": "voice-flag-clear-rent",
+      "language": "en",
+      "input": "voice",
+      "message": "paid rent $1,150.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. A thousands comma: no question.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "1150.00", "currency": "CAD", "category": "Housing", "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-flag-clear-tuition",
+      "language": "en",
+      "input": "voice",
+      "message": "Tuition deposit $500.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. Ends in 00: no question.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "500.00", "currency": "CAD", "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-flag-clear-words",
+      "language": "en",
+      "input": "voice",
+      "message": "Spent nine fifty on bubble tea yesterday.",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript, sent with input 'voice'. An amount in words: no question.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "9.50", "currency": "CAD", "category": "Dining Out", "date": "2026-10-13" }] }
+      }
+    },
+    {
+      "id": "voice-words-tim-hortons",
+      "language": "en",
+      "message": "coffee at tim hortons four seventy five",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "4.75", "currency": "CAD", "category": "Dining Out", "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-shoppers",
+      "language": "en",
+      "message": "shoppers drug mark twelve forty nine today",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path. The merchant is misheard (drug mark).",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "12.49", "currency": "CAD", "category": ["Shopping", "Healthcare"], "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-petro-canada",
+      "language": "en",
+      "message": "gas at petro canada fifty one thirty",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "51.30", "currency": "CAD", "category": "Transportation", "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-netflix",
+      "language": "en",
+      "message": "netflix sixteen ninety nine",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "16.99", "currency": "CAD", "category": ["Entertainment", "Utilities", "Other Expenses"], "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-amazon",
+      "language": "en",
+      "message": "amazon order forty two seventeen",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path. \"order forty two\" can read as an order number: Pocky drafted 42.17 in 3 of 6 runs and asked in 3, never a wrong amount. Either way the reply must name 42.17 and never 4217.",
+      "expect": {
+        "tools": { "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "reply": { "mustContain": ["42.17"], "mustNotContain": ["4217", "4,217"] }
+      }
+    },
+    {
+      "id": "voice-words-amazon-split-digits",
+      "language": "en",
+      "message": "amazon order 42 17",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path. Whisper wrote the dollars and cents as two separate numbers; Pocky asked in 2 of 2 runs rather than guess, which is safe; either way the reply must name 42.17 and never 4217.",
+      "expect": {
+        "tools": { "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "reply": { "mustContain": ["42.17"], "mustNotContain": ["4217", "4,217"] }
+      }
+    },
+    {
+      "id": "voice-words-textbook",
+      "language": "en",
+      "message": "textbook from the bookstore ninety nine ninety nine",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "99.99", "currency": "CAD", "category": ["Education", "Shopping"], "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-cineplex",
+      "language": "en",
+      "message": "movie tickets at cineplex thirty two fifty",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "32.50", "currency": "CAD", "category": "Entertainment", "date": "2026-10-14" }] }
+      }
+    },
+    {
+      "id": "voice-words-garbled-income",
+      "language": "en",
+      "message": "god paid two thousand four hundred eighty from michael art",
+      "note": "Spike round 2 (docs/VOICE.md): a real Whisper base.en transcript with the words prompt (variant w2), typed path. Misheard words (god paid, michael art for my co-op); the amount is still clear.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "2480.00", "currency": "CAD", "date": "2026-10-14" }] }
+      }
     }
   ]
 }

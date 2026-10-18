@@ -9,6 +9,10 @@ out/
 public/models/
 public/ort/
 
+# voice dictation assets, fetched and checksummed by scripts/voice-assets.js
+# (public/voice/worker.js itself is committed)
+public/voice/*/
+
 # env files
 .env
 .env.*
