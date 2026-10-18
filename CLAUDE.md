@@ -31,7 +31,7 @@ npm start              # next start (serve production build)
 npm run lint           # next lint (needs .eslintrc.json — without it, it prompts and hangs)
 npm run check:locales  # every public/locales/<locale>/<ns>.json: fails on duplicate keys or a key one locale has and another lacks (plural forms compared by base key); warns on t() keys that resolve nowhere (`legal:` prefix → legal.json)
 npm run ocr-assets     # fetch + checksum the OCR model into public/models, copy ONNX Runtime into public/ort (runs before dev/build)
-npm run voice-assets   # fetch + checksum dictation assets into public/voice/<name>-<version>/ (Transformers.js 4.3.1, its ONNX Runtime 1.31.0-dev WASM, Whisper base.en q8, ~116 MB on disk); runs before dev/build after ocr-assets. Each download has a 120 s timeout and 3 attempts and is written via a .tmp rename; CI caches these directories and public/models keyed on the scripts. Behind a TLS-intercepting proxy, run with NODE_OPTIONS=--use-system-ca
+npm run voice-assets   # fetch + checksum dictation assets into public/voice/<name>-<version>/ (Transformers.js 4.3.1, its ONNX Runtime 1.31.0-dev WASM, Whisper base.en q8, ~116 MB on disk); runs before dev/build after ocr-assets. Each download has a 120 s timeout and 3 attempts and is written via a .tmp rename. Behind a TLS-intercepting proxy, run with NODE_OPTIONS=--use-system-ca
 # There is still no `npm test` in the frontend, despite README claims.
 ```
 
