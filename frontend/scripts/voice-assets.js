@@ -82,19 +82,40 @@ const FILES = [
 
 const sha256 = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
 
+const TIMEOUT_MS = 120_000;
+const ATTEMPTS = 3;
+
+// One file, with a per-attempt timeout and retries with backoff: a build
+// downloads about 116 MB here, and one stalled connection should not hang it.
+async function download(file, url) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
+      return Buffer.from(await res.arrayBuffer());
+    } catch (error) {
+      if (attempt >= ATTEMPTS) throw new Error(`${file}: ${error.message}`);
+      const wait = 2000 * 2 ** (attempt - 1);
+      console.log(`voice-assets: ${file} attempt ${attempt} failed (${error.message}); retrying in ${wait / 1000} s`);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+}
+
 async function ensure({ file, url, sha256: expected }) {
   const target = path.join(VOICE_DIR, file);
   if (fs.existsSync(target) && sha256(fs.readFileSync(target)) === expected) return 'present';
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${file}: HTTP ${res.status} from ${url}`);
-  const buffer = Buffer.from(await res.arrayBuffer());
+  const buffer = await download(file, url);
   const actual = sha256(buffer);
   if (actual !== expected) {
     throw new Error(`${file}: checksum mismatch (expected ${expected}, got ${actual}). Not writing it.`);
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, buffer);
+  // Write beside the target, then rename, so an interrupted run never leaves a
+  // truncated file under the served name.
+  fs.writeFileSync(`${target}.tmp`, buffer);
+  fs.renameSync(`${target}.tmp`, target);
   return 'downloaded';
 }
 

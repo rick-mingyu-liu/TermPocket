@@ -541,8 +541,10 @@
     "voice": {
       "start": "Dictate a message (English only)",
       "stop": "Stop recording",
+      "cancelLoad": "Cancel the speech model download",
       "preparing": "Preparing speech recognition…",
-      "loading": "Downloading the speech model, first time only: {{loaded}} / {{total}} MB",
+      "loading": "Downloading the speech model, first time only: about {{loaded}} of {{total}} MB",
+      "ready": "Speech model ready. Tap the microphone and speak in English.",
       "recording": "Listening… {{elapsed}} / {{limit}} s. Tap stop when you are done.",
       "transcribing": "Transcribing on this device…",
       "review": "Dictated text: check it, especially amounts, before you send.",

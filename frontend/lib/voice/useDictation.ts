@@ -6,10 +6,17 @@ const SAMPLE_RATE = 16_000
 export const DICTATION_LIMIT_MS = 15_000
 /** Below this peak level a recording is treated as silence, so Whisper is never asked to invent words for it. */
 const SILENCE_PEAK = 0.01
+/** A recording smaller than this holds no usable speech (a tap-tap, or a recorder that produced nothing). */
+const MIN_RECORDING_BYTES = 1_000
+/** A model download that reports no progress for this long is treated as failed. */
+const LOAD_STALL_MS = 5 * 60_000
 
 export type DictationState =
   | { status: 'idle' }
   | { status: 'loading'; loaded: number; total: number }
+  // The model finished loading on this tap; the next tap records, so the
+  // microphone and audio context start inside a user gesture (iOS).
+  | { status: 'ready' }
   | { status: 'recording'; elapsed: number }
   | { status: 'transcribing' }
 
@@ -38,8 +45,7 @@ export function dictationSupported(): boolean {
  * Decode a recording (webm/opus in Chrome and Firefox, mp4/aac in Safari) and
  * resample it to 16 kHz mono, which Whisper expects.
  */
-async function toWhisperInput(blob: Blob): Promise<Float32Array> {
-  const context = new AudioContext()
+async function toWhisperInput(blob: Blob, context: AudioContext): Promise<Float32Array> {
   try {
     const decoded = await context.decodeAudioData(await blob.arrayBuffer())
     const offline = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration * SAMPLE_RATE)), SAMPLE_RATE)
@@ -60,8 +66,9 @@ function silent(audio: Float32Array): boolean {
 }
 
 /**
- * On-device English dictation. `toggle` starts (loading the model on first
- * use, then recording) or stops a recording; a transcript is handed to
+ * On-device English dictation. `toggle` loads the model on first use (and
+ * cancels that load if tapped again), then stops at 'ready'; once the model is
+ * loaded it starts or stops a recording. A transcript is handed to
  * `onText` and never sent anywhere. The model worker lives at
  * /voice/worker.js and is created on first use and terminated on unmount.
  * Audio exists only in this tab's memory: it is not uploaded, stored or logged.
@@ -71,6 +78,9 @@ export function useDictation(onText: (text: string) => void) {
   const [error, setError] = useState<DictationError | null>(null)
   const worker = useRef<Worker | null>(null)
   const ready = useRef<Promise<void> | null>(null)
+  const loaded = useRef(false)
+  const rejectLoad = useRef<((error: Error) => void) | null>(null)
+  const cancelled = useRef(false)
   const waiting = useRef(new Map<number, Waiting>())
   const nextId = useRef(1)
   const recorder = useRef<MediaRecorder | null>(null)
@@ -88,6 +98,10 @@ export function useDictation(onText: (text: string) => void) {
     worker.current?.terminate()
     worker.current = null
     ready.current = null
+    loaded.current = false
+    // Settle a load in progress so nothing waits on a terminated worker.
+    rejectLoad.current?.(new Error('The speech engine stopped.'))
+    rejectLoad.current = null
     for (const { reject } of waiting.current.values()) reject(new Error('The speech engine stopped.'))
     waiting.current.clear()
   }, [])
@@ -97,21 +111,26 @@ export function useDictation(onText: (text: string) => void) {
     if (ready.current) return ready.current
     const w = new Worker('/voice/worker.js', { type: 'module' })
     worker.current = w
-    ready.current = new Promise<void>((resolve, reject) => {
+    const promise = new Promise<void>((resolve, reject) => {
+      let stall: ReturnType<typeof setTimeout> | undefined
+      const watch = () => { clearTimeout(stall); stall = setTimeout(() => reject(new Error('The speech model stopped downloading.')), LOAD_STALL_MS) }
+      watch()
+      rejectLoad.current = error => { clearTimeout(stall); reject(error) }
       w.onmessage = ({ data }: MessageEvent<WorkerReply>) => {
-        if (data.type === 'progress') update({ status: 'loading', loaded: data.loaded, total: data.total })
-        else if (data.type === 'ready') resolve()
+        if (data.type === 'progress') { watch(); if (!cancelled.current) update({ status: 'loading', loaded: data.loaded, total: data.total }) }
+        else if (data.type === 'ready') { clearTimeout(stall); rejectLoad.current = null; loaded.current = true; resolve() }
         else if (data.type === 'result') { waiting.current.get(data.id)?.resolve(data.text); waiting.current.delete(data.id) }
-        else if (data.id === undefined) reject(new Error(data.message))
+        else if (data.id === undefined) rejectLoad.current?.(new Error(data.message))
         else { waiting.current.get(data.id)?.reject(new Error(data.message)); waiting.current.delete(data.id) }
       }
       // A worker that cannot start (missing file, no module workers) or that
       // crashed later: fail the load and anything waiting, and start over next time.
-      w.onerror = event => { event.preventDefault(); reject(new Error('The speech engine stopped.')); if (worker.current === w) stopWorker() }
+      w.onerror = event => { event.preventDefault(); if (worker.current === w) stopWorker() }
     })
-    ready.current.catch(stopWorker)
+    ready.current = promise
+    promise.catch(() => { if (worker.current === w) stopWorker() })
     w.postMessage({ type: 'load' })
-    return ready.current
+    return promise
   }, [stopWorker])
 
   const transcribe = (audio: Float32Array) => new Promise<string>((resolve, reject) => {
@@ -142,16 +161,21 @@ export function useDictation(onText: (text: string) => void) {
   }, [])
 
   const record = async () => {
+    // Both are created synchronously in the tap's handler, inside its user
+    // gesture, which iOS Safari wants for the microphone and Web Audio.
+    const context = new AudioContext()
+    const closeContext = () => { void context.close().catch(() => undefined) }
     let media: MediaStream
     try {
       media = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch (cause) {
+      closeContext()
       const name = (cause as Error)?.name
       fail(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied'
         : name === 'NotFoundError' || name === 'OverconstrainedError' ? 'noMic' : 'failed')
       return
     }
-    if (!mounted.current) { media.getTracks().forEach(track => track.stop()); return }
+    if (!mounted.current) { media.getTracks().forEach(track => track.stop()); closeContext(); return }
     stream.current = media
     const chunks: Blob[] = []
     const r = new MediaRecorder(media)
@@ -161,10 +185,13 @@ export function useDictation(onText: (text: string) => void) {
     r.onstop = async () => {
       release()
       recorder.current = null
-      if (discard.current || !mounted.current) { update({ status: 'idle' }); return }
+      if (discard.current || !mounted.current) { closeContext(); update({ status: 'idle' }); return }
+      const blob = new Blob(chunks, { type: r.mimeType })
+      if (blob.size < MIN_RECORDING_BYTES) { closeContext(); fail('noSpeech'); return }
       update({ status: 'transcribing' })
       try {
-        const audio = await toWhisperInput(new Blob(chunks, { type: r.mimeType }))
+        // toWhisperInput closes the context.
+        const audio = await toWhisperInput(blob, context)
         const text = silent(audio) ? '' : await transcribe(audio)
         if (!mounted.current) return
         if (!text) { fail('noSpeech'); return }
@@ -183,22 +210,31 @@ export function useDictation(onText: (text: string) => void) {
 
   const toggle = useCallback(async () => {
     if (state.status === 'recording') { stop(); return }
-    if (state.status !== 'idle') return
+    if (state.status === 'loading') {
+      // Cancel the download; the next tap starts it again (files already
+      // fetched stay in the browser's cache).
+      cancelled.current = true
+      stopWorker()
+      update({ status: 'idle' })
+      return
+    }
+    if (state.status === 'transcribing') return
     setError(null)
+    if (loaded.current) { await record(); return }
+    cancelled.current = false
     update({ status: 'loading', loaded: 0, total: 0 })
     try {
       await load()
     } catch {
-      fail('loadFailed')
+      if (!cancelled.current) fail('loadFailed')
       return
     }
-    // The page was closed or hidden while the model loaded: do not start listening.
-    if (!mounted.current) return
-    if (document.visibilityState === 'hidden') { update({ status: 'idle' }); return }
-    await record()
+    if (cancelled.current) return
+    // Never start listening on its own after a download: wait for a tap.
+    update({ status: 'ready' })
     // record and update are recreated each render but only touch refs and setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.status, load, stop])
+  }, [state.status, load, stop, stopWorker])
 
   useEffect(() => {
     mounted.current = true

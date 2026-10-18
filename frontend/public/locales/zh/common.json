@@ -540,8 +540,10 @@
     "voice": {
       "start": "语音输入（仅支持英语）",
       "stop": "停止录音",
+      "cancelLoad": "取消下载语音模型",
       "preparing": "正在准备语音识别……",
-      "loading": "正在下载语音模型（仅首次）：{{loaded}} / {{total}} MB",
+      "loading": "正在下载语音模型（仅首次）：约 {{loaded}} / {{total}} MB",
+      "ready": "语音模型已就绪。点击麦克风，用英语说话。",
       "recording": "正在录音…… {{elapsed}} / {{limit}} 秒。说完后点击停止。",
       "transcribing": "正在本机识别……",
       "review": "以上为语音识别的文字：发送前请检查，尤其是金额。",
