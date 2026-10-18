@@ -79,7 +79,9 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 | --- | --- |
 | [#94](https://github.com/rick-mingyu-liu/TermPocket/pull/94) | Dictated-style English evaluation cases and a bare "dollars" meaning the conversation currency. Awaiting owner review |
 | [#102](https://github.com/rick-mingyu-liu/TermPocket/pull/102) | Draft: remove the SDK runtime. Gated until about 2026-10-22, after a week of direct in production, a pasted Render Shell preflight, and no open PR touching `runtime.ts` |
-| [#86](https://github.com/rick-mingyu-liu/TermPocket/pull/86) | Draft: English voice dictation design and spike |
+| [#86](https://github.com/rick-mingyu-liu/TermPocket/pull/86) | Draft: English voice dictation design and spike. Superseded by `feat/voice-input` |
+| [#140](https://github.com/rick-mingyu-liu/TermPocket/pull/140) | Draft: voice spike round 2 (words prompt, dictated flag). Superseded by `feat/voice-input` |
+| `feat/voice-input` | Voice dictation in Pocky's chat: on-device Whisper `base.en`, self-hosted, `input: "voice"` flag. Needs a phone check on the preview |
 
 ## Next
 

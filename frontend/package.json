@@ -10,8 +10,9 @@
     "lint": "next lint",
     "check:locales": "node scripts/check-locales.js",
     "ocr-assets": "node scripts/ocr-assets.js",
-    "predev": "npm run ocr-assets",
-    "prebuild": "npm run ocr-assets"
+    "voice-assets": "node scripts/voice-assets.js",
+    "predev": "npm run ocr-assets && npm run voice-assets",
+    "prebuild": "npm run ocr-assets && npm run voice-assets"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

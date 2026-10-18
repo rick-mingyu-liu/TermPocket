@@ -538,6 +538,24 @@
     "compose": "Your message",
     "placeholder": "Tell me what you spent or earned, ask about your records, or correct a pending entry…",
     "enterHint": "Enter to send · Shift+Enter for a new line",
+    "voice": {
+      "start": "Dictate a message (English only)",
+      "stop": "Stop recording",
+      "preparing": "Preparing speech recognition…",
+      "loading": "Downloading the speech model, first time only: {{loaded}} / {{total}} MB",
+      "recording": "Listening… {{elapsed}} / {{limit}} s. Tap stop when you are done.",
+      "transcribing": "Transcribing on this device…",
+      "review": "Dictated text: check it, especially amounts, before you send.",
+      "ackTitle": "Browser dictation",
+      "ackText": "Dictation in Pocky runs in your browser with Transformers.js and ONNX Runtime, using OpenAI’s Whisper base.en model converted to ONNX by the Hugging Face community (onnx-community/whisper-base.en). The model link identifies the exact version TermPocket ships.",
+      "errors": {
+        "denied": "Microphone access is blocked. Allow it in your browser’s site settings, or type instead.",
+        "noMic": "No microphone was found. Connect one, or type instead.",
+        "noSpeech": "No speech was heard. Try again closer to the microphone, in English.",
+        "loadFailed": "The speech model could not be loaded. Check your connection and try again, or type instead.",
+        "failed": "Dictation did not work this time. Try again, or type instead."
+      }
+    },
     "send": "Send",
     "deleteConversation": "Delete conversation",
     "deleteWarning": "This permanently deletes this conversation and its pending drafts. Transactions already saved remain in your records. This cannot be undone.",

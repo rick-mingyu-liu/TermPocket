@@ -1,5 +1,5 @@
 {
-  "updated": "17 October 2026",
+  "updated": "18 October 2026",
   "privacy": {
     "intro": [
       "TermPocket is a free personal finance app for university students, run from Canada by its developer, [rick-mingyu-liu](https://github.com/rick-mingyu-liu) (“we”, “us”). This page explains what TermPocket stores, where it goes, how long it is kept, and how to ask for a copy or for deletion.",
@@ -18,9 +18,10 @@
         ]
       },
       {
-        "h": "Screenshots stay on your device",
+        "h": "Screenshots and voice recordings stay on your device",
         "p": [
-          "When you import a screenshot, text recognition runs in your browser. The image never leaves your device. The recognised text lines are sent to our server, which turns them into draft rows and sends them back without storing them. Only the rows you confirm are saved."
+          "When you import a screenshot, text recognition runs in your browser. The image never leaves your device. The recognised text lines are sent to our server, which turns them into draft rows and sends them back without storing them. Only the rows you confirm are saved.",
+          "When you dictate a message to Pocky with the microphone button, speech recognition also runs in your browser. The recording never leaves your device and is not stored. Only the transcribed text, which you can edit before sending, is sent, just like a typed message."
         ]
       },
       {
@@ -31,7 +32,7 @@
         "items": [
           "your message and the recent part of the conversation (up to 30 earlier messages);",
           "the entries currently waiting for your review;",
-          "the conversation’s currency, timezone and reply language, and today’s date and term dates;",
+          "the conversation’s currency, timezone and reply language, today’s date and term dates, and whether the message was dictated;",
           "when Pocky looks up your records to answer a question or plan: the dates, amounts, currencies, descriptions and categories of the matching transactions, totals by category, and your savings goals (names, amounts, target dates and descriptions);",
           "any amounts or plans you describe, such as pay, rent or a savings target."
         ],

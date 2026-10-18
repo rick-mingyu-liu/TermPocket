@@ -1,6 +1,6 @@
 # TermPocket — phase 2 plan
 
-Drafted 2026-10-15. Updated 2026-10-17. Phase 1 put Pocky into production: recording, investigation and planning, live on Render with migrations 013–015 on Neon ([`STATUS.md`](../STATUS.md)). Phase 2 takes TermPocket from "works for its owner" to "safe to post publicly", and adds voice input.
+Drafted 2026-10-15. Updated 2026-10-18. Phase 1 put Pocky into production: recording, investigation and planning, live on Render with migrations 013–015 on Neon ([`STATUS.md`](../STATUS.md)). Phase 2 takes TermPocket from "works for its owner" to "safe to post publicly", and adds voice input.
 
 ## Goals
 
@@ -40,13 +40,13 @@ These must be done before any public post. Status as of 2026-10-17; "owner check
 
 ### C. Voice dictation
 
-Speech-to-text in the browser, tap to start and tap to stop by default (push-to-talk is an open question in `VOICE.md`), **English only for now** (owner's decision, 2026-10-15). The transcript is placed in the message box for the user to edit before Send. Recording rules do not change: only the confirm button saves. The full design and handoff is [`VOICE.md`](VOICE.md).
+**Built 2026-10-18** (`feat/voice-input`, superseding #86 and #140): a mic button in Pocky's composer, tap to start and tap to stop, **English only for now** (owner's decision, 2026-10-15). The transcript is placed in the message box for the user to edit before Send. Recording rules do not change: only the confirm button saves. The full design and handoff is [`VOICE.md`](VOICE.md).
 
 - **Engine:** an English-only on-device Whisper model (`tiny.en` or `base.en`) through Transformers.js, or whisper.cpp built for WebAssembly. Audio never leaves the device, which matches screenshot import's promise and adds nothing to the privacy policy. Rejected alternatives: the browser's built-in speech recognition (audio goes to Google or Apple, no Firefox support) and hosted transcription APIs (another data processor and another bill). Chinese and mixed speech can come later, with SenseVoice-Small as the first candidate.
 - **Interim:** the phone keyboard's or macOS's own dictation already fills the message box; use it during the week of real use and note where it fails.
 - **Spike (1 day), before committing:** see `VOICE.md` — the `onnxruntime-web` alias, accuracy on amounts and merchants, latency on a laptop and a phone, and the model download.
-- **Build (2–3 days):** a microphone button on `/agent`, permission and error states, a 15-second cap, transcription in a worker, en and zh UI strings, and voice-style evaluation cases (spoken numbers, filler words). No backend change.
-- **Done when:** a spoken English entry becomes a correct draft in under 5 s on a laptop, and the measured phone time is recorded.
+- **Build:** a microphone button on `/agent`, permission and error states, a 15-second cap, transcription in a worker, en and zh UI strings, and voice-style evaluation cases (spoken numbers, filler words). Whisper `base.en` 8-bit with the `w2` words prompt, all assets self-hosted; one backend change, the optional `input: "voice"` flag that makes Pocky ask about run-together amounts. Done.
+- **Done when:** a spoken English entry becomes a correct draft in under 5 s on a laptop, and the measured phone time is recorded. Status: transcription takes about 2 s on a laptop; on the owner's iPhone all 20 amounts were right, but the phone time was not recorded.
 
 ### D. Pocky memory (after B's week of use)
 
