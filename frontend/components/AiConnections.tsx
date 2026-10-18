@@ -21,7 +21,12 @@ import {
 const NAME_MAX = 60
 const COPY_TIMEOUT_MS = 1500
 
-type CopyTarget = 'secret' | 'endpoint' | 'header' | 'claude-code-cmd' | 'claude-code-json'
+type CopyTarget = 'secret' | 'endpoint' | 'header' | 'claude-code-cmd' | 'claude-code-json' | 'codex-cmd' | 'codex-toml'
+
+const CODEX_CMD = `codex mcp add termpocket --url "${MCP_ENDPOINT_URL}" --bearer-token-env-var TERMPOCKET_TOKEN`
+const CODEX_TOML = `[mcp_servers.termpocket]
+url = ${JSON.stringify(MCP_ENDPOINT_URL)}
+bearer_token_env_var = "TERMPOCKET_TOKEN"`
 
 const CLAUDE_CODE_CMD = `claude mcp add --transport http termpocket ${MCP_ENDPOINT_URL} \\
   --header "Authorization: Bearer <your token>"`
@@ -79,6 +84,8 @@ export default function AiConnections() {
   const headerCodeRef = useRef<HTMLElement>(null)
   const cmdCodeRef = useRef<HTMLElement>(null)
   const jsonCodeRef = useRef<HTMLElement>(null)
+  const codexCmdCodeRef = useRef<HTMLElement>(null)
+  const codexTomlCodeRef = useRef<HTMLElement>(null)
   const [guideOpen, setGuideOpen] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -300,7 +307,7 @@ export default function AiConnections() {
             <BookOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">{t('How to connect an AI app')}</span>
-              <span className="block text-sm text-muted-foreground">{t('Step-by-step setup for Claude Code, Claude and other apps')}</span>
+              <span className="block text-sm text-muted-foreground">{t('Step-by-step setup for Codex, Claude Code, Claude and other apps')}</span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           </button>
@@ -474,15 +481,45 @@ export default function AiConnections() {
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden break-words text-sm">
             <ol className="list-decimal space-y-1 pl-5">
               <li>{t('Create a token above and copy it. It is shown only once.')}</li>
-              <li>{t('Add TermPocket to your AI app using the steps below, pasting the token where it says <your token>.')}</li>
+              <li>{t('Follow the instructions for your AI app below.')}</li>
               <li>{t('Ask it about your term spending or savings goals.')}</li>
             </ol>
             <Tabs defaultValue="claude-code" className="min-w-0">
               <TabsList className="h-auto flex-wrap justify-start">
                 <TabsTrigger value="claude-code">Claude Code</TabsTrigger>
+                <TabsTrigger value="codex">Codex</TabsTrigger>
                 <TabsTrigger value="claude">{t('Claude (claude.ai)')}</TabsTrigger>
                 <TabsTrigger value="other">{t('Other apps')}</TabsTrigger>
               </TabsList>
+              <TabsContent value="codex" className="space-y-3">
+                <p>{t('In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.')}</p>
+                <p className="text-muted-foreground">{t('In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.')}</p>
+                <p>{t('Run this in a terminal. The endpoint is already filled in for this site.')}</p>
+                <div className="flex items-stretch gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                    onClick={() => copy('codex-cmd', CODEX_CMD, codexCmdCodeRef.current)}
+                    aria-label={copied === 'codex-cmd' ? t('Copied') : t('Copy command')}>
+                    {copyIcon('codex-cmd')}
+                  </Button>
+                </div>
+                <p>{t('Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.')}</p>
+                <div className="flex items-stretch gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                    onClick={() => copy('codex-toml', CODEX_TOML, codexTomlCodeRef.current)}
+                    aria-label={copied === 'codex-toml' ? t('Copied') : t('Copy config')}>
+                    {copyIcon('codex-toml')}
+                  </Button>
+                </div>
+                <p>{t('Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.')}</p>
+                <p>{t('Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.')}</p>
+                <p>{t('The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.')}</p>
+                <p className="text-muted-foreground">{t('No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.')}</p>
+                <a href="https://developers.openai.com/codex/mcp/" target="_blank" rel="noopener noreferrer" className="inline-block underline underline-offset-4">
+                  {t('Official Codex MCP documentation')}
+                </a>
+              </TabsContent>
               <TabsContent value="claude-code" className="space-y-3">
                 <p>{t('Run this in a terminal. The endpoint is already filled in for this site.')}</p>
                 <div className="flex items-stretch gap-2">

@@ -37,10 +37,17 @@
   "Copied to clipboard": "已复制到剪贴板",
   "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.": "无法自动复制。文本已选中，请按 Ctrl+C 或 ⌘C。",
   "How to connect an AI app": "如何连接 AI 应用",
-  "Step-by-step setup for Claude Code, Claude and other apps": "Claude Code、Claude 及其他应用的设置步骤",
+  "Step-by-step setup for Codex, Claude Code, Claude and other apps": "Codex、Claude Code、Claude 及其他应用的分步设置指南",
+  "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.": "在用于启动 Codex 的终端中，将 TERMPOCKET_TOKEN 环境变量设为你复制的 TermPocket 令牌，不要加 Bearer 前缀。不要将令牌写入共享文件。",
+  "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.": "也可以将以下内容添加到 ~/.codex/config.toml。上面的命令会创建相同的配置，选择一种方式即可。",
+  "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.": "从该终端启动 Codex。如果使用桌面应用或 IDE 扩展，请确保相应进程也能读取 TERMPOCKET_TOKEN，然后重启应用。其他终端中设置的变量不一定能被它读取。",
+  "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.": "运行 codex mcp get termpocket 查看已保存的配置。在 Codex CLI 中使用 /mcp 检查连接和工具；配置存在并不代表连接成功。",
+  "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.": "可用工具为 money_term_summary、money_baseline 和 money_goals。你可以让 Codex 使用 TermPocket 总结本学期的收支。",
+  "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.": "无需 OAuth 登录。如果 Codex 提示缺少环境变量，请在启动 Codex 的环境中设置 TERMPOCKET_TOKEN。",
+  "Official Codex MCP documentation": "Codex 官方 MCP 文档",
   "Read-only: a connected app sees totals and savings goals, never transaction descriptions. Revoke it here at any time.": "只读：连接的应用只能看到汇总数据和储蓄目标，看不到交易描述。你可以随时在此撤销。",
   "Create a token above and copy it. It is shown only once.": "先在上方创建令牌并复制，它只会显示一次。",
-  "Add TermPocket to your AI app using the steps below, pasting the token where it says <your token>.": "按下面的步骤把 TermPocket 添加到你的 AI 应用，并把令牌粘贴到 <your token> 的位置。",
+  "Follow the instructions for your AI app below.": "按照下方对应 AI 应用的说明进行设置。",
   "Ask it about your term spending or savings goals.": "然后就可以问它本学期的花销或储蓄目标了。",
   "Claude (claude.ai)": "Claude（claude.ai）",
   "Other apps": "其他应用",
@@ -689,5 +696,6 @@
     "rateLimited": "尝试次数过多，请稍等几分钟后再试。",
     "error": "无法删除您的账户，请重试。",
     "done": "您的账户已删除。"
-  }
+  },
+  "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.": "在 Bash 或 Zsh 中，运行 read -r -s TERMPOCKET_TOKEN，将令牌粘贴到隐藏输入中并按回车，然后运行 export TERMPOCKET_TOKEN。"
 }

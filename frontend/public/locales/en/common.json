@@ -37,10 +37,17 @@
   "Copied to clipboard": "Copied to clipboard",
   "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.": "Could not copy automatically. The text is selected; press Ctrl+C or ⌘C.",
   "How to connect an AI app": "How to connect an AI app",
-  "Step-by-step setup for Claude Code, Claude and other apps": "Step-by-step setup for Claude Code, Claude and other apps",
+  "Step-by-step setup for Codex, Claude Code, Claude and other apps": "Step-by-step setup for Codex, Claude Code, Claude and other apps",
+  "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.": "In the terminal that will launch Codex, set TERMPOCKET_TOKEN to your copied TermPocket token, without the Bearer prefix. Keep the token out of shared files.",
+  "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.": "Alternatively, add this to ~/.codex/config.toml. The command above creates the same configuration; use one method.",
+  "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.": "Start Codex from that terminal. For the app or IDE extension, make sure its process also receives TERMPOCKET_TOKEN, then restart it. A variable set in another terminal may not be available there.",
+  "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.": "Run codex mcp get termpocket to check the saved configuration. In Codex CLI, use /mcp to check the connection and tools; configuration alone does not prove it connected.",
+  "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.": "The available tools are money_term_summary, money_baseline and money_goals. Ask Codex to use TermPocket to summarize your current term.",
+  "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.": "No OAuth login is needed. If Codex reports a missing environment variable, set TERMPOCKET_TOKEN in the environment that starts Codex.",
+  "Official Codex MCP documentation": "Official Codex MCP documentation",
   "Read-only: a connected app sees totals and savings goals, never transaction descriptions. Revoke it here at any time.": "Read-only: a connected app sees totals and savings goals, never transaction descriptions. Revoke it here at any time.",
   "Create a token above and copy it. It is shown only once.": "Create a token above and copy it. It is shown only once.",
-  "Add TermPocket to your AI app using the steps below, pasting the token where it says <your token>.": "Add TermPocket to your AI app using the steps below, pasting the token where it says <your token>.",
+  "Follow the instructions for your AI app below.": "Follow the instructions for your AI app below.",
   "Ask it about your term spending or savings goals.": "Ask it about your term spending or savings goals.",
   "Claude (claude.ai)": "Claude (claude.ai)",
   "Other apps": "Other apps",
@@ -692,5 +699,6 @@
     "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
     "error": "Could not delete your account. Please try again.",
     "done": "Your account has been deleted."
-  }
+  },
+  "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN.": "In Bash or Zsh, run read -r -s TERMPOCKET_TOKEN, paste the token into the hidden input and press Enter. Then run export TERMPOCKET_TOKEN."
 }
