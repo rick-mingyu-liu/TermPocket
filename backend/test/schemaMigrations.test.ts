@@ -9,6 +9,7 @@ import { packageRoot } from '../utils/packageRoot';
 import {
   listMigrations, planMigrations, baselineFiles, ensureTable, appliedMigrations,
   recordApplied, applyPending, checksumOf, UntrackedDatabaseError, EmptyDatabaseError,
+  parseArgs, refusePooledEndpoint,
 } from '../db/migrate';
 import type { MigrationFile } from '../db/migrate';
 
@@ -46,6 +47,25 @@ describe('planning', () => {
     assert.deepEqual(plan.pending.map((f) => f.name), ['003_c.sql']);
     assert.deepEqual(plan.changed.map((f) => f.name), ['002_b.sql']);
     assert.deepEqual(plan.missing, ['000_gone.sql']);
+  });
+
+  test('only the documented arguments are accepted', () => {
+    assert.deepEqual(parseArgs([]), { status: false, baseline: null });
+    assert.deepEqual(parseArgs(['--status']), { status: true, baseline: null });
+    assert.deepEqual(parseArgs(['--baseline', '015']), { status: false, baseline: '015' });
+    assert.throws(() => parseArgs(['--statsu']), /Unknown argument "--statsu"/);
+    assert.throws(() => parseArgs(['--baslein', '015']), /Unknown argument/);
+    assert.throws(() => parseArgs(['--status', '--baseline', '015']), /cannot be combined/);
+  });
+
+  test('refuses a pooled endpoint', () => {
+    assert.throws(() => refusePooledEndpoint('postgresql://u:p@ep-x-123-pooler.us-east-1.aws.neon.tech/db'), /direct endpoint/);
+    assert.doesNotThrow(() => refusePooledEndpoint('postgresql://u:p@ep-x-123.us-east-1.aws.neon.tech/db'));
+    assert.doesNotThrow(() => refusePooledEndpoint(undefined));
+  });
+
+  test('line endings do not change a checksum', () => {
+    assert.equal(checksumOf('BEGIN;\r\nSELECT 1;\r\nCOMMIT;\r\n'), checksumOf('BEGIN;\nSELECT 1;\nCOMMIT;\n'));
   });
 
   test('a baseline covers every file up to and including its number', () => {
@@ -89,10 +109,16 @@ test('against PostgreSQL: fresh, untracked, baseline, apply, re-run', { skip: !p
     assert.deepEqual(await applyPending(client, files), []);
     assert.equal(await recordApplied(client, files), 0);
 
-    // A failing migration stops the run and stays unrecorded.
-    const broken = [...files, file('999_broken.sql', 'SELECT * FROM no_such_table;'), file('999_later.sql', 'SELECT 1;')];
+    // A failing migration stops the run and stays unrecorded. One that fails
+    // inside its own BEGIN ... COMMIT leaves nothing behind, and the
+    // connection is still usable afterwards.
+    const broken = [...files,
+      file('998_broken.sql', 'BEGIN;\nALTER TABLE users ADD COLUMN zz_half_applied INTEGER;\nSELECT * FROM no_such_table;\nCOMMIT;'),
+      file('999_later.sql', 'SELECT 1;')];
     await assert.rejects(applyPending(client, broken), /no_such_table/);
-    assert.ok(!(await appliedMigrations(client)).some((m) => m.name.startsWith('999')));
+    assert.equal((await client.query('SELECT 1 AS ok')).rows[0].ok, 1, 'the connection was left in an aborted transaction');
+    assert.equal((await client.query("SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema = current_schema() AND column_name = 'zz_half_applied'")).rows[0].n, 0);
+    assert.ok(!(await appliedMigrations(client)).some((m) => m.name >= '998'));
 
     // An empty database is db:setup's job: nothing runs and nothing is recorded.
     await reset();

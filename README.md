@@ -205,11 +205,12 @@ npm run db:seed     # (re)builds the demo account
 A fresh database needs nothing else: `db:setup` also records every migration as applied in `schema_migrations`, because `schema.sql` already contains them. An **existing** database gets the migrations in [`backend/db/migrations/`](backend/db/migrations/) it has not had yet from the runner, which records each one:
 
 ```bash
+export DATABASE_URL="<direct connection string>"   # not the -pooler one; the runner refuses it
 npm run db:migrate -- --status   # applied / pending, changes nothing
 npm run db:migrate               # apply every pending migration, in order
 ```
 
-Use the direct (non-pooler) connection string. A database that predates `schema_migrations` is **untracked**, and the runner refuses to touch it, because the early migrations include one-off data rewrites that must not run twice. Record what it already has first: `npm run db:migrate -- --baseline 015` marks 001–015 as applied without running them. The runner also refuses an empty database (that is `db:setup`'s job). Production has 001–015 (013–015 were applied 2026-10-15); baseline it at 015, then `db:migrate` applies 016 and 017, both idempotent, so it is safe whether or not they were already applied by hand.
+For production, the direct string is `neonctl connection-string production --project-id <id>`. A database that predates `schema_migrations` is **untracked**, and the runner refuses to touch it, because the early migrations include one-off data rewrites that must not run twice. Record what it already has first: `npm run db:migrate -- --baseline 015` marks 001–015 as applied without running them. The runner also refuses an empty database (that is `db:setup`'s job). Production has 001–015 (013–015 were applied 2026-10-15); baseline it at 015 (`--baseline` records what you vouch for; it does not inspect the database), then `db:migrate` applies 016 and 017, both idempotent, so it is safe whether or not they were already applied by hand. Older per-migration notes below that show `psql -f` still describe what each migration does; apply them through `db:migrate`.
 
 `schema.sql` is the desired end state; a migration without a matching `schema.sql` edit means fresh setups and existing databases diverge.
 

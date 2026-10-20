@@ -16,6 +16,7 @@ npm run dev            # tsx watch app.ts (plain node cannot require the .ts mod
 npm start              # node dist/app.js (production — the compiled output, which is .js)
 npm run db:setup       # create schema from db/schema.sql (idempotent, CREATE IF NOT EXISTS)
 npm run db:seed        # (re)seed the demo account (john.doe@example.com / password123)
+npm run db:migrate     # apply pending db/migrations/ and record them (--status, --baseline NNN); direct endpoint only, never -pooler
 backend/scripts/rehearse-linux.sh [--live]  # from the repo root, with docker-compose.test.yml up: Render's npm ci + build + preflight in a fresh node:<.node-version> Linux container
 npm run agent:eval     # opt-in paid Pocky evaluation: 70 fictional cases, real runtime/DeepSeek, in-memory records (no DB); README "Evaluating Pocky"
 npm run agent:preflight  # read-only Pocky deploy check (config incl. which `AGENT_RUNTIME`, DB/migrations 013-015, SDK binary or the direct client, DeepSeek reachability); `-- --live` adds one fictional model turn through the active runtime. Runbook: README "Deploying Pocky to production"

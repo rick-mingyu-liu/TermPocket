@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { getPool } from './connection';
+import config = require('../config');
 import { packageRoot } from '../utils/packageRoot';
 
 /**
@@ -62,7 +63,8 @@ interface MigrationPlan {
   missing: string[];
 }
 
-const checksumOf = (sql: string): string => crypto.createHash('sha256').update(sql).digest('hex');
+// Line endings are normalized first, so a CRLF checkout does not read as a changed file.
+const checksumOf = (sql: string): string => crypto.createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex');
 
 const migrationsDir = (): string => path.join(packageRoot(__dirname), 'db', 'migrations');
 
@@ -155,47 +157,98 @@ async function applyPending(client: PoolClient, files: MigrationFile[], log: (li
   const done: string[] = [];
   for (const file of planMigrations(files, applied).pending) {
     log(`Applying ${file.name}`);
-    await client.query(file.sql);
+    try {
+      await client.query(file.sql);
+    } catch (error) {
+      // A file that opened its own transaction leaves the session aborted;
+      // roll it back so the connection stays usable for the caller.
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    }
     await recordApplied(client, [file]);
     done.push(file.name);
   }
   return done;
 }
 
+interface CliOptions {
+  status: boolean;
+  baseline: string | null;
+}
+
+/** Only the documented arguments: a typo must not turn into "apply everything". */
+function parseArgs(args: string[]): CliOptions {
+  const options: CliOptions = { status: false, baseline: null };
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--status') options.status = true;
+    else if (arg === '--baseline') options.baseline = args[++i] ?? '';
+    else throw new Error(`Unknown argument "${arg}". Usage: db:migrate [--status | --baseline NNN]`);
+  }
+  if (options.status && options.baseline !== null) throw new Error('--status and --baseline cannot be combined');
+  return options;
+}
+
+/**
+ * Neon's pooler (a `-pooler` host) runs PgBouncer in transaction mode: the
+ * advisory lock and its unlock can land on different server sessions, leaking
+ * the lock, and a migration's statements are not guaranteed one session.
+ */
+function refusePooledEndpoint(url: string | undefined): void {
+  if (url && /-pooler\./.test(url)) {
+    throw new Error('DATABASE_URL is a pooled (-pooler) endpoint. Run migrations against the direct endpoint: ' +
+      'DATABASE_URL="<direct connection string>" npm run db:migrate');
+  }
+}
+
+async function printStatus(client: PoolClient, files: MigrationFile[]): Promise<void> {
+  // Read-only: a database without the table simply has no records yet.
+  const exists = (await client.query<{ present: boolean }>("SELECT to_regclass('schema_migrations') IS NOT NULL AS present")).rows[0]?.present === true;
+  const applied = exists ? await appliedMigrations(client) : [];
+  const plan = planMigrations(files, applied);
+  for (const file of files) {
+    const state = plan.pending.includes(file) ? 'pending' : plan.changed.includes(file) ? 'applied, file changed since' : 'applied';
+    console.log(`${file.name}  ${state}`);
+  }
+  for (const name of plan.missing) console.log(`${name}  applied, file missing`);
+  if (!(await hasAppTables(client))) console.log('\nEmpty database: create it with npm run db:setup.');
+  else if (applied.length === 0) console.log('\nUntracked: tables exist but nothing is recorded. Use --baseline first.');
+}
+
 async function main(args: string[]): Promise<number> {
-  const statusOnly = args.includes('--status');
-  const baselineAt = args.indexOf('--baseline');
+  const options = parseArgs(args);
+  refusePooledEndpoint(config.database.url);
   const files = listMigrations();
   const client = await getPool().connect();
+  let locked = false;
   try {
-    await client.query('SELECT pg_advisory_lock($1)', [LOCK_KEY]);
+    if (options.status) {
+      await printStatus(client, files);
+      return 0;
+    }
+
+    // Never wait: a second runner, or a lock leaked by a dead session, is
+    // reported rather than hung on.
+    locked = (await client.query<{ locked: boolean }>('SELECT pg_try_advisory_lock($1) AS locked', [LOCK_KEY])).rows[0]?.locked === true;
+    if (!locked) throw new Error('Another db:migrate holds the migration lock. Wait for it to finish, then run this again.');
     await ensureTable(client);
 
-    if (baselineAt !== -1) {
-      const chosen = baselineFiles(files, args[baselineAt + 1] ?? '');
+    if (options.baseline !== null) {
+      const chosen = baselineFiles(files, options.baseline);
       const recorded = await recordApplied(client, chosen);
-      console.log(`Recorded ${recorded} migration(s) as applied without running them (through ${chosen.at(-1)!.name}).`);
+      console.log(`Recorded ${recorded} migration(s) as applied without running them (through ${chosen.at(-1)!.name}). ` +
+        'This records what you vouch for; it does not check the database.');
       return 0;
     }
 
-    const applied = await appliedMigrations(client);
-    const plan = planMigrations(files, applied);
-    if (statusOnly) {
-      for (const file of files) {
-        const state = plan.pending.includes(file) ? 'pending' : plan.changed.includes(file) ? 'applied, file changed since' : 'applied';
-        console.log(`${file.name}  ${state}`);
-      }
-      for (const name of plan.missing) console.log(`${name}  applied, file missing`);
-      if (await untrackedExisting(client, applied)) console.log('\nUntracked: tables exist but nothing is recorded. Use --baseline first.');
-      return 0;
+    for (const file of planMigrations(files, await appliedMigrations(client)).changed) {
+      console.warn(`Warning: ${file.name} changed after it was applied; it is not run again.`);
     }
-
-    for (const file of plan.changed) console.warn(`Warning: ${file.name} changed after it was applied; it is not run again.`);
     const done = await applyPending(client, files, (line) => console.log(line));
     console.log(done.length === 0 ? 'Nothing to apply.' : `Applied ${done.length} migration(s).`);
     return 0;
   } finally {
-    await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY]).catch(() => {});
+    if (locked) await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY]).catch(() => {});
     client.release();
     await getPool().end();
   }
@@ -222,5 +275,7 @@ export {
   checksumOf,
   UntrackedDatabaseError,
   EmptyDatabaseError,
+  parseArgs,
+  refusePooledEndpoint,
 };
 export type { MigrationFile, AppliedMigration, MigrationPlan };
