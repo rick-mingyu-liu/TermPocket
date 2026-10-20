@@ -89,6 +89,7 @@ Owner checks before a public post (none can be verified from the repo):
 - `DEMO_REFRESH_ENABLED=true` in production.
 - Whether migration 016 is applied to the production database.
 - Apply migration 017 (terms acceptance) after #156 deploys; every existing account then sees the accept card once.
+- Start tracking production's migrations (after the `db:migrate` PR is merged): with the direct connection string, `npm run db:migrate -- --baseline 015`, then `npm run db:migrate` (applies 016 and 017 if missing; both are idempotent), then `--status`.
 - Screenshot import timed on a mid-range phone.
 - Verification email deliverability: turn off click and open tracking in Resend, add a DMARC `rua` reporting address, score one message on mail-tester.com, and have a few test inboxes mark it "Not junk".
 - Optional review of the privacy policy and terms by a lawyer or a clinic; when to do the French version and the Quebec impact assessment.

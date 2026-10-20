@@ -239,3 +239,13 @@ CREATE TABLE IF NOT EXISTS agent_goal_proposals (
     FOREIGN KEY(run_id,conversation_id,user_id) REFERENCES agent_runs(id,conversation_id,user_id) ON DELETE SET NULL (run_id)
 );
 CREATE INDEX IF NOT EXISTS idx_agent_goal_proposals_conversation ON agent_goal_proposals(user_id,conversation_id,created_at DESC);
+
+-- Which files in db/migrations/ have been applied (db/migrate.ts, `npm run
+-- db:migrate`). db:setup on a fresh database records them all, because this
+-- file already contains their end state; an existing database is recorded
+-- with `npm run db:migrate -- --baseline NNN`.
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    name TEXT PRIMARY KEY,
+    checksum CHAR(64) NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
