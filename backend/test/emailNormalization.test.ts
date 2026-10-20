@@ -16,7 +16,8 @@ import { hashVerificationToken } from '../utils/verificationToken';
  *
  * Through the real auth router with db.query answering from an in-memory
  * users table that applies the controllers' own lookup rule:
- * `WHERE email IN ($1, $2) ORDER BY email = $1 DESC` (resend adds LIMIT 1).
+ * `WHERE lower(email) IN (lower($1), lower($2)) ORDER BY email = $1 DESC,
+ * email = $2 DESC, id` (resend adds LIMIT 1).
  */
 
 const emailServicePath = require.resolve('../services/emailService');
@@ -92,10 +93,13 @@ beforeEach(() => {
   storedTokens = [];
   mock.method(console, 'log', () => {});
   mock.method(db, 'query', async (text: string, params: unknown[] = []) => {
-    if (/FROM users WHERE email IN \(\$1, \$2\) ORDER BY email = \$1 DESC/.test(text)) {
+    if (/FROM users WHERE lower\(email\) IN \(lower\(\$1\), lower\(\$2\)\) ORDER BY email = \$1 DESC, email = \$2 DESC, id/.test(text)) {
       lookups.push(params);
       const [normalized, typed] = params as [string, string];
-      const rows = [...users.filter((u) => u.email === normalized), ...users.filter((u) => u.email === typed && u.email !== normalized)];
+      const wanted = [normalized.toLowerCase(), typed.toLowerCase()];
+      const rank = (u: StoredUser) => (u.email === normalized ? 0 : u.email === typed ? 1 : 2);
+      const rows = users.filter((u) => wanted.includes(u.email.toLowerCase()))
+        .sort((a, b) => rank(a) - rank(b) || a.id - b.id);
       const limited = text.includes('LIMIT 1') ? rows.slice(0, 1) : rows;
       return { rowCount: limited.length, rows: limited };
     }
@@ -152,6 +156,15 @@ describe('POST /auth/login', () => {
     assert.equal((await post('/login', { email: 'Two.Rows@Gmail.com', password: 'neither' })).status, 400);
   });
 
+  test('an account stored in mixed case signs in with the address in any case', async () => {
+    users = [user(13, 'Jane@Example.com')];
+    for (const typed of ['jane@example.com', 'JANE@EXAMPLE.COM', 'Jane@Example.com']) {
+      const { status, body } = await post('/login', { email: typed, password: 'password123' });
+      assert.equal(status, 200, typed);
+      assert.equal((jwt.decode(body.token!) as { email: string }).email, 'Jane@Example.com');
+    }
+  });
+
   test('a wrong password is still refused', async () => {
     users = [user(7, 'johndoe@gmail.com')];
     const { status, body } = await post('/login', { email: 'John.Doe@Gmail.com', password: 'wrong-password' });
@@ -165,6 +178,12 @@ describe('POST /auth/login', () => {
 });
 
 describe('POST /auth/resend-verification', () => {
+  test('finds an account stored in mixed case, and mails the stored address', async () => {
+    users = [user(14, 'Pending@Example.com', false)];
+    assert.equal((await post('/resend-verification', { email: 'pending@example.com' })).status, 200);
+    assert.deepEqual(mailedTo, ['Pending@Example.com']);
+  });
+
   test('finds the account however the address is typed, and mails the stored address', async () => {
     users = [user(12, 'janedoe@gmail.com', false)];
     const { status } = await post('/resend-verification', { email: 'Jane.Doe@Gmail.com' });

@@ -21,7 +21,7 @@ const ADDED = `,
     -- accepted, and when (migration 017). NULL means never: the app asks once
     -- after sign-in. config.legal.termsVersion is the current version.
     terms_version VARCHAR(32),
-    terms_accepted_at TIMESTAMP
+    terms_accepted_at TIMESTAMPTZ
 );`;
 const BEFORE = `
 );`;
@@ -33,6 +33,9 @@ test('migration 017: idempotent on the pre-017 schema and on a fresh one, and ma
   const root = packageRoot(__dirname);
   const desired = readFileSync(path.join(root, 'db/schema.sql'), 'utf8');
   const migration = readFileSync(path.join(root, 'db/migrations/017_terms_acceptance.sql'), 'utf8');
+  // 017 adds terms_accepted_at as TIMESTAMP; 020 later made every timestamp
+  // in users TIMESTAMPTZ, so the upgrade path matches schema.sql after both.
+  const timestamptz = readFileSync(path.join(root, 'db/migrations/020_timestamptz.sql'), 'utf8');
 
   const shape = async () => (await client.query(
     `SELECT column_name, data_type, character_maximum_length, is_nullable, column_default FROM information_schema.columns
@@ -66,8 +69,10 @@ test('migration 017: idempotent on the pre-017 schema and on a fresh one, and ma
     const before = (await client.query('SELECT id, email, email_verified, updated_at FROM users')).rows;
     await client.query(migration);
     await client.query(migration);
-    assert.deepEqual(await shape(), expectedShape);
+    assert.equal((await shape()).find((c) => c.column_name === 'terms_accepted_at')?.data_type, 'timestamp without time zone');
     assert.deepEqual((await client.query('SELECT id, email, email_verified, updated_at FROM users')).rows, before, 'an existing user row was rewritten');
+    await client.query(timestamptz);
+    assert.deepEqual(await shape(), expectedShape);
     assert.deepEqual((await client.query('SELECT terms_version, terms_accepted_at FROM users')).rows, [{ terms_version: null, terms_accepted_at: null }]);
     assert.equal((await client.query('SELECT count(*)::int AS n FROM transactions')).rows[0].n, 1);
   } finally {

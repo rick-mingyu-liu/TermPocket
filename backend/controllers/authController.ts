@@ -111,9 +111,12 @@ const authController = {
         return res.status(400).json({ error: emailValidation.reason });
       }
 
-      // Check if user already exists
+      // Check if user already exists, in any case: a row from before
+      // registration lowercased addresses can hold "Jane@Example.com", and
+      // users.email is unique on lower(email) (migration 021). A verified
+      // match comes first, so it is the one that refuses.
       const existingUser = await query<ExistingUserRow>(
-        'SELECT id, email, email_verified FROM users WHERE email = $1',
+        'SELECT id, email, email_verified FROM users WHERE lower(email) = lower($1) ORDER BY email_verified DESC NULLS LAST LIMIT 1',
         [email]
       );
 
@@ -192,6 +195,12 @@ const authController = {
       });
 
     } catch (error) {
+      // A concurrent registration of the same address won the INSERT: the
+      // unique index answers what the lookup above would have.
+      if ((error as { code?: unknown }).code === '23505') {
+        console.log('[Register] Lost a race for an address another registration just took');
+        return res.status(400).json({ error: 'User already exists' });
+      }
       console.error('Registration error:', error);
       res.status(500).json({ error: 'Server error' });
     }
@@ -208,12 +217,14 @@ const authController = {
       const { password } = req.body;
       const [email, typed] = lookupEmails(req, res);
 
-      // Find the account. At most two rows: the normalized address and, for an
-      // account stored before normalization existed, the address as typed. The
-      // password decides between them, normalized first, so the owner of either
-      // row can sign in even if both spellings of one mailbox exist.
+      // Find the account: the normalized address and, for an account stored
+      // before normalization existed, the address as typed, each in any case
+      // ("Jane@Example.com" stored, "jane@example.com" typed). Since migration
+      // 021 lower(email) is unique, so that is at most two rows, which differ
+      // only in Gmail dots or a +tag. The password decides between them,
+      // normalized first, so the owner of either row can sign in.
       const candidates = await query<LoginUserRow>(
-        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC',
+        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE lower(email) IN (lower($1), lower($2)) ORDER BY email = $1 DESC, email = $2 DESC, id',
         [email, typed]
       );
 
@@ -332,7 +343,7 @@ const authController = {
 
       // Find user
       const user = await query<ResendVerificationUserRow>(
-        'SELECT id, email, first_name, email_verified, email_verification_expires FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
+        'SELECT id, email, first_name, email_verified, email_verification_expires FROM users WHERE lower(email) IN (lower($1), lower($2)) ORDER BY email = $1 DESC, email = $2 DESC, id LIMIT 1',
         [email, typed]
       );
 

@@ -87,7 +87,7 @@ describe('agent storage safety', { skip: !enabled }, () => {
     // Two timestamps in the same JavaScript millisecond must still conflict.
     // Set the retained timestamp one microsecond earlier while retaining xmin,
     // isolating timestamp precision from the independent tuple-version guard.
-    await db.query(`UPDATE agent_receipts SET transaction_versions=jsonb_set(transaction_versions,'{0,updated_at}',to_jsonb(((transaction_versions->0->>'updated_at')::timestamp-interval '1 microsecond')::text)) WHERE id=$1`,[receipt.id]);
+    await db.query(`UPDATE agent_receipts SET transaction_versions=jsonb_set(transaction_versions,'{0,updated_at}',to_jsonb(((transaction_versions->0->>'updated_at')::timestamptz-interval '1 microsecond')::text)) WHERE id=$1`,[receipt.id]);
     await assert.rejects(store.undoReceipt(alice,receipt.id),{code:'agent_undo_conflict'});
     assert.equal((await db.query('SELECT id FROM transactions WHERE id=ANY($1::int[])',[receipt.transaction_ids])).rowCount,1);
   });

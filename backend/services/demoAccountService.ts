@@ -197,9 +197,11 @@ type DemoFreshness =
  * it only by deleting every refreshed row, and even then only to the time of
  * their own oldest row, which ages like any other.
  *
- * `created_at` is a zone-less TIMESTAMP written in UTC (db/connection.ts runs
- * every session in UTC), so it is compared with `now()` taken in UTC, in SQL,
- * on the database's clock. No local-time arithmetic anywhere.
+ * `created_at` is TIMESTAMPTZ since migration 020 and a zone-less UTC
+ * TIMESTAMP before it. Either way it is compared in SQL, on the database's
+ * clock, with `now()` taken in UTC: before 020 that is the same kind of
+ * value, and after it PostgreSQL reads the zone-less side in the session's
+ * zone, which db/connection.ts sets to UTC. No local-time arithmetic anywhere.
  *
  * Resolved by `is_demo`, never by email, like the refresh itself. No row means
  * there is no demo account; a demo account with no transactions is stale.
