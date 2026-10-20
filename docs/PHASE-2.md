@@ -35,12 +35,11 @@ These must be done before any public post. Status as of 2026-10-17; "owner check
 | A week of real use | Every wrong draft, wrong number or refusal is written down and added to `backend/eval/` as a fictional case |
 | Evaluation in the loop | `npm run agent:eval` passes before any prompt, tool or limit change merges |
 | Runtime | Direct in-process runtime (#89, #93, #99, #100) in production with `AGENT_RUNTIME=direct` (per the description of #102; the host preflight output is not in the repo: owner check). #102 removes the SDK runtime; it is a draft, gated until about 2026-10-22 |
-| Open | #94 (dictated-style evaluation cases and the bare "dollars" currency fix, awaiting owner review) |
-| Status | The week of real use has started; nothing is recorded in the repo yet. Evaluation cases added: #112, #113 |
+| Status | The week of real use has started; nothing is recorded in the repo yet. Evaluation cases added: #94 (dictated-style cases, bare "dollars" is the conversation currency), #112, #113 |
 
 ### C. Voice dictation
 
-**Built 2026-10-18** (`feat/voice-input`, superseding #86 and #140): a mic button in Pocky's composer, tap to start and tap to stop, **English only for now** (owner's decision, 2026-10-15). The transcript is placed in the message box for the user to edit before Send. Recording rules do not change: only the confirm button saves. The full design and handoff is [`VOICE.md`](VOICE.md).
+**Built and merged 2026-10-18** (#142; the spike drafts #86 and #140 were closed): a mic button in Pocky's composer, tap to start and tap to stop, **English only for now** (owner's decision, 2026-10-15). The transcript is placed in the message box for the user to edit before Send. Recording rules do not change: only the confirm button saves. The full design and handoff is [`VOICE.md`](VOICE.md).
 
 - **Engine:** an English-only on-device Whisper model (`tiny.en` or `base.en`) through Transformers.js, or whisper.cpp built for WebAssembly. Audio never leaves the device, which matches screenshot import's promise and adds nothing to the privacy policy. Rejected alternatives: the browser's built-in speech recognition (audio goes to Google or Apple, no Firefox support) and hosted transcription APIs (another data processor and another bill). Chinese and mixed speech can come later, with SenseVoice-Small as the first candidate.
 - **Interim:** the phone keyboard's or macOS's own dictation already fills the message box; use it during the week of real use and note where it fails.
