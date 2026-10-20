@@ -719,5 +719,20 @@
     "done": "您的账户已删除。"
   },
   "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.": "Bash/Zsh：运行 read -r -s TERMPOCKET_TOKEN，粘贴令牌并回车，再运行 export TERMPOCKET_TOKEN。",
-  "Run this command:": "运行以下命令："
+  "Run this command:": "运行以下命令：",
+  "mcpGuide": {
+    "intro": "选择你的应用，按以下三个步骤连接。",
+    "prepare": "准备令牌",
+    "add": "添加 TermPocket",
+    "check": "检查连接",
+    "prepareToken": "在 AI 连接中创建并复制令牌。令牌只显示一次，请妥善保管。",
+    "claudeCommand": "将 <your token> 替换为你的令牌，然后在终端运行以下命令。",
+    "codexCheck": "在同一个终端启动 Codex，使用 /mcp 检查连接。无需 OAuth 登录。",
+    "codexApp": "使用桌面应用或 IDE 时，请确保其进程能读取 TERMPOCKET_TOKEN，然后重启。",
+    "manual": "手动配置",
+    "troubleshooting": "故障排查",
+    "claudeDetails": "展开下方的连接信息，将端点作为连接器网址，并填入包含你令牌的请求头。",
+    "otherDetails": "在支持远程 HTTP MCP 和自定义请求头的应用中，添加下方连接信息中的端点和请求头，并将 <token> 替换为你的令牌。",
+    "tryQuestion": "试着问：“这个学期我花了多少钱？”"
+  }
 }

@@ -722,5 +722,20 @@
     "done": "Your account has been deleted."
   },
   "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.": "Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.",
-  "Run this command:": "Run this command:"
+  "Run this command:": "Run this command:",
+  "mcpGuide": {
+    "intro": "Choose your app and follow these three steps.",
+    "prepare": "Prepare your token",
+    "add": "Add TermPocket",
+    "check": "Check the connection",
+    "prepareToken": "Create a token in AI connections and copy it. It is shown only once; keep it private.",
+    "claudeCommand": "Replace <your token> with your token, then run this in a terminal.",
+    "codexCheck": "Start Codex in the same terminal and use /mcp to check the connection. No OAuth login needed.",
+    "codexApp": "For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.",
+    "manual": "Manual configuration",
+    "troubleshooting": "Troubleshooting",
+    "claudeDetails": "Expand Connection details below. Use the endpoint as the connector URL and the request header with your token.",
+    "otherDetails": "In an app that supports remote MCP over HTTP with custom headers, add the endpoint and request header from Connection details below. Replace <token> with your token.",
+    "tryQuestion": "Try asking: “How much have I spent this term?”"
+  }
 }
