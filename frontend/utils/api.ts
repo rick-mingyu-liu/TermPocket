@@ -75,6 +75,12 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // The terms card handles its own errors: a failed status check lets the
+    // app go on silently, and a failed accept shows a line inside the card.
+    if (error.config?.url === '/auth/terms' && response?.status !== 401) {
+      return Promise.reject(error)
+    }
+
     // The goals page's top-up suggestion reads last month's totals in the
     // background and simply stays hidden when they fail (a missing exchange
     // rate is a 500), so no dialog should interrupt the page.
@@ -172,6 +178,18 @@ export const retentionAPI = {
 export const accountAPI = {
   // Deletes the account and everything in it; the password is checked again.
   delete: (password: string) => api.delete<{ deleted: true }>('/auth/account', { data: { password } }),
+}
+
+export interface TermsStatus {
+  currentVersion: string
+  acceptedVersion: string | null
+  // True when the version accepted is not the current one: asked once per version.
+  required: boolean
+}
+
+export const termsAPI = {
+  status: () => api.get<TermsStatus>('/auth/terms'),
+  accept: (version: string) => api.post<TermsStatus>('/auth/terms', { version }),
 }
 
 export { api }

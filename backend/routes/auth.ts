@@ -77,6 +77,10 @@ const deleteAccountValidation = [
     .isLength({ max: 1024 }).withMessage('Password is too long')
 ];
 
+const acceptTermsValidation = [
+  body('version').isString().bail().isLength({ min: 1, max: 32 })
+];
+
 const resendVerificationValidation = [
   body('email').isEmail().withMessage('Please enter a valid email')
 ];
@@ -98,6 +102,9 @@ router.put('/profile', auth, updateProfileValidation, authController.updateProfi
 // Sends an email, so it is throttled like the credential routes.
 router.post('/test-email', authLimiter, auth, authController.sendTestEmail);
 router.put('/notifications', auth, authController.updateNotificationSettings);
+// The accept card shown once after sign-in when the stored version is not the current one.
+router.get('/terms', auth, authController.getTermsStatus);
+router.post('/terms', auth, acceptTermsValidation, authController.acceptTerms);
 // Settings -> Danger zone -> Delete account. Per-user limiter: it checks the password.
 router.delete('/account', auth, accountDeleteLimiter, deleteAccountValidation, authController.deleteAccount);
 
