@@ -22,7 +22,12 @@ CREATE TABLE IF NOT EXISTS users (
     -- Automatic deletion (migration 016): keep only the last N terms of
     -- transactions, the current one included. NULL is off, the default for
     -- everyone; the hourly sweep deletes nothing for a NULL row.
-    transaction_retention_terms SMALLINT CHECK (transaction_retention_terms BETWEEN 3 AND 12)
+    transaction_retention_terms SMALLINT CHECK (transaction_retention_terms BETWEEN 3 AND 12),
+    -- Which version of the Terms of Service and Privacy Policy the user
+    -- accepted, and when (migration 017). NULL means never: the app asks once
+    -- after sign-in. config.legal.termsVersion is the current version.
+    terms_version VARCHAR(32),
+    terms_accepted_at TIMESTAMP
 );
 
 -- At most one demo account: the refresh resolves its target with a bare

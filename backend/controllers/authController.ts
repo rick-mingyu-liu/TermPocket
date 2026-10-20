@@ -10,6 +10,7 @@ import { sendWeeklyReport, generateWeeklyReport, sendEmailVerification } from '.
 import { validateEmail } from '../services/emailValidationService';
 import { reclaimStaleUnverifiedAccount } from '../services/cleanupService';
 import * as accountService from '../services/accountService';
+import * as termsService from '../services/termsService';
 import logger = require('../utils/logger');
 import { errorSummary } from '../utils/errorSummary';
 
@@ -89,7 +90,7 @@ const authController = {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { email, password, first_name, last_name } = req.body;
+      const { email, password, first_name, last_name, accept_terms } = req.body;
 
       // MailboxLayer where a key is configured, the disposable-domain list
       // where it is not. Never throws, so it cannot short-circuit the rest of
@@ -132,11 +133,21 @@ const authController = {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationExpires = new Date(Date.now() + config.emailVerification.tokenExpiry);
 
+      // The sign-up form's tick box. Without it (an old client), or before
+      // migration 017, nothing is stored and the user is asked once after
+      // signing in instead (services/termsService.ts).
+      const recordTerms = accept_terms === true && await termsService.termsAvailable();
+
       // Create user with email verification fields
-      const newUser = await query<NewUserRow>(
-        'INSERT INTO users (email, password_hash, first_name, last_name, email_verification_token, email_verification_expires) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, first_name, last_name, created_at, email_verification_expires',
-        [email, passwordHash, first_name, last_name, verificationToken, verificationExpires]
-      );
+      const newUser = recordTerms
+        ? await query<NewUserRow>(
+          'INSERT INTO users (email, password_hash, first_name, last_name, email_verification_token, email_verification_expires, terms_version, terms_accepted_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id, email, first_name, last_name, created_at, email_verification_expires',
+          [email, passwordHash, first_name, last_name, verificationToken, verificationExpires, termsService.currentVersion()]
+        )
+        : await query<NewUserRow>(
+          'INSERT INTO users (email, password_hash, first_name, last_name, email_verification_token, email_verification_expires) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, first_name, last_name, created_at, email_verification_expires',
+          [email, passwordHash, first_name, last_name, verificationToken, verificationExpires]
+        );
       // RETURNING always answers with the row just inserted, so rows[0] is
       // never undefined here; the assertions below rely on the same fact.
       const userId = newUser.rows[0]!.id;
@@ -421,6 +432,49 @@ const authController = {
     } catch (error) {
       console.error('Update notification settings error:', error);
       res.status(500).json({ error: 'Failed to update notification settings' });
+    }
+  },
+
+  /**
+   * GET /auth/terms: whether this user must accept the current Terms of
+   * Service and Privacy Policy before going on. True only when the version
+   * they accepted is not the current one, so it is asked once per version.
+   */
+  async getTermsStatus(req: Request, res: Response) {
+    res.set('Cache-Control', 'no-store');
+    const userId = req.user.userId;
+    try {
+      res.json(await termsService.termsStatus(userId));
+    } catch (error) {
+      if (error instanceof termsService.TermsUserNotFoundError) {
+        return res.status(404).json({ error: error.message, code: error.code });
+      }
+      console.error('Get terms status error:', { userId, ...errorSummary(error) });
+      res.status(500).json({ error: 'Server error' });
+    }
+  },
+
+  /** POST /auth/terms { version }: records acceptance of the current version. */
+  async acceptTerms(req: Request, res: Response) {
+    res.set('Cache-Control', 'no-store');
+    const userId = req.user.userId;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'A terms version is required', code: 'terms_invalid' });
+    }
+    try {
+      const status = await termsService.acceptTerms(userId, req.body.version as string);
+      console.log(`[Terms] User ${userId} accepted version ${status.acceptedVersion ?? 'none stored'}`);
+      res.json(status);
+    } catch (error) {
+      if (error instanceof termsService.TermsVersionError) {
+        return res.status(409).json({ error: error.message, code: error.code, currentVersion: termsService.currentVersion() });
+      }
+      if (error instanceof termsService.TermsUserNotFoundError) {
+        return res.status(404).json({ error: error.message, code: error.code });
+      }
+      console.error('Accept terms error:', { userId, ...errorSummary(error) });
+      res.status(500).json({ error: 'Server error' });
     }
   },
 

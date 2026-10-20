@@ -221,6 +221,15 @@ const config = {
     transactionRetentionBatch: 5000,
   },
 
+  // The Terms of Service and Privacy Policy as one version: a user who has
+  // not accepted this exact string sees the accept card once after signing in
+  // (services/termsService.ts). Change it only when the legal text changes in
+  // a way users should agree to again — every account is then asked once more.
+  // A date, by convention the `updated` date in public/locales/*/legal.json.
+  legal: {
+    termsVersion: '2026-10-20',
+  },
+
   validation: {
     // Raised from the 6 that routes/auth.ts used to enforce. This only gates
     // registration — login checks the hash, and there is no password-change

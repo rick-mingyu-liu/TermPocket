@@ -26,6 +26,9 @@ export interface UserRow {
   is_demo: boolean;
   /** Terms of transactions kept (migration 016); null is off. */
   transaction_retention_terms: number | null;
+  /** Version of the terms and privacy policy accepted (migration 017); null is never. */
+  terms_version: string | null;
+  terms_accepted_at: Date | null;
 }
 
 export type TransactionType = 'income' | 'expense';

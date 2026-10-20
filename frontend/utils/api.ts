@@ -174,4 +174,16 @@ export const accountAPI = {
   delete: (password: string) => api.delete<{ deleted: true }>('/auth/account', { data: { password } }),
 }
 
+export interface TermsStatus {
+  currentVersion: string
+  acceptedVersion: string | null
+  // True when the version accepted is not the current one: asked once per version.
+  required: boolean
+}
+
+export const termsAPI = {
+  status: () => api.get<TermsStatus>('/auth/terms'),
+  accept: (version: string) => api.post<TermsStatus>('/auth/terms', { version }),
+}
+
 export { api }

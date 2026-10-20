@@ -6,6 +6,7 @@ import Head from 'next/head'
 import { Analytics } from "@vercel/analytics/react";
 import { appWithTranslation } from 'next-i18next';
 import { stripUrlQuery } from '@/lib/analytics';
+import TermsGate from '@/components/TermsGate';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -19,6 +20,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         <meta name="theme-color" content="#023A25" />
       </Head>
       <Component {...pageProps} />
+      <TermsGate />
       <Analytics beforeSend={stripUrlQuery} />
       <Toaster
         position="top-right"

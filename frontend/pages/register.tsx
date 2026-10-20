@@ -81,6 +81,8 @@ export default function Register() {
   const [registrationSuccess, setRegistrationSuccess] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [registerError, setRegisterError] = useState('')
+  // The terms tick box: unticked by default, and Create account stays disabled until it is ticked.
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [language, setLanguage] = useState('en');
   // The server renders the form before React attaches its submit handler. A
   // click in that window would submit natively (a GET to this page, fields in
@@ -116,6 +118,7 @@ export default function Register() {
       const response = await api.post('/auth/register', {
         ...registerData,
         language,
+        accept_terms: acceptedTerms,
       })
       if (response.data.requiresVerification) {
         setRegistrationSuccess(true)
@@ -419,19 +422,30 @@ export default function Register() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={loading || !hydrated}>
+                <div className="flex items-start gap-2">
+                  <input
+                    id="acceptTerms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 accent-green-600"
+                  />
+                  <label htmlFor="acceptTerms" className="text-sm leading-snug text-muted-foreground">
+                    {/* New tab, so following a link does not lose what was typed. */}
+                    <Trans
+                      i18nKey="legalConsent"
+                      t={t}
+                      components={{
+                        terms: <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground" />,
+                        privacy: <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground" />,
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={loading || !hydrated || !acceptedTerms}>
                   {loading ? t('Creating account...') : t('Create account')}
                 </Button>
-                <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                  <Trans
-                    i18nKey="legalConsent"
-                    t={t}
-                    components={{
-                      terms: <Link href="/terms" className="underline underline-offset-2 hover:text-foreground" />,
-                      privacy: <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground" />,
-                    }}
-                  />
-                </p>
               </form>
 
               <div className="mt-6">

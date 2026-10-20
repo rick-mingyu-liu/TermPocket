@@ -405,13 +405,15 @@ All routes except registration, login and email verification require `Authorizat
 ### `/auth`
 | | |
 |---|---|
-| `POST /register` | create an account |
+| `POST /register` | create an account; `accept_terms: true` (the sign-up tick box) stores the current terms version |
 | `POST /login` | returns a JWT |
 | `GET /verify-email/:token` | confirm an address |
 | `POST /resend-verification` | reissue the mail |
 | `GET, PUT /profile` | read and update the profile; `GET` includes the notification flags |
 | `PUT /notifications` | `weekly_reports_enabled`, `email_notifications_enabled` — the scheduled email needs both |
 | `POST /test-email` | send the weekly report now |
+| `GET /terms` | `{currentVersion, acceptedVersion, required}`; `required` (the accept card) when the accepted version is not the current one — never for the demo account or before migration 017 |
+| `POST /terms` | `{version}` — accept the current terms; `409` `terms_version_mismatch` for any other version |
 | `DELETE /account` | `{ password }` — delete the account and everything belonging to it; `403` `account_password_incorrect` or `account_demo` deletes nothing |
 
 Rate limited to 5 requests per 15 minutes per IP across `/register`, `/login`, `/resend-verification` and `/test-email` **combined**. `DELETE /account` has its own budget instead, 5 attempts per 15 minutes per user (`RATE_LIMIT_ACCOUNT_DELETE_MAX`).
@@ -695,13 +697,15 @@ The order constraints: **frontend, then backend, then 014** (the previous fronte
 
 ## Database
 
-The original tables are `users`, `transactions`, `savings_goals`, `import_batches` and `access_tokens`. Migration `013` adds `agent_conversations`, `agent_messages`, `agent_runs`, `agent_drafts`, `agent_receipts` and `agent_admissions`. Compound foreign keys enforce owner and conversation associations. Saved transactions have no deletion dependency on conversations. Migration `014` drops the retired `watchlist` and `ai_plans` tables. Migration `015` adds `agent_goal_proposals` (goal changes awaiting the Confirm button); until it is applied, goal proposals are unavailable and nothing else is affected. Migration `016` adds `users.transaction_retention_terms` (automatic deletion; NULL, off, for everyone); until it is applied, Settings shows the option as unavailable and nothing is deleted.
+The original tables are `users`, `transactions`, `savings_goals`, `import_batches` and `access_tokens`. Migration `013` adds `agent_conversations`, `agent_messages`, `agent_runs`, `agent_drafts`, `agent_receipts` and `agent_admissions`. Compound foreign keys enforce owner and conversation associations. Saved transactions have no deletion dependency on conversations. Migration `014` drops the retired `watchlist` and `ai_plans` tables. Migration `015` adds `agent_goal_proposals` (goal changes awaiting the Confirm button); until it is applied, goal proposals are unavailable and nothing else is affected. Migration `016` adds `users.transaction_retention_terms` (automatic deletion; NULL, off, for everyone); until it is applied, Settings shows the option as unavailable and nothing is deleted. Migration `017` adds `users.terms_version` and `users.terms_accepted_at` (which terms each user accepted, and when; NULL for existing users, who are asked once after signing in); until it is applied, nobody is asked and nothing is stored.
 
 **Automatic deletion.** Off for every account unless its owner turns it on in Settings. A user keeps the last 3, 6, 9 or 12 terms (the current one included); the hourly maintenance run deletes that user's transactions dated before the first kept term's start, with the boundary from `utils/terms.ts`, so it removes whole terms and agrees with the dashboard's term view. Only transactions are deleted — goals, Pocky conversations, import records and tokens are not. At most 5,000 rows go per run across all users; the rest go on later runs. Each run audits one line per user with the user id and count only. The demo account is excluded: it cannot turn it on, and the sweep skips it. See [`backend/services/retentionService.ts`](backend/services/retentionService.ts).
 
 **Account deletion.** Settings → Danger zone → Delete account asks for the password again, then `DELETE /auth/account` deletes, in one transaction, the user's rows in every per-user table (Pocky goal proposals, messages, drafts, receipts, runs, admission records and conversations, access tokens, import counts, savings goals, transactions), then the user row with its preferences and retention setting. Every one of those tables also cascades from `users`; the explicit deletes make the result independent of the deployed foreign-key actions and give the audit line its counts (user id and counts only). Admission records go too: they outlive *conversation* deletion so clearing history cannot reset the turn budget, but a deleted account has no budget left to use, and re-registering means a new user id and a verified address. The demo account refuses (`403 account_demo`). A Pocky turn running for that user in this process is aborted. See [`backend/services/accountService.ts`](backend/services/accountService.ts).
 
 **Migration 016 (automatic deletion):** deploy the backend first (it tolerates the column's absence and notices it without a restart), then the frontend, then apply `016_transaction_retention.sql` with `psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -f db/migrations/016_transaction_retention.sql` against a direct (non-pooled) database connection. It is additive and idempotent, and leaves every user off.
+
+**Migration 017 (terms acceptance):** the same order: deploy the backend, then the frontend, then apply `017_terms_acceptance.sql` the same way. It is additive and idempotent. After it, every existing account sees the accept card once on its next visit; new sign-ups that ticked the box do not. To ask everyone again after changing the legal text, change `config.legal.termsVersion`.
 
 `updated_at` is maintained by triggers. Monetary rows carry a `currency` column. `transactions.source` accepts `manual`, `ocr`, `ocr_llm` and `agent`; only confirmation writes `agent` rows. `import_batches` records counts for confirmed screenshot imports.
 

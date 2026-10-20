@@ -1,5 +1,5 @@
 {
-  "updated": "19 October 2026",
+  "updated": "20 October 2026",
   "privacy": {
     "intro": [
       "TermPocket is a free personal finance app for university students, run from Canada by its developer, [rick-mingyu-liu](https://github.com/rick-mingyu-liu) (“we”, “us”). This page explains what TermPocket stores, where it goes, how long it is kept, and how to ask for a copy or for deletion.",
@@ -9,7 +9,7 @@
       {
         "h": "What we store",
         "items": [
-          "Your account: first and last name, email address, language, email preferences and whether your address is verified. Your password is stored only as a bcrypt hash, never as the password itself.",
+          "Your account: first and last name, email address, language, email preferences, whether your address is verified, and which version of the Terms of Service and this policy you accepted and when. Your password is stored only as a bcrypt hash, never as the password itself.",
           "Your records: the transactions you enter or import (amount, currency, date, type, category, description and how it was added) and your savings goals (name, amounts, currency, target date and description).",
           "Screenshot imports: a count of how many rows each import saved and how many you edited. The screenshot itself is not stored (see below).",
           "Pocky conversations: your messages and Pocky’s replies, the entries it drafts for you to review, goal changes it proposes, and each conversation’s currency, timezone and language settings. We also keep technical records of each request (status, token counts, error codes, time) and short receipts that let you undo a save; receipts hold record IDs and version stamps, not amounts or descriptions.",
