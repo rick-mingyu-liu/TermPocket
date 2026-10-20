@@ -11,6 +11,7 @@ type LegalDoc = 'privacy' | 'terms'
 // The shape of each entry in public/locales/<locale>/legal.json. The text is
 // long, so it lives in its own namespace rather than in common.json.
 interface LegalSection {
+  id?: string
   h: string
   p?: string[]
   items?: string[]
@@ -26,11 +27,13 @@ function list<T>(value: unknown): T[] {
 
 const LINK_CLASS = 'text-green-700 underline underline-offset-2 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300'
 
-/** Renders `[label](https://...)` as a link; anything else stays literal text. */
+/** Supports HTTPS, local legal pages and section links; other text stays literal. */
 function Rich({ text }: { text: string }) {
-  const parts = text.split(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/)
+  const parts = text.split(/\[([^\]]+)\]\((https:\/\/[^\s)]+|\/(?:privacy|terms)(?:#[\w-]+)?|#[\w-]+)\)/)
   return <>{parts.map((part, i) => i % 3 === 1
-    ? <a key={i} href={parts[i + 1]} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>{part}</a>
+    ? parts[i + 1].startsWith('https://')
+      ? <a key={i} href={parts[i + 1]} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>{part}</a>
+      : <Link key={i} href={parts[i + 1]} className={LINK_CLASS}>{part}</Link>
     : i % 3 === 2 ? null : part)}</>
 }
 
@@ -82,7 +85,7 @@ export default function LegalPage({ doc }: { doc: LegalDoc }) {
           </div>
 
           {sections.map((section, i) => (
-            <section key={i} className="space-y-3" aria-labelledby={`${doc}-${i}`}>
+            <section key={i} id={section.id} className="space-y-3" aria-labelledby={`${doc}-${i}`}>
               <h2 id={`${doc}-${i}`} className="text-xl font-semibold">{section.h}</h2>
               <Paragraphs text={section.p} />
               {section.items && (

@@ -1,9 +1,9 @@
 {
-  "updated": "18 October 2026",
+  "updated": "19 October 2026",
   "privacy": {
     "intro": [
       "TermPocket is a free personal finance app for university students, run from Canada by its developer, [rick-mingyu-liu](https://github.com/rick-mingyu-liu) (“we”, “us”). This page explains what TermPocket stores, where it goes, how long it is kept, and how to ask for a copy or for deletion.",
-      "In short: we store what you type into TermPocket so the app can show it back to you. We do not sell it, show ads, or connect to your bank. The servers are in the United States, and if you use Pocky, the assistant, your messages and the records it looks up are processed by DeepSeek, the AI provider behind Pocky (see “Pocky and DeepSeek” below)."
+      "We store what you type into TermPocket so the app can show it back to you. We do not sell it, show ads, or connect to your bank. Our servers are in the United States. If you use Pocky, third-party AI providers process your messages and the records it looks up. See [Current AI providers](#ai-providers) for the provider and processing location."
     ],
     "sections": [
       {
@@ -25,9 +25,9 @@
         ]
       },
       {
-        "h": "Pocky and DeepSeek",
+        "h": "Pocky and AI processing",
         "p": [
-          "Pocky is optional. When you send it a message, our server sends the following to DeepSeek through api.deepseek.com so it can reply:"
+          "TermPocket uses third-party artificial intelligence (AI) and large language model (LLM) API providers to power Pocky. Pocky is optional. When you send it a message, our server sends the following information to the provider to generate a response:"
         ],
         "items": [
           "your message and the recent part of the conversation (up to 30 earlier messages);",
@@ -37,8 +37,27 @@
           "any amounts or plans you describe, such as pay, rent or a savings target."
         ],
         "after": [
-          "DeepSeek, the AI provider behind Pocky, processes this information on its servers in China, outside Canada, where it may be subject to local laws. DeepSeek handles what it receives under its own terms and privacy policy. Deleting a conversation in TermPocket removes it from our database; we cannot promise that it is removed from DeepSeek’s systems.",
-          "Do not include passwords, card numbers or other credentials in a message. If you do not want this information to reach DeepSeek, do not use Pocky; the rest of TermPocket works without it."
+          "Inputs are not automatically anonymized. Processing takes place outside Canada and may be subject to local laws. See [Current AI providers](#ai-providers) for details.",
+          "Deleting a conversation in TermPocket removes it from our database; it does not necessarily delete information retained by the AI provider.",
+          "Do not include passwords, card numbers or other credentials in a message. If you do not want this information shared with an AI provider, do not use Pocky; the rest of TermPocket works without it."
+        ]
+      },
+      {
+        "id": "ai-providers",
+        "h": "Current AI providers",
+        "p": [
+          "DeepSeek provides the API used by Pocky, with processing in China, outside Canada. Its API terms apply to this integration. Its general privacy policy does not cover the processing of end-user data from applications such as TermPocket.",
+          "We do not promise a fixed provider retention period or that API inputs are excluded from model training. We will update this section when the provider changes and notify you of changes to how your existing information is used, as described below."
+        ],
+        "links": [
+          {
+            "label": "API terms",
+            "href": "https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html"
+          },
+          {
+            "label": "Provider privacy policy",
+            "href": "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html"
+          }
         ]
       },
       {
@@ -53,7 +72,7 @@
           "If you connect an AI service of your own with a personal access token, that service receives the totals and savings goals it asks for (goal names, amounts and dates) and handles them under its own terms."
         ],
         "after": [
-          "These providers store and process information outside Canada, in the United States (and, for Pocky, China)."
+          "These services also store and process information outside Canada, including in the United States. The AI processing location is listed under [Current AI providers](#ai-providers)."
         ]
       },
       {
@@ -163,7 +182,7 @@
       {
         "h": "Your information",
         "p": [
-          "What you record is yours. You allow us to store and process it only to provide TermPocket to you, including sending it to the service providers named in the Privacy Policy, such as DeepSeek when you use Pocky."
+          "What you record is yours. You allow us to store and process it only to provide TermPocket to you, including sharing relevant information with the service providers described in our [Privacy Policy](/privacy). When you use Pocky, this includes third-party AI providers; see [Current AI providers](/privacy#ai-providers)."
         ]
       },
       {

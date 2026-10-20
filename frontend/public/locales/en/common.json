@@ -669,6 +669,7 @@
     "sdkLicense": "SDK license notice",
     "sdkLegal": "Anthropic legal agreements",
     "sdkAcknowledgement": "The transaction assistant uses Anthropic’s Claude Agent SDK. Its license notice reserves Anthropic’s rights and refers to the applicable Anthropic legal agreements; see the linked notice and terms.",
+    "aiProviders": "Current AI providers",
     "providerAcknowledgement": "AI processing for conversational transaction recording when configured"
   },
   "retention": {

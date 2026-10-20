@@ -1,4 +1,5 @@
 import { useTranslation } from 'next-i18next'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Dialog, DialogClose, DialogContent, DialogDescription,
@@ -129,9 +130,12 @@ export default function OpenSourceAcknowledgements({ open, onOpenChange, classNa
             <h3 className="font-semibold">{t('External services')}</h3>
             <p className="text-sm text-muted-foreground">{t('These API services are listed separately from the open source libraries above.')}</p>
             <ul className="space-y-2 text-sm">
-              <li><ProjectLinks projects={[
-                ['DeepSeek', 'https://www.deepseek.com'],
-              ]} /><p className="mt-1 text-muted-foreground">{t('agent.providerAcknowledgement')}</p></li>
+              <li>
+                <Link href="/privacy#ai-providers" className="rounded-sm underline underline-offset-4 hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {t('agent.aiProviders')}
+                </Link>
+                <p className="mt-1 text-muted-foreground">{t('agent.providerAcknowledgement')}</p>
+              </li>
               <li><ProjectLinks projects={[
                 ['Frankfurter', 'https://frankfurter.dev']
               ]} /><p className="mt-1 text-muted-foreground">{t('Currency exchange rates')}</p></li>
