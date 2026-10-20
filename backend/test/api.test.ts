@@ -26,6 +26,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import type { Test, Response } from 'supertest';
+import { hashVerificationToken } from '../utils/verificationToken';
 
 const HAVE_DB = Boolean(process.env.TEST_DATABASE_URL);
 
@@ -371,7 +372,7 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
         `INSERT INTO users (email, password_hash, first_name, last_name, email_verified,
                             email_verification_token, email_verification_expires, created_at)
          VALUES ($1, 'x', 'Unverified', 'Test', FALSE, $2, ${minutesAgo(1)}, ${minutesAgo(31)}) RETURNING id`,
-        [`it-${crypto.randomUUID()}@example.invalid`, token]
+        [`it-${crypto.randomUUID()}@example.invalid`, hashVerificationToken(token)]
       );
       users.push(r.rows[0]!.id);
 
@@ -379,6 +380,23 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
       assert.equal(res.status, 400);
       const after = await db.query<{ email_verified: boolean }>('SELECT email_verified FROM users WHERE id = $1', [r.rows[0]!.id]);
       assert.equal(after.rows[0]!.email_verified, false);
+    });
+
+    test('a live link verifies; the stored value is only its hash and does not work as a link', async () => {
+      const token = crypto.randomBytes(32).toString('hex');
+      const r = await db.query<{ id: number }>(
+        `INSERT INTO users (email, password_hash, first_name, last_name, email_verified,
+                            email_verification_token, email_verification_expires, created_at)
+         VALUES ($1, 'x', 'Unverified', 'Test', FALSE, $2, NOW() + make_interval(mins => 20), ${minutesAgo(10)}) RETURNING id`,
+        [`it-${crypto.randomUUID()}@example.invalid`, hashVerificationToken(token)]
+      );
+      users.push(r.rows[0]!.id);
+
+      assert.equal((await request(app).get(`/auth/verify-email/${hashVerificationToken(token)}`)).status, 400);
+      assert.equal((await request(app).get(`/auth/verify-email/${token}`)).status, 200);
+      const after = await db.query<{ email_verified: boolean; email_verification_token: string | null }>(
+        'SELECT email_verified, email_verification_token FROM users WHERE id = $1', [r.rows[0]!.id]);
+      assert.deepEqual(after.rows[0], { email_verified: true, email_verification_token: null });
     });
 
     async function insertUnverified(createdAgo: string, expires: string, email = `it-${crypto.randomUUID()}@example.invalid`): Promise<number> {

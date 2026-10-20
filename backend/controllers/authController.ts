@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import crypto from 'node:crypto';
 import { validationResult } from 'express-validator';
 import { query } from '../db/connection';
 import config = require('../config');
@@ -13,6 +12,7 @@ import * as accountService from '../services/accountService';
 import * as termsService from '../services/termsService';
 import logger = require('../utils/logger');
 import { errorSummary } from '../utils/errorSummary';
+import { newVerificationToken, hashVerificationToken } from '../utils/verificationToken';
 
 // The columns the SELECT below names — narrower than the full UserRow.
 interface ExistingUserRow {
@@ -140,8 +140,9 @@ const authController = {
       const saltRounds = 10;
       const passwordHash = await bcrypt.hash(password, saltRounds);
 
-      // Generate email verification token
-      const verificationToken = crypto.randomBytes(32).toString('hex');
+      // Generate email verification token: the token goes in the email, only
+      // its hash is stored.
+      const { token: verificationToken, hash: verificationHash } = newVerificationToken();
       const verificationExpires = new Date(Date.now() + config.emailVerification.tokenExpiry);
 
       // The sign-up form's tick box. Without it (an old client), or before
@@ -153,11 +154,11 @@ const authController = {
       const newUser = recordTerms
         ? await query<NewUserRow>(
           'INSERT INTO users (email, password_hash, first_name, last_name, email_verification_token, email_verification_expires, terms_version, terms_accepted_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id, email, first_name, last_name, created_at, email_verification_expires',
-          [email, passwordHash, first_name, last_name, verificationToken, verificationExpires, termsService.currentVersion()]
+          [email, passwordHash, first_name, last_name, verificationHash, verificationExpires, termsService.currentVersion()]
         )
         : await query<NewUserRow>(
           'INSERT INTO users (email, password_hash, first_name, last_name, email_verification_token, email_verification_expires) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, first_name, last_name, created_at, email_verification_expires',
-          [email, passwordHash, first_name, last_name, verificationToken, verificationExpires]
+          [email, passwordHash, first_name, last_name, verificationHash, verificationExpires]
         );
       // RETURNING always answers with the row just inserted, so rows[0] is
       // never undefined here; the assertions below rely on the same fact.
@@ -273,7 +274,7 @@ const authController = {
       // Find user with this verification token
       const user = await query<VerifyEmailUserRow>(
         'SELECT id, email, first_name, email_verification_expires, created_at FROM users WHERE email_verification_token = $1',
-        [token]
+        [hashVerificationToken(String(token))]
       );
       if (user.rows.length === 0) {
         console.log('[VerifyEmail] No user found for the supplied token');
@@ -353,14 +354,14 @@ const authController = {
         return res.status(400).json({ error: 'Please wait before requesting another verification email' });
       }
 
-      // Generate new verification token
-      const verificationToken = crypto.randomBytes(32).toString('hex');
+      // Generate new verification token (stored as its hash)
+      const { token: verificationToken, hash: verificationHash } = newVerificationToken();
       const verificationExpires = new Date(Date.now() + config.emailVerification.tokenExpiry);
 
       // Update user with new token
       await query(
         'UPDATE users SET email_verification_token = $1, email_verification_expires = $2 WHERE id = $3',
-        [verificationToken, verificationExpires, user.rows[0]!.id]
+        [verificationHash, verificationExpires, user.rows[0]!.id]
       );
 
       // Send verification email

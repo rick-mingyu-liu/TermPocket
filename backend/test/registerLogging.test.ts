@@ -4,6 +4,7 @@ import util from 'node:util';
 import axios from 'axios';
 import db = require('../db/connection');
 import config = require('../config');
+import { hashVerificationToken } from '../utils/verificationToken';
 
 /**
  * A regression guard for item 16: registration must not write the
@@ -24,6 +25,9 @@ import config = require('../config');
 const emailServicePath = require.resolve('../services/emailService');
 const authControllerPath = require.resolve('../controllers/authController');
 
+// The token the stubbed email would have carried: the credential itself.
+let mailedToken: string | null = null;
+
 function loadControllerWithStubbedEmail() {
   // A stub Module: only `exports` (the three functions authController
   // destructures out of emailService at module load) is ever read back out of
@@ -33,7 +37,7 @@ function loadControllerWithStubbedEmail() {
     filename: emailServicePath,
     loaded: true,
     exports: {
-      sendEmailVerification: async () => {},
+      sendEmailVerification: async (_to: string, _name: string, token: string) => { mailedToken = token; },
       sendWeeklyReport: async () => {},
       generateWeeklyReport: async () => ({ text: '', html: '' }),
     },
@@ -68,6 +72,7 @@ describe('POST /auth/register logging', () => {
   beforeEach(() => {
     printed = [];
     insertedToken = null;
+    mailedToken = null;
 
     // A key is set so these tests always take the mocked MailboxLayer path and
     // do not depend on the environment. They used to *need* one: validation
@@ -92,7 +97,7 @@ describe('POST /auth/register logging', () => {
       // via crypto.randomBytes(32).toString('hex') and binds fifth in the
       // INSERT — always a string on this branch; db.query's mocked signature
       // only knows params as unknown[].
-      insertedToken = params[4] as string;                             // the token, as stored
+      insertedToken = params[4] as string;                             // the token's hash, as stored
       return {
         rows: [{
           id: 7,
@@ -138,7 +143,15 @@ describe('POST /auth/register logging', () => {
 
   test('does not log the verification token', async () => {
     const { output } = await register();
-    assert.ok(!output.includes(insertedToken!), 'the verification token was written to the log');
+    assert.ok(mailedToken, 'no token reached the email');
+    assert.ok(!output.includes(mailedToken!), 'the verification token was written to the log');
+    assert.ok(!output.includes(insertedToken!), 'the stored hash was written to the log');
+  });
+
+  test('stores only the hash of the token it emails', async () => {
+    await register();
+    assert.equal(insertedToken, hashVerificationToken(mailedToken!));
+    assert.notEqual(insertedToken, mailedToken);
   });
 
   test('does not log any 64-character hex string', async () => {
@@ -180,7 +193,8 @@ describe('POST /auth/register logging', () => {
 
     const { output } = await register();
 
-    assert.ok(!output.includes(insertedToken!), 'the verification token was written to the log');
+    assert.ok(!output.includes(mailedToken!), 'the verification token was written to the log');
+    assert.ok(!output.includes(insertedToken!), 'the stored hash was written to the log');
     assert.ok(!output.includes(EMAIL), 'the raw address was written to the log');
     assert.match(output, /user 7/);
   });
