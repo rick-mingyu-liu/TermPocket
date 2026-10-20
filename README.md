@@ -202,11 +202,14 @@ npm run db:setup    # applies db/schema.sql — idempotent, safe to re-run
 npm run db:seed     # (re)builds the demo account
 ```
 
-A fresh database needs nothing else. An **existing** database needs any migration in [`backend/db/migrations/`](backend/db/migrations/) it has not had yet, applied by hand — for example the one screenshot import depends on:
+A fresh database needs nothing else: `db:setup` also records every migration as applied in `schema_migrations`, because `schema.sql` already contains them. An **existing** database gets the migrations in [`backend/db/migrations/`](backend/db/migrations/) it has not had yet from the runner, which records each one:
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/011_add_import_tracking.sql
+npm run db:migrate -- --status   # applied / pending, changes nothing
+npm run db:migrate               # apply every pending migration, in order
 ```
+
+Use the direct (non-pooler) connection string. A database that predates `schema_migrations` is **untracked**, and the runner refuses to touch it, because the early migrations include one-off data rewrites that must not run twice. Record what it already has first: `npm run db:migrate -- --baseline 015` marks 001–015 as applied without running them. The runner also refuses an empty database (that is `db:setup`'s job). Production has 001–015 (013–015 were applied 2026-10-15); baseline it at 015, then `db:migrate` applies 016 and 017, both idempotent, so it is safe whether or not they were already applied by hand.
 
 `schema.sql` is the desired end state; a migration without a matching `schema.sql` edit means fresh setups and existing databases diverge.
 
@@ -246,7 +249,7 @@ backend/                        Express + PostgreSQL API (TypeScript)
 ├── db/
 │   ├── connection.ts           lazy pool, auto-closes after 5 min idle
 │   ├── schema.sql              desired end state
-│   ├── migrations/             numbered, applied by hand
+│   ├── migrations/             numbered; applied and recorded by `npm run db:migrate`
 │   └── demoData.ts             the demo account, generated from today
 ├── middleware/                 auth.ts (JWT), rateLimiter.ts
 ├── routes/                     express-validator chains + mounting

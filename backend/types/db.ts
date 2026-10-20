@@ -109,3 +109,10 @@ export interface AgentGoalProposalRow {
   request_id: string | null; request_hash: string | null; result_goal_id: number | null;
   created_at: Date; expires_at: Date; decided_at: Date | null;
 }
+
+/** db/migrations/ files applied to this database (db/migrate.ts). */
+export interface SchemaMigrationRow {
+  name: string;
+  checksum: string;
+  applied_at: Date;
+}
