@@ -411,21 +411,21 @@ export default function AiConnections() {
         </DialogContent>
       </Dialog>
       <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
-        <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl flex-col overflow-hidden">
-          <DialogHeader className="pr-6">
+        <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-3xl flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 pr-6">
             <DialogTitle>{t('Set up an AI app')}</DialogTitle>
             <DialogDescription>
               {t('Use your token with the endpoint and header below.')}
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden break-words text-sm">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden break-words pr-2 text-sm [scrollbar-gutter:stable]">
             <section aria-labelledby="ai-details-heading" className="space-y-3 rounded-lg border p-3">
               <h4 id="ai-details-heading" className="font-medium">{t('Connection details')}</h4>
               <div className="space-y-1.5">
                 <p className="text-muted-foreground">{t('MCP endpoint')}</p>
-                <div className="flex items-stretch gap-2">
+                <div className="flex items-start gap-2">
                   <code ref={endpointCodeRef} className="flex-1 min-w-0 break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs">{MCP_ENDPOINT_URL}</code>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('endpoint', MCP_ENDPOINT_URL, endpointCodeRef.current)}
                     aria-label={copied === 'endpoint' ? t('Copied') : t('Copy endpoint URL')}>
                     {copyIcon('endpoint')}
@@ -434,9 +434,9 @@ export default function AiConnections() {
               </div>
               <div className="space-y-1.5">
                 <p className="text-muted-foreground">{t('Request header')}</p>
-                <div className="flex items-stretch gap-2">
+                <div className="flex items-start gap-2">
                   <code ref={headerCodeRef} className="flex-1 min-w-0 break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs">Authorization: Bearer &lt;token&gt;</code>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('header', 'Authorization: Bearer <token>', headerCodeRef.current)}
                     aria-label={copied === 'header' ? t('Copied') : t('Copy header format')}>
                     {copyIcon('header')}
@@ -455,18 +455,18 @@ export default function AiConnections() {
                 <p>{t('Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.')}</p>
                 <p className="text-muted-foreground">{t('Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.')}</p>
                 <p>{t('Run this command:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                <div className="flex items-start gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('codex-cmd', CODEX_CMD, codexCmdCodeRef.current)}
                     aria-label={copied === 'codex-cmd' ? t('Copied') : t('Copy command')}>
                     {copyIcon('codex-cmd')}
                   </Button>
                 </div>
                 <p>{t('Or add this to ~/.codex/config.toml:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                <div className="flex items-start gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('codex-toml', CODEX_TOML, codexTomlCodeRef.current)}
                     aria-label={copied === 'codex-toml' ? t('Copied') : t('Copy config')}>
                     {copyIcon('codex-toml')}
@@ -480,9 +480,9 @@ export default function AiConnections() {
               </TabsContent>
               <TabsContent value="claude-code" className="space-y-3">
                 <p>{t('Run this in a terminal. The endpoint is already filled in for this site.')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={cmdCodeRef}>{CLAUDE_CODE_CMD}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                <div className="flex items-start gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={cmdCodeRef}>{CLAUDE_CODE_CMD}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('claude-code-cmd', CLAUDE_CODE_CMD, cmdCodeRef.current)}
                     aria-label={copied === 'claude-code-cmd' ? t('Copied') : t('Copy command')}>
                     {copyIcon('claude-code-cmd')}
@@ -490,9 +490,9 @@ export default function AiConnections() {
                 </div>
                 <p>{t('Then run claude mcp get termpocket. It should say Connected.')}</p>
                 <p className="text-muted-foreground">{t('To share a project config file, never put the token in it. Reference an environment variable instead:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={jsonCodeRef}>{CLAUDE_CODE_JSON}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
+                <div className="flex items-start gap-2">
+                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={jsonCodeRef}>{CLAUDE_CODE_JSON}</code></pre>
+                  <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
                     onClick={() => copy('claude-code-json', CLAUDE_CODE_JSON, jsonCodeRef.current)}
                     aria-label={copied === 'claude-code-json' ? t('Copied') : t('Copy config')}>
                     {copyIcon('claude-code-json')}
@@ -516,7 +516,7 @@ export default function AiConnections() {
               {t('If an app reports 401, the token is wrong or revoked, or the header lacks “Bearer ”. Create a new token. Your TermPocket login does not work here.')}
             </p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <DialogClose asChild>
               <Button type="button" variant="outline">{t('Close')}</Button>
             </DialogClose>
