@@ -120,6 +120,22 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
       assert.match(res.body.error, /Invalid credentials/);
     });
 
+    test('signs in an account stored in mixed case, typed in lowercase, and the database refuses its lowercase twin', async () => {
+      // Rows from before registration lowercased addresses keep their case.
+      const stored = `IT-${crypto.randomUUID()}@Example.invalid`;
+      const hash = await bcrypt.hash(PASSWORD, 10);
+      const r = await db.query<{ id: number }>(
+        `INSERT INTO users (email, password_hash, first_name, last_name, email_verified)
+         VALUES ($1, $2, 'Integration', 'Test', TRUE) RETURNING id`, [stored, hash]);
+      users.push(r.rows[0]!.id);
+      const res = await login(stored.toLowerCase());
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      assert.equal(res.body.user.id, r.rows[0]!.id);
+      await assert.rejects(db.query(
+        `INSERT INTO users (email, password_hash, first_name, last_name) VALUES ($1, 'x', 'A', 'B')`,
+        [stored.toLowerCase()]), { code: '23505' });
+    });
+
     test('rejects an unauthenticated read', async () => {
       const res = await request(app).get('/transactions');
       assert.equal(res.status, 401);

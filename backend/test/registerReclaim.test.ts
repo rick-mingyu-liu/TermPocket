@@ -120,7 +120,7 @@ describe('registering over an existing account', () => {
     existing(true, false);
     await register();
     const lookup = calls.find((c) => c.sql.startsWith('SELECT'))!;
-    assert.match(lookup.sql, /WHERE lower\(email\) = lower\(\$1\) ORDER BY email_verified DESC LIMIT 1/);
+    assert.match(lookup.sql, /WHERE lower\(email\) = lower\(\$1\) ORDER BY email_verified DESC NULLS LAST LIMIT 1/);
     assert.deepEqual(lookup.params, [EMAIL]);
   });
 
