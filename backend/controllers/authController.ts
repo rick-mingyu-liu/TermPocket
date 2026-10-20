@@ -208,25 +208,28 @@ const authController = {
       const { password } = req.body;
       const [email, typed] = lookupEmails(req, res);
 
-      // Find user
-      const user = await query<LoginUserRow>(
-        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
+      // Find the account. At most two rows: the normalized address and, for an
+      // account stored before normalization existed, the address as typed. The
+      // password decides between them, normalized first, so the owner of either
+      // row can sign in even if both spellings of one mailbox exist.
+      const candidates = await query<LoginUserRow>(
+        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC',
         [email, typed]
       );
 
-      if (user.rows.length === 0) {
-        return res.status(400).json({ error: 'Invalid credentials' });
+      let account: LoginUserRow | undefined;
+      for (const row of candidates.rows) {
+        if (await bcrypt.compare(password, row.password_hash)) {
+          account = row;
+          break;
+        }
       }
-
-      // Check password. rows.length === 0 already returned above, so rows[0]
-      // exists for the rest of this handler.
-      const isValidPassword = await bcrypt.compare(password, user.rows[0]!.password_hash);
-      if (!isValidPassword) {
+      if (!account) {
         return res.status(400).json({ error: 'Invalid credentials' });
       }
 
       // Check if email is verified
-      if (!user.rows[0]!.email_verified) {
+      if (!account.email_verified) {
         return res.status(400).json({
           error: 'Please verify your email address before logging in. Check your inbox for a verification link.',
           requiresVerification: true
@@ -239,7 +242,7 @@ const authController = {
       // it is unset, so every request that reaches this handler has one.
       const token = jwt.sign(
         // The stored address, which an as-typed match may spell differently.
-        { userId: user.rows[0]!.id, email: user.rows[0]!.email },
+        { userId: account.id, email: account.email },
         config.jwt.secret as string,
         // config.jwt.expiresIn is the literal '7d' at its declaration in
         // config/index.ts, which is a valid jsonwebtoken duration string; the
@@ -248,7 +251,7 @@ const authController = {
         { expiresIn: config.jwt.expiresIn as SignOptions['expiresIn'] }
       );
 
-      const { password_hash, email_verified, ...userWithoutPassword } = user.rows[0]!;
+      const { password_hash, email_verified, ...userWithoutPassword } = account;
 
       res.json({
         message: 'Login successful',

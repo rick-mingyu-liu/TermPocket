@@ -15,7 +15,7 @@ import config = require('../config');
  *
  * Through the real auth router with db.query answering from an in-memory
  * users table that applies the controllers' own lookup rule:
- * `WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1`.
+ * `WHERE email IN ($1, $2) ORDER BY email = $1 DESC` (resend adds LIMIT 1).
  */
 
 const emailServicePath = require.resolve('../services/emailService');
@@ -87,11 +87,12 @@ beforeEach(() => {
   mailedTo = [];
   mock.method(console, 'log', () => {});
   mock.method(db, 'query', async (text: string, params: unknown[] = []) => {
-    if (/FROM users WHERE email IN \(\$1, \$2\) ORDER BY email = \$1 DESC LIMIT 1/.test(text)) {
+    if (/FROM users WHERE email IN \(\$1, \$2\) ORDER BY email = \$1 DESC/.test(text)) {
       lookups.push(params);
       const [normalized, typed] = params as [string, string];
-      const match = users.find((u) => u.email === normalized) ?? users.find((u) => u.email === typed);
-      return { rowCount: match ? 1 : 0, rows: match ? [match] : [] };
+      const rows = [...users.filter((u) => u.email === normalized), ...users.filter((u) => u.email === typed && u.email !== normalized)];
+      const limited = text.includes('LIMIT 1') ? rows.slice(0, 1) : rows;
+      return { rowCount: limited.length, rows: limited };
     }
     if (text.startsWith('UPDATE users SET email_verification_token')) return { rowCount: 1, rows: [] };
     throw new Error(`unexpected query: ${text}`);
@@ -134,10 +135,13 @@ describe('POST /auth/login', () => {
     assert.equal((jwt.decode(body.token!) as { email: string }).email, 'Early.User@Gmail.com');
   });
 
-  test('the normalized account wins when both spellings exist', async () => {
-    users = [user(10, 'Two.Rows@Gmail.com'), user(11, 'tworows@gmail.com')];
-    const { body } = await post('/login', { email: 'Two.Rows@Gmail.com', password: 'password123' });
-    assert.equal((jwt.decode(body.token!) as { userId: number }).userId, 11);
+  test('when both spellings of one mailbox exist, each owner signs in to their own account', async () => {
+    users = [{ ...user(10, 'Two.Rows@Gmail.com'), password_hash: bcrypt.hashSync('legacy-pass', 4) }, user(11, 'tworows@gmail.com')];
+    const legacy = await post('/login', { email: 'Two.Rows@Gmail.com', password: 'legacy-pass' });
+    assert.equal((jwt.decode(legacy.body.token!) as { userId: number }).userId, 10);
+    const normalized = await post('/login', { email: 'Two.Rows@Gmail.com', password: 'password123' });
+    assert.equal((jwt.decode(normalized.body.token!) as { userId: number }).userId, 11);
+    assert.equal((await post('/login', { email: 'Two.Rows@Gmail.com', password: 'neither' })).status, 400);
   });
 
   test('a wrong password is still refused', async () => {
