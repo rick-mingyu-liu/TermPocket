@@ -81,6 +81,17 @@ interface UpdatedProfileRow {
   updated_at: Date | null;
 }
 
+/**
+ * The address forms to look a user up by: the normalized one routes/auth.ts
+ * produced, and the address as typed (for the few accounts stored before
+ * registration normalized addresses). Lookups prefer the normalized match.
+ */
+const lookupEmails = (req: Request, res: Response): [string, string] => {
+  const normalized = String(req.body.email);
+  const typed: unknown = res.locals.typedEmail;
+  return [normalized, typeof typed === 'string' && typed ? typed : normalized];
+};
+
 const authController = {
   // Register new user
   async register(req: Request, res: Response) {
@@ -194,12 +205,13 @@ const authController = {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { email, password } = req.body;
+      const { password } = req.body;
+      const [email, typed] = lookupEmails(req, res);
 
       // Find user
       const user = await query<LoginUserRow>(
-        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE email = $1',
-        [email]
+        'SELECT id, email, password_hash, first_name, last_name, email_verified FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
+        [email, typed]
       );
 
       if (user.rows.length === 0) {
@@ -226,7 +238,8 @@ const authController = {
       // the environment, but config/validate.ts exits the process at boot when
       // it is unset, so every request that reaches this handler has one.
       const token = jwt.sign(
-        { userId: user.rows[0]!.id, email },
+        // The stored address, which an as-typed match may spell differently.
+        { userId: user.rows[0]!.id, email: user.rows[0]!.email },
         config.jwt.secret as string,
         // config.jwt.expiresIn is the literal '7d' at its declaration in
         // config/index.ts, which is a valid jsonwebtoken duration string; the
@@ -312,12 +325,12 @@ const authController = {
   // Resend verification email
   async resendVerification(req: Request, res: Response) {
     try {
-      const { email } = req.body;
+      const [email, typed] = lookupEmails(req, res);
 
       // Find user
       const user = await query<ResendVerificationUserRow>(
-        'SELECT id, email, first_name, email_verified, email_verification_token, email_verification_expires FROM users WHERE email = $1',
-        [email]
+        'SELECT id, email, first_name, email_verified, email_verification_token, email_verification_expires FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
+        [email, typed]
       );
 
       if (user.rows.length === 0) {
@@ -349,7 +362,7 @@ const authController = {
 
       // Send verification email
       try {
-        await sendEmailVerification(email, user.rows[0]!.first_name, verificationToken);
+        await sendEmailVerification(user.rows[0]!.email, user.rows[0]!.first_name, verificationToken);
         res.json({ message: 'Verification email sent successfully' });
       } catch (emailError) {
         const code = emailError instanceof Error ? (emailError as Error & { code?: unknown }).code : undefined;

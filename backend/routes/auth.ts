@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { body } from 'express-validator';
 import authController = require('../controllers/authController');
 import auth = require('../middleware/auth');
@@ -28,6 +28,24 @@ const validateEmail = (email: string) => {
   return true;
 };
 
+/**
+ * Registration has always stored the address through `normalizeEmail()`:
+ * lowercased, and for Gmail without dots or a +tag (John.Doe@Gmail.com is
+ * stored as johndoe@gmail.com). Login and resend used to look the address up
+ * as typed, so anyone who typed it the way they registered it, capitals or
+ * dots included, got "Invalid credentials". Every route that looks a user up
+ * by address now normalizes it the same way.
+ *
+ * The address as typed is kept too (`res.locals.typedEmail`): accounts created
+ * in the project's first week, before normalization existed, are stored as
+ * typed, and the controllers fall back to that exact string.
+ */
+const keepTypedEmail = (req: Request, res: Response, next: NextFunction) => {
+  const email: unknown = req.body?.email;
+  res.locals.typedEmail = typeof email === 'string' ? email.trim() : undefined;
+  next();
+};
+
 // Validation middleware
 const registerValidation = [
   body('email')
@@ -53,7 +71,7 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body('email').isEmail().withMessage('Please enter a valid email'),
+  body('email').trim().isEmail().withMessage('Please enter a valid email').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required')
 ];
 
@@ -82,7 +100,7 @@ const acceptTermsValidation = [
 ];
 
 const resendVerificationValidation = [
-  body('email').isEmail().withMessage('Please enter a valid email')
+  body('email').trim().isEmail().withMessage('Please enter a valid email').normalizeEmail()
 ];
 
 // Routes
@@ -94,9 +112,9 @@ const resendVerificationValidation = [
 // save more than five times in a quarter hour. Those fall under the general
 // apiLimiter in app.ts instead.
 router.post('/register', authLimiter, registerValidation, authController.register);
-router.post('/login', authLimiter, loginValidation, authController.login);
+router.post('/login', authLimiter, keepTypedEmail, loginValidation, authController.login);
 router.get('/verify-email/:token', authController.verifyEmail);
-router.post('/resend-verification', authLimiter, resendVerificationValidation, authController.resendVerification);
+router.post('/resend-verification', authLimiter, keepTypedEmail, resendVerificationValidation, authController.resendVerification);
 router.get('/profile', auth, authController.getProfile);
 router.put('/profile', auth, updateProfileValidation, authController.updateProfile);
 // Sends an email, so it is throttled like the credential routes.
