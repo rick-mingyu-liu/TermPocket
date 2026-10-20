@@ -58,14 +58,15 @@ async function deleteUnverifiedAccounts(): Promise<number | null> {
 }
 
 /**
- * Deletes the unverified account registered under `email`, if it is stale, so
- * that a new registration can take the address. Returns whether one was
- * deleted. A verified account, or an unverified one still inside its window,
- * is never touched.
+ * Deletes the unverified account registered under `email` in any case, if it
+ * is stale, so that a new registration can take the address. Returns whether
+ * one was deleted. A verified account, or an unverified one still inside its
+ * window, is never touched. Case-insensitive like register's lookup, because
+ * users.email is unique on lower(email) (migration 021).
  */
 async function reclaimStaleUnverifiedAccount(email: string): Promise<boolean> {
   const result = await query(
-    `DELETE FROM users WHERE email = $1 AND ${unverifiedAccountIsStale(2, 3)}`,
+    `DELETE FROM users WHERE lower(email) = lower($1) AND ${unverifiedAccountIsStale(2, 3)}`,
     [email, ...staleParams()]
   );
   return (result.rowCount ?? 0) > 0;

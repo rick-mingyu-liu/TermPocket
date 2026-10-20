@@ -36,7 +36,7 @@ export type TransactionSource = 'manual' | 'ocr' | 'ocr_llm' | 'agent';
 
 export interface TransactionRow {
   id: number;
-  user_id: number | null;
+  user_id: number;
   amount: string;
   description: string;
   category: string;
@@ -50,7 +50,7 @@ export interface TransactionRow {
 
 export interface ImportBatchRow {
   id: number;
-  user_id: number | null;
+  user_id: number;
   row_count: number;
   edited_count: number;
   llm_count: number;
@@ -69,7 +69,7 @@ export interface AccessTokenRow {
 
 export interface SavingsGoalRow {
   id: number;
-  user_id: number | null;
+  user_id: number;
   name: string;
   target_amount: string;
   current_amount: string | null;

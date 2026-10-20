@@ -93,7 +93,7 @@ describe('reclaimStaleUnverifiedAccount', () => {
     assert.equal(await reclaimStaleUnverifiedAccount('a@example.com'), true);
 
     const [sql, params] = query.mock.calls[0]!.arguments;
-    assert.match(sql, /^DELETE FROM users WHERE email = \$1 AND email_verified = FALSE AND \(/);
+    assert.match(sql, /^DELETE FROM users WHERE lower\(email\) = lower\(\$1\) AND email_verified = FALSE AND \(/);
     assert.match(sql, /email_verification_expires < NOW\(\)/);
     assert.deepEqual(params, [
       'a@example.com',

@@ -94,7 +94,7 @@ describe('registering over an existing account', () => {
     const out = await register();
     assert.equal(out.status, 201, JSON.stringify(out.body));
     assert.equal(deletes().length, 1);
-    assert.match(deletes()[0]!.sql, /WHERE email = \$1 AND email_verified = FALSE AND \(/);
+    assert.match(deletes()[0]!.sql, /WHERE lower\(email\) = lower\(\$1\) AND email_verified = FALSE AND \(/);
     assert.equal(deletes()[0]!.params[0], EMAIL);
     assert.equal(inserts().length, 1);
   });
@@ -114,5 +114,37 @@ describe('registering over an existing account', () => {
     assert.deepEqual(out.body, { error: 'User already exists' });
     assert.equal(deletes().length, 0, 'a DELETE was issued against a verified account');
     assert.equal(inserts().length, 0);
+  });
+
+  test('the lookup ignores case and puts a verified match first', async () => {
+    existing(true, false);
+    await register();
+    const lookup = calls.find((c) => c.sql.startsWith('SELECT'))!;
+    assert.match(lookup.sql, /WHERE lower\(email\) = lower\(\$1\) ORDER BY email_verified DESC LIMIT 1/);
+    assert.deepEqual(lookup.params, [EMAIL]);
+  });
+
+  test('losing a race to the unique index answers "User already exists", not a 500', async () => {
+    mock.method(db, 'query', async (sql: string, params: unknown[] = []) => {
+      calls.push({ sql, params });
+      if (sql.startsWith('SELECT')) return { rows: [], rowCount: 0 };
+      throw Object.assign(new Error('duplicate key value violates unique constraint "idx_users_email_lower"'), { code: '23505' });
+    });
+    const logged: unknown[][] = [];
+    mock.method(console, 'log', (...args: unknown[]) => { logged.push(args); });
+    const out = await register();
+    assert.equal(out.status, 400);
+    assert.deepEqual(out.body, { error: 'User already exists' });
+    assert.equal(inserts().length, 1);
+    assert.ok(!JSON.stringify(logged).includes(EMAIL), 'the address reached the log');
+  });
+
+  test('any other database error is still a 500', async () => {
+    mock.method(db, 'query', async (sql: string) => {
+      if (sql.startsWith('SELECT')) return { rows: [], rowCount: 0 };
+      throw Object.assign(new Error('connection lost'), { code: '08006' });
+    });
+    const out = await register();
+    assert.equal(out.status, 500);
   });
 });

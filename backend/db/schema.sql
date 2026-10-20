@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(100) NOT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255),
-    email_verification_expires TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    email_verification_expires TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     language VARCHAR(10) NOT NULL DEFAULT 'en',
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     weekly_reports_enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- accepted, and when (migration 017). NULL means never: the app asks once
     -- after sign-in. config.legal.termsVersion is the current version.
     terms_version VARCHAR(32),
-    terms_accepted_at TIMESTAMP
+    terms_accepted_at TIMESTAMPTZ
 );
 
 -- At most one demo account: the refresh resolves its target with a bare
@@ -35,31 +35,36 @@ CREATE TABLE IF NOT EXISTS users (
 -- rewrites depend on the query plan.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_single_demo ON users (is_demo) WHERE is_demo;
 
+-- One account per address whatever its case (migration 021): rows from before
+-- registration lowercased addresses can hold "Jane@Example.com".
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (lower(email));
+
 -- Transactions table
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    amount DECIMAL(10,2) NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Always positive: direction lives in type (migration 018).
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
     description VARCHAR(255) NOT NULL,
     category VARCHAR(100) NOT NULL,
     type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense')),
     date DATE NOT NULL,
-    currency VARCHAR(10) NOT NULL DEFAULT 'CAD',
+    currency VARCHAR(10) NOT NULL DEFAULT 'CAD' CHECK (currency IN ('CAD','USD','EUR','GBP','AUD','CNY')),
     -- How the row was entered: typed in, or imported from a screenshot (and
     -- whether the parser or the LLM fallback read it). See migration 011.
     source VARCHAR(20) NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'ocr', 'ocr_llm', 'agent')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- One row per confirmed screenshot import. Counts only; see migration 011.
 CREATE TABLE IF NOT EXISTS import_batches (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     row_count INTEGER NOT NULL CHECK (row_count > 0),
     edited_count INTEGER NOT NULL CHECK (edited_count >= 0),
     llm_count INTEGER NOT NULL CHECK (llm_count >= 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Read-only personal access tokens for POST /mcp; see migration 012.
@@ -68,29 +73,31 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(60) NOT NULL,
     token_hash CHAR(64) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_used_at TIMESTAMP,
-    revoked_at TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ
 );
 
 -- Savings goals table
 CREATE TABLE IF NOT EXISTS savings_goals (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    target_amount DECIMAL(10,2) NOT NULL,
-    current_amount DECIMAL(10,2) DEFAULT 0,
+    target_amount DECIMAL(10,2) NOT NULL CHECK (target_amount > 0),
+    current_amount DECIMAL(10,2) DEFAULT 0 CHECK (current_amount >= 0),
     target_date DATE,
     description TEXT,
-    currency VARCHAR(10) NOT NULL DEFAULT 'CAD',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    currency VARCHAR(10) NOT NULL DEFAULT 'CAD' CHECK (currency IN ('CAD','USD','EUR','GBP','AUD','CNY')),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for better performance
--- Every read of transactions filters on user_id and the main listing then sorts
--- by date DESC, created_at DESC, so one composite index serves filter and sort.
-CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date DESC, created_at DESC);
+-- Every read of transactions filters on user_id, and the listings (GET
+-- /transactions, the agent's transaction_details, the weekly report) sort by
+-- date DESC, id DESC, so one composite index serves filter, range and sort
+-- (migration 019; it replaced 006's, which ended in created_at).
+CREATE INDEX IF NOT EXISTS idx_transactions_user_date_id ON transactions(user_id, date DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_goals_user_id ON savings_goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_import_batches_user_id ON import_batches(user_id);

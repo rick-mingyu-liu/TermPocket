@@ -97,11 +97,14 @@ test('against PostgreSQL: fresh, untracked, baseline, apply, re-run', { skip: !p
     await assert.rejects(applyPending(client, files), UntrackedDatabaseError);
     assert.deepEqual(await appliedMigrations(client), [], 'nothing may be recorded when it refuses');
 
-    // Baseline through 015, then apply: only 016 and 017 run, in order.
+    // Baseline through 015 (production's state), then apply: every later
+    // migration runs, in order, against the full schema.
     assert.equal(await recordApplied(client, baselineFiles(files, '015')), names.filter((n) => n.slice(0, 3) <= '015').length);
+    const later = names.filter((n) => n.slice(0, 3) > '015');
+    assert.ok(later.includes('016_transaction_retention.sql') && later.includes('017_terms_acceptance.sql'));
     const logged: string[] = [];
-    assert.deepEqual(await applyPending(client, files, (line) => logged.push(line)), ['016_transaction_retention.sql', '017_terms_acceptance.sql']);
-    assert.deepEqual(logged, ['Applying 016_transaction_retention.sql', 'Applying 017_terms_acceptance.sql']);
+    assert.deepEqual(await applyPending(client, files, (line) => logged.push(line)), later);
+    assert.deepEqual(logged, later.map((n) => `Applying ${n}`));
     assert.deepEqual((await appliedMigrations(client)).map((m) => m.name), names);
     assert.ok((await appliedMigrations(client)).every((m) => m.checksum === files.find((f) => f.name === m.name)!.checksum));
 

@@ -21,8 +21,10 @@ import config = require('../config');
 // host, and leaves the value the only thing it ever was: a day.
 types.setTypeParser(types.builtins.DATE, (value: string) => value);
 
-// A TIMESTAMP column (no zone: users, transactions, goals, tokens) holds a
-// UTC wall-clock time, because every session runs in UTC (see createPool).
+// A TIMESTAMP column (no zone) holds a UTC wall-clock time, because every
+// session runs in UTC (see createPool). Since migration 020 no table has one
+// (users, transactions, goals, import batches and tokens became TIMESTAMPTZ),
+// but a database before 020 still does, so this stays.
 // node-pg reads such a value as the *process's* local time and writes a Date
 // parameter in local time with an offset that PostgreSQL then drops, so both
 // directions were right only while the server process also ran in UTC. Under

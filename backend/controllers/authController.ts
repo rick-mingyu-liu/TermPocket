@@ -111,9 +111,12 @@ const authController = {
         return res.status(400).json({ error: emailValidation.reason });
       }
 
-      // Check if user already exists
+      // Check if user already exists, in any case: a row from before
+      // registration lowercased addresses can hold "Jane@Example.com", and
+      // users.email is unique on lower(email) (migration 021). A verified
+      // match comes first, so it is the one that refuses.
       const existingUser = await query<ExistingUserRow>(
-        'SELECT id, email, email_verified FROM users WHERE email = $1',
+        'SELECT id, email, email_verified FROM users WHERE lower(email) = lower($1) ORDER BY email_verified DESC LIMIT 1',
         [email]
       );
 
@@ -192,6 +195,12 @@ const authController = {
       });
 
     } catch (error) {
+      // A concurrent registration of the same address won the INSERT: the
+      // unique index answers what the lookup above would have.
+      if ((error as { code?: unknown }).code === '23505') {
+        console.log('[Register] Lost a race for an address another registration just took');
+        return res.status(400).json({ error: 'User already exists' });
+      }
       console.error('Registration error:', error);
       res.status(500).json({ error: 'Server error' });
     }
