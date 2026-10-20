@@ -411,39 +411,14 @@ export default function AiConnections() {
         </DialogContent>
       </Dialog>
       <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
-        <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-2xl flex-col overflow-hidden">
-          <DialogHeader className="pr-6">
+        <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-3xl flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 pr-6">
             <DialogTitle>{t('Set up an AI app')}</DialogTitle>
             <DialogDescription>
-              {t('Use your token with the endpoint and header below.')}
+              {t('mcpGuide.intro')}
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden break-words text-sm">
-            <section aria-labelledby="ai-details-heading" className="space-y-3 rounded-lg border p-3">
-              <h4 id="ai-details-heading" className="font-medium">{t('Connection details')}</h4>
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">{t('MCP endpoint')}</p>
-                <div className="flex items-stretch gap-2">
-                  <code ref={endpointCodeRef} className="flex-1 min-w-0 break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs">{MCP_ENDPOINT_URL}</code>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('endpoint', MCP_ENDPOINT_URL, endpointCodeRef.current)}
-                    aria-label={copied === 'endpoint' ? t('Copied') : t('Copy endpoint URL')}>
-                    {copyIcon('endpoint')}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">{t('Request header')}</p>
-                <div className="flex items-stretch gap-2">
-                  <code ref={headerCodeRef} className="flex-1 min-w-0 break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs">Authorization: Bearer &lt;token&gt;</code>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('header', 'Authorization: Bearer <token>', headerCodeRef.current)}
-                    aria-label={copied === 'header' ? t('Copied') : t('Copy header format')}>
-                    {copyIcon('header')}
-                  </Button>
-                </div>
-              </div>
-            </section>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden break-words pr-2 text-sm [scrollbar-gutter:stable]">
             <Tabs defaultValue="claude-code" className="min-w-0">
               <TabsList className="h-auto flex-wrap justify-start">
                 <TabsTrigger value="claude-code">Claude Code</TabsTrigger>
@@ -451,72 +426,158 @@ export default function AiConnections() {
                 <TabsTrigger value="claude">{t('Claude (claude.ai)')}</TabsTrigger>
                 <TabsTrigger value="other">{t('Other apps')}</TabsTrigger>
               </TabsList>
-              <TabsContent value="codex" className="space-y-3">
-                <p>{t('Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.')}</p>
-                <p className="text-muted-foreground">{t('Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.')}</p>
-                <p>{t('Run this command:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('codex-cmd', CODEX_CMD, codexCmdCodeRef.current)}
-                    aria-label={copied === 'codex-cmd' ? t('Copied') : t('Copy command')}>
-                    {copyIcon('codex-cmd')}
-                  </Button>
-                </div>
-                <p>{t('Or add this to ~/.codex/config.toml:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('codex-toml', CODEX_TOML, codexTomlCodeRef.current)}
-                    aria-label={copied === 'codex-toml' ? t('Copied') : t('Copy config')}>
-                    {copyIcon('codex-toml')}
-                  </Button>
-                </div>
-                <p>{t('Start Codex from the same terminal. For the app or IDE, make TERMPOCKET_TOKEN available to its process, then restart it.')}</p>
-                <p>{t('In Codex CLI, use /mcp to check the connection, then ask about your term spending. No OAuth login needed.')}</p>
-                <a href="https://developers.openai.com/codex/mcp/" target="_blank" rel="noopener noreferrer" className="inline-block underline underline-offset-4">
-                  {t('Codex documentation')}
-                </a>
-              </TabsContent>
-              <TabsContent value="claude-code" className="space-y-3">
-                <p>{t('Run this in a terminal. The endpoint is already filled in for this site.')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={cmdCodeRef}>{CLAUDE_CODE_CMD}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('claude-code-cmd', CLAUDE_CODE_CMD, cmdCodeRef.current)}
-                    aria-label={copied === 'claude-code-cmd' ? t('Copied') : t('Copy command')}>
-                    {copyIcon('claude-code-cmd')}
-                  </Button>
-                </div>
-                <p>{t('Then run claude mcp get termpocket. It should say Connected.')}</p>
-                <p className="text-muted-foreground">{t('To share a project config file, never put the token in it. Reference an environment variable instead:')}</p>
-                <div className="flex items-stretch gap-2">
-                  <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={jsonCodeRef}>{CLAUDE_CODE_JSON}</code></pre>
-                  <Button type="button" variant="outline" size="sm" className="h-auto shrink-0"
-                    onClick={() => copy('claude-code-json', CLAUDE_CODE_JSON, jsonCodeRef.current)}
-                    aria-label={copied === 'claude-code-json' ? t('Copied') : t('Copy config')}>
-                    {copyIcon('claude-code-json')}
-                  </Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="claude" className="space-y-2">
-                <ol className="list-decimal space-y-1 pl-5">
-                  <li>{t('In Claude, open Settings and add a custom connector.')}</li>
-                  <li>{t('Paste the MCP endpoint shown above as the connector URL.')}</li>
-                  <li>{t('In the request headers setting, add Authorization with the value Bearer <your token>.')}</li>
+              <TabsContent value="codex" className="space-y-5 pt-3">
+                <ol className="space-y-6">
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">1. {t('mcpGuide.prepare')}</h3>
+                    <p>{t('Set TERMPOCKET_TOKEN to your token (without Bearer). Keep it out of shared files.')}</p>
+                    <p className="text-muted-foreground">{t('Bash/Zsh: run read -r -s TERMPOCKET_TOKEN, paste your token and press Enter, then run export TERMPOCKET_TOKEN.')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">2. {t('mcpGuide.add')}</h3>
+                    <p>{t('Run this command:')}</p>
+                    <div className="flex items-start gap-2">
+                      <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexCmdCodeRef}>{CODEX_CMD}</code></pre>
+                      <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                        onClick={() => copy('codex-cmd', CODEX_CMD, codexCmdCodeRef.current)}
+                        aria-label={copied === 'codex-cmd' ? t('Copied') : t('Copy command')}>
+                        {copyIcon('codex-cmd')}
+                      </Button>
+                    </div>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">3. {t('mcpGuide.check')}</h3>
+                    <p>{t('mcpGuide.codexCheck')}</p>
+                    <p className="text-muted-foreground">{t('mcpGuide.tryQuestion')}</p>
+                  </li>
                 </ol>
-                <p className="text-muted-foreground">{t('This needs a public HTTPS endpoint. It has not been tested with TermPocket yet.')}</p>
+                <details className="border-t pt-3">
+                  <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('mcpGuide.manual')}</summary>
+                  <div className="mt-3 space-y-3">
+                    <p>{t('Or add this to ~/.codex/config.toml:')}</p>
+                    <div className="flex items-start gap-2">
+                      <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={codexTomlCodeRef}>{CODEX_TOML}</code></pre>
+                      <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                        onClick={() => copy('codex-toml', CODEX_TOML, codexTomlCodeRef.current)}
+                        aria-label={copied === 'codex-toml' ? t('Copied') : t('Copy config')}>
+                        {copyIcon('codex-toml')}
+                      </Button>
+                    </div>
+                    <p className="text-muted-foreground">{t('mcpGuide.codexApp')}</p>
+                    <a href="https://developers.openai.com/codex/mcp/" target="_blank" rel="noopener noreferrer" className="inline-block underline underline-offset-4">{t('Codex documentation')}</a>
+                  </div>
+                </details>
               </TabsContent>
-              <TabsContent value="other" className="space-y-2">
-                <p>{t('Any app that supports remote MCP servers over HTTP with a custom header can connect: use the endpoint above and the header Authorization: Bearer <your token>.')}</p>
-                <p className="text-muted-foreground">{t('Apps that only support signing in with OAuth cannot connect.')}</p>
+              <TabsContent value="claude-code" className="space-y-5 pt-3">
+                <ol className="space-y-6">
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">1. {t('mcpGuide.prepare')}</h3>
+                    <p>{t('mcpGuide.prepareToken')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">2. {t('mcpGuide.add')}</h3>
+                    <p>{t('mcpGuide.claudeCommand')}</p>
+                    <div className="flex items-start gap-2">
+                      <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={cmdCodeRef}>{CLAUDE_CODE_CMD}</code></pre>
+                      <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                        onClick={() => copy('claude-code-cmd', CLAUDE_CODE_CMD, cmdCodeRef.current)}
+                        aria-label={copied === 'claude-code-cmd' ? t('Copied') : t('Copy command')}>
+                        {copyIcon('claude-code-cmd')}
+                      </Button>
+                    </div>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">3. {t('mcpGuide.check')}</h3>
+                    <p>{t('Then run claude mcp get termpocket. It should say Connected.')}</p>
+                    <p className="text-muted-foreground">{t('mcpGuide.tryQuestion')}</p>
+                  </li>
+                </ol>
+                <details className="border-t pt-3">
+                  <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('mcpGuide.manual')}</summary>
+                  <div className="mt-3 space-y-3">
+                    <p>{t('To share a project config file, never put the token in it. Reference an environment variable instead:')}</p>
+                    <div className="flex items-start gap-2">
+                      <pre className="min-w-0 max-w-full flex-1 whitespace-pre-wrap break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs"><code ref={jsonCodeRef}>{CLAUDE_CODE_JSON}</code></pre>
+                      <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                        onClick={() => copy('claude-code-json', CLAUDE_CODE_JSON, jsonCodeRef.current)}
+                        aria-label={copied === 'claude-code-json' ? t('Copied') : t('Copy config')}>
+                        {copyIcon('claude-code-json')}
+                      </Button>
+                    </div>
+                  </div>
+                </details>
+              </TabsContent>
+              <TabsContent value="claude" className="space-y-5 pt-3">
+                <p className="text-muted-foreground">{t('This needs a public HTTPS endpoint. It has not been tested with TermPocket yet.')}</p>
+                <ol className="space-y-6">
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">1. {t('mcpGuide.prepare')}</h3>
+                    <p>{t('mcpGuide.prepareToken')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">2. {t('mcpGuide.add')}</h3>
+                    <p>{t('In Claude, open Settings and add a custom connector.')}</p>
+                    <p className="text-muted-foreground">{t('mcpGuide.claudeDetails')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">3. {t('mcpGuide.check')}</h3>
+                    <p>{t('mcpGuide.tryQuestion')}</p>
+                  </li>
+                </ol>
+              </TabsContent>
+              <TabsContent value="other" className="space-y-5 pt-3">
+                <ol className="space-y-6">
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">1. {t('mcpGuide.prepare')}</h3>
+                    <p>{t('mcpGuide.prepareToken')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">2. {t('mcpGuide.add')}</h3>
+                    <p>{t('mcpGuide.otherDetails')}</p>
+                    <p className="text-muted-foreground">{t('Apps that only support signing in with OAuth cannot connect.')}</p>
+                  </li>
+                  <li className="space-y-2">
+                    <h3 className="text-base font-semibold">3. {t('mcpGuide.check')}</h3>
+                    <p>{t('mcpGuide.tryQuestion')}</p>
+                  </li>
+                </ol>
               </TabsContent>
             </Tabs>
-            <p className="text-muted-foreground">
-              {t('If an app reports 401, the token is wrong or revoked, or the header lacks “Bearer ”. Create a new token. Your TermPocket login does not work here.')}
-            </p>
+            <details className="border-t pt-3">
+              <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('Connection details')}</summary>
+              <div className="mt-3 space-y-3">
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground">{t('MCP endpoint')}</p>
+                  <div className="flex items-start gap-2">
+                    <code ref={endpointCodeRef} className="flex-1 min-w-0 break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs">{MCP_ENDPOINT_URL}</code>
+                    <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                      onClick={() => copy('endpoint', MCP_ENDPOINT_URL, endpointCodeRef.current)}
+                      aria-label={copied === 'endpoint' ? t('Copied') : t('Copy endpoint URL')}>
+                      {copyIcon('endpoint')}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground">{t('Request header')}</p>
+                  <div className="flex items-start gap-2">
+                    <code ref={headerCodeRef} className="flex-1 min-w-0 break-words rounded-md border bg-muted px-3 py-2 font-mono text-xs">Authorization: Bearer &lt;token&gt;</code>
+                    <Button type="button" variant="outline" size="sm" className="h-9 w-9 shrink-0 p-0"
+                      onClick={() => copy('header', 'Authorization: Bearer <token>', headerCodeRef.current)}
+                      aria-label={copied === 'header' ? t('Copied') : t('Copy header format')}>
+                      {copyIcon('header')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </details>
+            <details className="border-t pt-3">
+              <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('mcpGuide.troubleshooting')}</summary>
+              <div className="mt-3 space-y-3">
+                <p>{t('If an app reports 401, the token is wrong or revoked, or the header lacks “Bearer ”. Create a new token. Your TermPocket login does not work here.')}</p>
+              </div>
+            </details>
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <DialogClose asChild>
               <Button type="button" variant="outline">{t('Close')}</Button>
             </DialogClose>
