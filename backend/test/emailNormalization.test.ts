@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db = require('../db/connection');
 import config = require('../config');
+import { hashVerificationToken } from '../utils/verificationToken';
 
 /**
  * Registration stores the address through normalizeEmail(): lowercased, and
@@ -37,6 +38,8 @@ interface StoredUser {
 let users: StoredUser[];
 let lookups: unknown[][];
 let mailedTo: string[];
+let mailedTokens: string[];
+let storedTokens: unknown[];
 let server: Server;
 let baseUrl: string;
 let savedAuthMax: number;
@@ -57,7 +60,7 @@ before(async () => {
   require.cache[emailServicePath] = {
     id: emailServicePath, filename: emailServicePath, loaded: true,
     exports: {
-      sendEmailVerification: async (to: string) => { mailedTo.push(to); },
+      sendEmailVerification: async (to: string, _name: string, token: string) => { mailedTo.push(to); mailedTokens.push(token); },
       sendWeeklyReport: async () => {},
       generateWeeklyReport: async () => ({ text: '', html: '' }),
     },
@@ -85,6 +88,8 @@ beforeEach(() => {
   users = [];
   lookups = [];
   mailedTo = [];
+  mailedTokens = [];
+  storedTokens = [];
   mock.method(console, 'log', () => {});
   mock.method(db, 'query', async (text: string, params: unknown[] = []) => {
     if (/FROM users WHERE email IN \(\$1, \$2\) ORDER BY email = \$1 DESC/.test(text)) {
@@ -94,7 +99,10 @@ beforeEach(() => {
       const limited = text.includes('LIMIT 1') ? rows.slice(0, 1) : rows;
       return { rowCount: limited.length, rows: limited };
     }
-    if (text.startsWith('UPDATE users SET email_verification_token')) return { rowCount: 1, rows: [] };
+    if (text.startsWith('UPDATE users SET email_verification_token')) {
+      storedTokens.push(params[0]);
+      return { rowCount: 1, rows: [] };
+    }
     throw new Error(`unexpected query: ${text}`);
   });
 });
@@ -162,5 +170,12 @@ describe('POST /auth/resend-verification', () => {
     const { status } = await post('/resend-verification', { email: 'Jane.Doe@Gmail.com' });
     assert.equal(status, 200);
     assert.deepEqual(mailedTo, ['janedoe@gmail.com']);
+  });
+
+  test('stores only the hash of the token it emails', async () => {
+    users = [user(13, 'janedoe@gmail.com', false)];
+    assert.equal((await post('/resend-verification', { email: 'janedoe@gmail.com' })).status, 200);
+    assert.equal(mailedTokens.length, 1);
+    assert.deepEqual(storedTokens, [hashVerificationToken(mailedTokens[0]!)]);
   });
 });
