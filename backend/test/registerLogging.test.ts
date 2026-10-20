@@ -93,10 +93,8 @@ describe('POST /auth/register logging', () => {
 
     mock.method(db, 'query', async (sql: string, params: unknown[]) => {
       if (/^SELECT/i.test(sql.trim())) return { rows: [] };          // no existing user
-      // params[4] is the verification token authController.register generates
-      // via crypto.randomBytes(32).toString('hex') and binds fifth in the
-      // INSERT — always a string on this branch; db.query's mocked signature
-      // only knows params as unknown[].
+      // params[4] is the SHA-256 of the token register emails, bound fifth in
+      // the INSERT; db.query's mocked signature only knows params as unknown[].
       insertedToken = params[4] as string;                             // the token's hash, as stored
       return {
         rows: [{

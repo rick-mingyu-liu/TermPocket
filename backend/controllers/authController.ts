@@ -56,7 +56,6 @@ interface ResendVerificationUserRow {
   email: string;
   first_name: string;
   email_verified: boolean | null;
-  email_verification_token: string | null;
   email_verification_expires: Date | null;
 }
 
@@ -333,7 +332,7 @@ const authController = {
 
       // Find user
       const user = await query<ResendVerificationUserRow>(
-        'SELECT id, email, first_name, email_verified, email_verification_token, email_verification_expires FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
+        'SELECT id, email, first_name, email_verified, email_verification_expires FROM users WHERE email IN ($1, $2) ORDER BY email = $1 DESC LIMIT 1',
         [email, typed]
       );
 
