@@ -123,7 +123,7 @@ export default function Register() {
         Swal.fire({
           icon: 'success',
           title: t('Registration successful!'),
-          text: t('Please check your email to verify your account.'),
+          text: t("Please check your email to verify your account. If it isn't in your inbox, check your Junk or Spam folder."),
         })
       } else {
         localStorage.setItem('token', response.data.token)
@@ -200,7 +200,11 @@ export default function Register() {
                 <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
                   <p>{t('• Click the verification link in your email to activate your account')}</p>
                   <p>{t('• The link will expire in 30 minutes')}</p>
-                  <p>{t('• Check your spam folder if you don\'t see the email')}</p>
+                </div>
+
+                <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{t('Not in your inbox? Check your Junk or Spam folder, and mark the email as "Not junk" so the next one arrives normally.')}</p>
                 </div>
 
                 <div className="space-y-2">

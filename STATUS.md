@@ -1,6 +1,6 @@
 # TermPocket — status and plan
 
-As of 2026-10-17. Update this file when a step below completes; git history keeps the earlier versions.
+As of 2026-10-20. Update this file when a step below completes; git history keeps the earlier versions.
 
 ## Summary
 
@@ -8,7 +8,7 @@ Pocky, TermPocket's bilingual assistant, can now record, investigate and plan. I
 
 - **Built:** recording transactions by chat with button-only saving, read-only questions about your own spending, and planning (cash projections, savings-goal proposals). The stock watchlist and the old one-shot AI plans are removed.
 - **Production:** the agent is enabled (`AGENT_ENABLED=true`) with its AI provider key; the production database has all three agent migrations: 013 (conversations), 014 (legacy `watchlist` and `ai_plans` dropped) and 015 (goal proposals). The runbook is the README section "Deploying Pocky to production", and `npm run agent:preflight` checks each step.
-- **Since 2026-10-15:** TermPocket has its own domain (https://www.termpocket.com) and sends mail from it through Resend. Privacy policy and terms are drafted and linked, account deletion and a stored, enforced retention setting exist, and Pocky runs on the in-process runtime. See "Merged 2026-10-15 to 2026-10-17".
+- **Since 2026-10-15:** TermPocket has its own domain (https://www.termpocket.com) and sends mail from it through Resend. Privacy policy and terms are drafted and linked, account deletion and a stored, enforced retention setting exist, Pocky runs on the in-process runtime, and the composer takes on-device English voice dictation. See "Merged 2026-10-15 to 2026-10-20".
 - **Next:** the remaining owner checks before a public post (see "Next"), a week of real use of Pocky, then Pocky memory, shaped by what real use shows.
 
 ## What is merged
@@ -38,7 +38,7 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 | --- | --- |
 | Frontend and backend | Both auto-deploy from `main`. The production frontend build calls the production backend (checked in the served JavaScript, 2026-10-15) |
 | Domain | termpocket.com (Namecheap). The site is https://www.termpocket.com; the apex redirects to www, and the old frontend URL redirects (307) to www, keeping the path and query. `CORS_ORIGIN` is a comma-separated list (#120) with www, the apex and the old frontend URL; `FRONTEND_URL` is the www address |
-| Email | Sent through Resend SMTP (#122 made `EMAIL_HOST`, `EMAIL_PORT` and `EMAIL_FROM` configurable), from `TermPocket <noreply@termpocket.com>`. The domain is verified in Resend; the owner tested that mail delivers. Namecheap forwards `privacy@`, `support@` and `noreply@` to the owner's Gmail |
+| Email | Sent through Resend SMTP (#122 made `EMAIL_HOST`, `EMAIL_PORT` and `EMAIL_FROM` configurable), from `TermPocket <noreply@termpocket.com>`. The domain is verified in Resend; the owner tested that mail delivers. QA (2026-10-20) found the verification email lands in the junk folder: SPF and DKIM (on `send.`) and DMARC (`p=none`, no reporting address) are published, so the likely cause is the new domain's missing reputation. The register and resend screens now point to the junk folder (#155); click and open tracking in Resend, a DMARC `rua` address and a mail-tester score are owner checks. Namecheap forwards `privacy@`, `support@` and `noreply@` to the owner's Gmail |
 | Backend host | Starter instance (0.5 CPU, 512 MB), in a region next to the database since 2026-10-15; one instance, build `npm ci --include=dev`. The previous service in another region is suspended, kept for rollback. One SDK turn measured about 240 MB for its child process, so `AGENT_MAX_CONCURRENT_RUNS` defaults to 1 (#88); the direct runtime (#89, `AGENT_RUNTIME=direct`) measured about 105 MB for the whole process. Production has run `AGENT_RUNTIME=direct` since 2026-10-15 per the description of #102; the host preflight output has not been pasted into the repo (owner check) |
 | Migration 016 (retention) | Merged in #103 and additive. This repo does not record that it was applied to the production database: owner check (until it is, Settings shows automatic deletion as unavailable and nothing is deleted) |
 | Production PostgreSQL and source audit | PostgreSQL 17.11; 0 incompatible transaction source values; read-only preflight |
@@ -52,22 +52,23 @@ The owner's work machine's Zscaler proxy blocks termpocket.com as a "Newly Regis
 
 Turning Pocky on is the runbook in the README. In short: deploy, run the preflight on the host, apply 013, 014 and 015 through the database's direct endpoint, set the two variables, run the preflight with `--live`, then smoke-test in the app with fictional input.
 
-## Merged 2026-10-15 to 2026-10-17
+## Merged 2026-10-15 to 2026-10-20
 
 Pull requests merged after the table above, grouped by theme. Each passed CI before merge.
 
 | Theme | PRs |
 | --- | --- |
 | Pocky runtime and limits | Direct in-process runtime ([#89](https://github.com/rick-mingyu-liu/TermPocket/pull/89), hardened in #93 and #99); concurrency cap (#88) and `agent_busy` for the user's own turn (#100); per-user cap of 60 turns a day and all-users cap of 600 (#90); planning limit and habits fixes (#84, #87); test flake (#91) |
-| Pocky evaluation | Explicit year in a plan case (#112); scenario occurrence counts (#113) |
-| Pocky and product features | Enter to send in Pocky, safe with IME composition (#128); in-app MCP setup dialog (#129, sized for small screens in #132); goal top-up suggestion card on Goals (#130) and dashboard badge (#131); first-run onboarding tour with a "Show tour again" button in Settings (#135); 200 transactions per page (#83) |
+| Pocky evaluation | Dictated-style English cases and a bare "dollars" meaning the conversation currency (#94); explicit year in a plan case (#112); scenario occurrence counts (#113) |
+| Voice dictation | On-device English dictation in Pocky's composer: Whisper `base.en`, self-hosted, never auto-sent, `input: "voice"` flag (#142, design in [`docs/VOICE.md`](docs/VOICE.md)); the spike drafts #86 and #140 were closed |
+| Pocky and product features | Enter to send in Pocky, safe with IME composition (#128); in-app MCP setup dialog (#129, sized for small screens in #132); goal top-up suggestion card on Goals (#130) and dashboard badge (#131); first-run onboarding tour with a "Show tour again" button in Settings (#135); 200 transactions per page (#83); Codex setup in AI connections (#141, shortened in #147) and a tidier card (#144, #146); red dot on the goals badge (#143) |
 | Data and accounts | Retention setting stored and enforced, migration 016 (#103); account deletion from Settings (#114); demo refresh driven by staleness (#95) |
-| Email | Configurable SMTP (#122); redesigned emails with a shared layout, HTML escaping of user-typed values (this fixed an injection in the verification email's first name), CAD conversion, term-so-far and goals with progress bars (#124); leftover-to-goal section in the first weekly report of each month (#134); weekly report gate (#105). A failed MailboxLayer SMTP probe no longer rejects a registration (#126): university mail refused probes |
+| Email | Configurable SMTP (#122); redesigned emails with a shared layout, HTML escaping of user-typed values (this fixed an injection in the verification email's first name), CAD conversion, term-so-far and goals with progress bars (#124); leftover-to-goal section in the first weekly report of each month (#134); weekly report gate (#105); a junk-folder hint on the register and resend screens (#155). A failed MailboxLayer SMTP probe no longer rejects a registration (#126): university mail refused probes |
 | Domain and hosting | `CORS_ORIGIN` as a list (#120); backend moved next to the database (#92); frontend skips unchanged builds (#98); FSL license (#96) |
 | Legal and contact | Privacy policy and terms drafts (#101, #104); contact addresses in the legal pages and the login "Contact Us" (#121); GitHub-linked operator name (#123); wording: run from Canada, DeepSeek and China mentioned once, Resend rather than Gmail, "snowfluke" in acknowledgements (#127); governing law Ontario with users' own consumer protections (#133); 13+ with parent or guardian permission under the age of majority, and Quebec: the person in charge of personal information named (Mingyu Liu, `privacy@`), complaint rights to the OPC and the CAI, withdrawing consent (#136) |
 | i18n | Eight pages used `getServerSideProps` and got an empty translation store on the hosted frontend (a raw `legalConsent` key on /register, Chinese pages in English); they now use `getStaticProps` and `localePath` (#125), verified on production; `check:locales` covers all namespaces (#107) |
 | QA and security fixes | Token URLs redacted from logs (#108); analytics strips the query string (#106); QA findings (#97, #109, #110, #111, #115, #116, #118, #119) |
-| Docs | Phase 2 plan (#82, #85); Pocky live (#81); hosting region (#80, #92) |
+| Docs | Phase 2 plan (#82, #85); Pocky live (#81); hosting region (#80, #92); README refresh (#138, #139); internal infrastructure names removed from public docs (#145); provider-neutral AI wording with the current provider named once in the privacy policy (#154) |
 
 Not done on the legal side: a French version (Quebec's Charter of the French language), a written privacy impact assessment for transfers outside Quebec (the policy deliberately makes no claim of one), and review by someone qualified. "Pocky" is a Glico trademark, flagged as a naming risk; the owner has not decided.
 
@@ -77,11 +78,8 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 
 | PR | State |
 | --- | --- |
-| [#94](https://github.com/rick-mingyu-liu/TermPocket/pull/94) | Dictated-style English evaluation cases and a bare "dollars" meaning the conversation currency. Awaiting owner review |
 | [#102](https://github.com/rick-mingyu-liu/TermPocket/pull/102) | Draft: remove the SDK runtime. Gated until about 2026-10-22, after a week of direct in production, a pasted production host preflight, and no open PR touching `runtime.ts` |
-| [#86](https://github.com/rick-mingyu-liu/TermPocket/pull/86) | Draft: English voice dictation design and spike. Superseded by `feat/voice-input` |
-| [#140](https://github.com/rick-mingyu-liu/TermPocket/pull/140) | Draft: voice spike round 2 (words prompt, dictated flag). Superseded by `feat/voice-input` |
-| `feat/voice-input` | Voice dictation in Pocky's chat: on-device Whisper `base.en`, self-hosted, `input: "voice"` flag. Needs a phone check on the preview |
+| #148–#153 | Dependabot (2026-10-19): backend and frontend minor/patch groups, `bcryptjs`, and majors `next` 16, `recharts` 3, `@types/node` 26. Not reviewed yet |
 
 ## Next
 
@@ -91,6 +89,7 @@ Owner checks before a public post (none can be verified from the repo):
 - `DEMO_REFRESH_ENABLED=true` in production.
 - Whether migration 016 is applied to the production database.
 - Screenshot import timed on a mid-range phone.
+- Verification email deliverability: turn off click and open tracking in Resend, add a DMARC `rua` reporting address, score one message on mail-tester.com, and have a few test inboxes mark it "Not junk".
 - Optional review of the privacy policy and terms by a lawyer or a clinic; when to do the French version and the Quebec impact assessment.
 - The name "Pocky".
 
