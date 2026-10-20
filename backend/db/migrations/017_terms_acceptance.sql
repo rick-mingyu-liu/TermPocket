@@ -2,7 +2,7 @@
 -- accepted, and when.
 --
 -- users.terms_version holds the accepted version (config.legal.termsVersion at
--- the time, a date such as '2026-10-19'); users.terms_accepted_at the UTC
+-- the time, a date such as '2026-10-20'); users.terms_accepted_at the UTC
 -- timestamp. Both are NULL for every existing row: those users never accepted
 -- anything, so the app shows them the accept card once after they sign in.
 -- New registrations that tick the box store the current version.

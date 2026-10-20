@@ -42,7 +42,8 @@ export default function TermsGate() {
     checkedToken.current = token
     termsAPI.status()
       .then(({ data }) => setVersion(data.required ? data.currentVersion : null))
-      .catch(() => {})
+      // Forget the token so the next navigation asks again (a cold backend, say).
+      .catch(() => { checkedToken.current = null })
   }, [path])
 
   const accept = async () => {

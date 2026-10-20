@@ -15,14 +15,14 @@ import { packageRoot } from '../utils/packageRoot';
  * Needs an explicit TEST_DATABASE_URL, never the .env database. All DDL runs in
  * a random schema that is dropped afterwards.
  */
-const ADDED = `    is_demo BOOLEAN NOT NULL DEFAULT FALSE,
-    -- Automatic deletion (migration 016): keep only the last N terms of
+// The 016 column with its comment, removed to build the pre-016 schema. Only
+// these lines, so a column added after it (017's) does not break the match;
+// columns from later migrations are present on both sides of the comparison.
+const ADDED = `    -- Automatic deletion (migration 016): keep only the last N terms of
     -- transactions, the current one included. NULL is off, the default for
     -- everyone; the hourly sweep deletes nothing for a NULL row.
-    transaction_retention_terms SMALLINT CHECK (transaction_retention_terms BETWEEN 3 AND 12)
-);`;
-const BEFORE = `    is_demo BOOLEAN NOT NULL DEFAULT FALSE
-);`;
+    transaction_retention_terms SMALLINT CHECK (transaction_retention_terms BETWEEN 3 AND 12),
+`;
 
 test('migration 016: idempotent on the pre-016 schema and on a fresh one, and matches schema.sql', { skip: !process.env.TEST_DATABASE_URL }, async () => {
   const pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
@@ -31,8 +31,6 @@ test('migration 016: idempotent on the pre-016 schema and on a fresh one, and ma
   const root = packageRoot(__dirname);
   const desired = readFileSync(path.join(root, 'db/schema.sql'), 'utf8');
   const migration = readFileSync(path.join(root, 'db/migrations/016_transaction_retention.sql'), 'utf8');
-  assert.ok(desired.includes(ADDED), 'schema.sql no longer declares the column the way this test expects');
-  const previous = desired.replace(ADDED, BEFORE);
 
   const shape = async () => (await client.query(
     `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
@@ -47,6 +45,10 @@ test('migration 016: idempotent on the pre-016 schema and on a fresh one, and ma
   };
 
   try {
+    // Inside the try, so a failed match still releases the pool.
+    assert.ok(desired.includes(ADDED), 'schema.sql no longer declares the column the way this test expects');
+    const previous = desired.replace(ADDED, '');
+
     // Fresh: schema.sql already has the column; the migration is a no-op twice.
     await reset();
     await client.query(desired);
