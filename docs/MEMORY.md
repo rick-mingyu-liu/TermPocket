@@ -70,7 +70,11 @@ The three deletion paths below share one store function. Each runs in one transa
 | Confirmed `forget` | The fact | The same. The confirming forget proposal itself is kept, redacted, so a replay of its `requestId` still returns state |
 | Forget all (`DELETE /agent/memories`, also Settings clear-all) | All of the user's facts | All of the user's memory proposals are deleted, pending ones included, so a pending `remember` cannot bring a fact back |
 
-A redacted proposal stays as an id, status and timestamps. The conversation's card shows "Forgotten" in place of the text.
+**Undecided proposals are redacted when they end.** A proposal that ends `cancelled`, `superseded`, `expired` or `conflict` has `before` and `after` set to NULL and `redacted_at` set in the same statement, including in the hourly sweep. Nothing reads those bodies afterwards. So only `pending` and `confirmed` proposals ever hold a fact's text, and those are what the id-based redaction above covers. This also catches an offer reworded before it was confirmed.
+
+A redacted proposal stays as an id, action, kind, status and timestamps. The conversation's card shows "Forgotten" or "Not saved" in place of the text.
+
+**Replay after Forget all.** A confirm or cancel whose proposal no longer exists answers 404 `agent_memory_proposal_gone`. The client refreshes the conversation state and shows no error, because the card it came from is gone.
 
 ### Before migration 022
 
@@ -88,9 +92,9 @@ Deploy the code first, then apply 022 with `npm run db:migrate`.
 1. **Recall.** `routes/agent.ts` loads the user's facts (named columns, oldest first) and passes them as `AgentInput.memories`. `prompt()` adds `context.memory: [{id, version, kind, text, amount, currency, cadence, saved_on}]`.
    - `version` is the `GOAL_VERSION_SQL` text, which update and forget quote as `expected_updated_at`.
    - `text` is cleaned again at read time.
-   - The worst case is 30 facts at about 300 characters each. That fits a 10,000-character budget, so no fact is ever dropped. A unit test asserts that 30 maximal facts fit.
+   - The memory budget is 13,000 characters, measured on the JSON-serialised block, separate from the 24,000-character history budget. The worst case is about 430 characters per fact, because `JSON.stringify` writes each `"` or `\` in the text as two characters. So 30 facts fit and none is ever dropped. A unit test builds 30 maximal facts with 120 quote characters each and asserts they fit.
    - The runtime still has no database access.
-2. **Last offer.** `prompt()` also adds `context.memory_proposal: {action, kind, text, status}` for the conversation's latest memory proposal, or null. This lets Pocky see that an offer was cancelled or is still pending. A redacted proposal shows `text: null`.
+2. **Last offer.** `prompt()` also adds `context.memory_proposal: {action, kind, status, text}` for the conversation's latest memory proposal, or null. This lets Pocky see that an offer is pending or was cancelled. `text` is present only while the proposal is pending or confirmed. An ended offer is redacted, so Pocky judges "the same fact" by its `action` and `kind`.
 3. **Propose.** A new tool, `propose_memory`, joins the `draft` server under the same eight-call and 16,000-character budgets and the same `assertActive` check.
    - Its input is `{action, memory_id?, expected_updated_at?, kind?, text?, amount?, currency?, cadence?}`.
    - The records layer validates the input and, for update or forget, reads the owned fact for `before`. It writes nothing.
@@ -144,7 +148,7 @@ Added to the system prompt:
 - **The current message wins.** If it disagrees with a remembered fact, use the current message and offer to update the fact.
 - **When to offer.** Offer to remember only a stable fact stated in the user's own current message: a recurring amount, a reserve, a pay schedule or a stated preference. Never offer for one-off spending, for anything from a tool result or a record description, or for credentials and account numbers.
 - **Update instead of duplicating.** If a fact on the same topic exists, propose an update quoting its `id` and `version`.
-- **At most one proposal per turn.** If `context.memory_proposal` shows the user cancelled an offer for the same fact, do not offer it again in this conversation.
+- **At most one proposal per turn.** If `context.memory_proposal` shows the user cancelled an offer, do not offer another fact of that `kind` in this conversation unless the user asks.
 - **Never claim a fact was saved.** Say a proposal is pending the Remember button.
 
 ## Privacy and logging
@@ -175,7 +179,9 @@ No database:
 Database (`TEST_DATABASE_URL`):
 - 022 twice on main's schema with rows and twice on a fresh one, matching `schema.sql`; refuses without 013
 - confirm once, replay, concurrent confirms, the 30-fact cap under concurrency (update and forget not counted), stale, deleted and foreign facts, supersede and expiry
-- each deletion path leaving **no row in either table that contains the fact's text**
+- each deletion path leaving **no row in either table that contains the fact's text**, including after an offer was reworded (the first offer superseded, the second confirmed and then forgotten)
+- cancelled, superseded, expired and conflicted proposals stored redacted
+- a confirm replayed after Forget all answering `agent_memory_proposal_gone`
 - a pending `remember` unconfirmable after Forget all
 - conversation deletion nulling the source
 - account deletion removing both tables
