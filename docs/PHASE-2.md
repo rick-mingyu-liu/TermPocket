@@ -51,7 +51,7 @@ These must be done before any public post. Status as of 2026-10-17; "owner check
 
 Designed, not built: [`MEMORY.md`](MEMORY.md) (2026-10-21).
 
-Remembered facts (rent, co-op pay, reserve) that Pocky offers and only the Remember button saves, forgotten from chat or from Settings → Pocky memory. Built on the direct runtime after #102 removes the SDK, in three pull requests (storage and Settings; Pocky's tool, prompt and card; privacy policy with a `termsVersion` bump). Saved plans and per-account currency, timezone and reply language were split out as later, smaller changes. **Done when** deleting a fact removes it from everything Pocky sees, and the evaluation set still passes.
+Remembered facts (rent, co-op pay, reserve) that Pocky offers and only the Remember button saves, forgotten from chat or from Settings → Pocky memory. Built on the direct runtime after #102 removes the SDK, in three pull requests (storage and routes; Pocky's tool, prompt, card and the Settings list; privacy policy with a `termsVersion` bump). Saved plans and per-account currency, timezone and reply language were split out as later, smaller changes. **Done when** deleting a fact removes it from everything Pocky sees, and the evaluation set still passes.
 
 ### E. Data growth
 
