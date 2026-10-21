@@ -25,3 +25,4 @@ node_modules/
 /docs/*
 !/docs/PHASE-2.md
 !/docs/VOICE.md
+!/docs/MEMORY.md
