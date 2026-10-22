@@ -3,19 +3,17 @@
 # production. In a fresh node container it does what Render's build does
 # (`npm ci --include=dev`, which builds dist/), loads schema.sql into the
 # docker-compose.test.yml database, then runs `npm run agent:preflight`. Pass
-# --live to also run one fictional Pocky turn, which proves the SDK's Linux
-# binary starts and reaches DeepSeek.
+# --live to also run one fictional Pocky turn, which proves the runtime
+# reaches DeepSeek from Linux.
 #
 #   docker compose -f docker-compose.test.yml up -d --wait
 #   backend/scripts/rehearse-linux.sh            # preflight only
 #   backend/scripts/rehearse-linux.sh --live     # plus one model turn
 #
 # The container runs this machine's own architecture by default. Render is
-# linux/amd64, but on an Apple-silicon Mac that platform runs under QEMU, which
-# aborts the SDK's x64 binary (it needs CPU features QEMU does not emulate), so
-# an amd64 run there fails for reasons Render never sees. Set
-# REHEARSAL_PLATFORM=linux/amd64 on an x64 machine; on Render itself, run
-# `npm run agent:preflight` in the Shell to cover the real CPU.
+# linux/amd64; on an Apple-silicon Mac that platform runs under QEMU, which is
+# slow. Set REHEARSAL_PLATFORM=linux/amd64 on an x64 machine; on Render itself,
+# run `npm run agent:preflight` in the Shell to cover the real CPU.
 #
 # Secrets: the source is streamed into the container with every .env file left
 # out, so no dependency's install script can read DATABASE_URL (in the main

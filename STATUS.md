@@ -39,14 +39,14 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 | Frontend and backend | Both auto-deploy from `main`. The production frontend build calls the production backend (checked in the served JavaScript, 2026-10-15) |
 | Domain | termpocket.com (Namecheap). The site is https://www.termpocket.com; the apex redirects to www, and the old frontend URL redirects (307) to www, keeping the path and query. `CORS_ORIGIN` is a comma-separated list (#120) with www, the apex and the old frontend URL; `FRONTEND_URL` is the www address |
 | Email | Sent through Resend SMTP (#122 made `EMAIL_HOST`, `EMAIL_PORT` and `EMAIL_FROM` configurable), from `TermPocket <noreply@termpocket.com>`. The domain is verified in Resend; the owner tested that mail delivers. QA (2026-10-20) found the verification email lands in the junk folder: SPF and DKIM (on `send.`) and DMARC (`p=none`, no reporting address) are published, so the likely cause is the new domain's missing reputation. The register and resend screens now point to the junk folder (#155); click and open tracking in Resend, a DMARC `rua` address and a mail-tester score are owner checks. Namecheap forwards `privacy@`, `support@` and `noreply@` to the owner's Gmail |
-| Backend host | Starter instance (0.5 CPU, 512 MB), in a region next to the database since 2026-10-15; one instance, build `npm ci --include=dev`. The previous service in another region is suspended, kept for rollback. One SDK turn measured about 240 MB for its child process, so `AGENT_MAX_CONCURRENT_RUNS` defaults to 1 (#88); the direct runtime (#89, `AGENT_RUNTIME=direct`) measured about 105 MB for the whole process. Production has run `AGENT_RUNTIME=direct` since 2026-10-15 per the description of #102; the host preflight output has not been pasted into the repo (owner check) |
+| Backend host | Starter instance (0.5 CPU, 512 MB), in a region next to the database since 2026-10-15; one instance, build `npm ci --include=dev`. The previous service in another region is suspended, kept for rollback. Pocky runs in-process (#89); the whole process measured about 105 MB, so `AGENT_MAX_CONCURRENT_RUNS` defaults to 4. It was 1 (#88) while each Agent SDK turn spawned a ~240 MB child process; production ran in-process from 2026-10-15 and #102 removed the SDK on 2026-10-22. Delete the leftover `AGENT_RUNTIME` variable on Render (owner check) |
 | Migration 016 (retention) | Merged in #103 and additive. This repo does not record that it was applied to the production database: owner check (until it is, Settings shows automatic deletion as unavailable and nothing is deleted) |
 | Production PostgreSQL and source audit | PostgreSQL 17.11; 0 incompatible transaction source values; read-only preflight |
 | Migration 013 (conversations) | Applied 2026-10-15: 6/6 agent tables, source check allows `agent` |
 | Migration 014 (drop `watchlist`, `ai_plans`) | Applied 2026-10-15: 23 watchlist rows and 0 AI plans dropped, by the owner's decision |
 | Migration 015 (goal proposals) | Applied 2026-10-15: `agent_goal_proposals` present |
 | `AGENT_ENABLED` and the AI provider key | Set 2026-10-15. The `--live` preflight turn (1 tool call, 1 drafted row, 8,109 in / 201 out tokens, 3.8 s) confirms the key works |
-| Host checks | `/tmp` writable, linux-x64 glibc, Node 22.23.3, SDK binary launches, DeepSeek reachable (preflight on the host) |
+| Host checks | linux-x64, Node 22.23.3, HTTP client installed, DeepSeek reachable (preflight on the host) |
 
 The owner's work machine's Zscaler proxy blocks termpocket.com as a "Newly Registered Domain". That is the proxy, not the site.
 
@@ -78,7 +78,6 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 
 | PR | State |
 | --- | --- |
-| [#102](https://github.com/rick-mingyu-liu/TermPocket/pull/102) | Draft: remove the SDK runtime. Gated until about 2026-10-22, after a week of direct in production, a pasted production host preflight, and no open PR touching `runtime.ts` |
 | #148–#153 | Dependabot (2026-10-19): backend and frontend minor/patch groups, `bcryptjs`, and majors `next` 16, `recharts` 3, `@types/node` 26. Not reviewed yet |
 
 ## Next

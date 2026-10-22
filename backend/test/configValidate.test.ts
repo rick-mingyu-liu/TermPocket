@@ -97,6 +97,12 @@ describe('startup configuration check', () => {
     assert.doesNotMatch(output, /fails outright|500/);
   });
 
+  test('starts, but warns, when the retired AGENT_RUNTIME is still set', () => {
+    const { code, output } = runWith({ JWT_SECRET: GOOD_SECRET, DATABASE_URL: 'postgres://x/y', AGENT_RUNTIME: 'direct' });
+    assert.equal(code, 0);
+    assert.match(output, /AGENT_RUNTIME is ignored/);
+  });
+
   test('is silent when everything is present', () => {
     const { code, output } = runWith({
       JWT_SECRET: GOOD_SECRET,

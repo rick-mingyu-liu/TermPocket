@@ -65,10 +65,9 @@ function validateConfig(): void {
     if (!process.env[key]) console.warn(`⚠️  ${key} is not set — ${consequence}.`);
   }
 
-  // config.agent.runtime treats anything but 'direct' as 'sdk'; say so rather than fall back silently.
-  const runtime = process.env.AGENT_RUNTIME;
-  if (runtime && runtime !== 'sdk' && runtime !== 'direct') {
-    console.warn(`⚠️  AGENT_RUNTIME is neither sdk nor direct — Pocky turns use ${config.agent.runtime}.`);
+  // The Agent SDK runtime is gone; a leftover variable would suggest a choice that no longer exists.
+  if (process.env.AGENT_RUNTIME) {
+    console.warn('⚠️  AGENT_RUNTIME is ignored — Pocky always runs in-process. Remove the variable.');
   }
 }
 

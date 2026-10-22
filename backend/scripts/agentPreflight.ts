@@ -1,9 +1,3 @@
-import { spawn } from 'node:child_process';
-import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
 import config = require('../config');
 import type { PoolClient } from 'pg';
 import { getPool } from '../db/connection';
@@ -32,7 +26,7 @@ export interface Check { status: Status; name: string; detail: string }
 export interface PreflightSettings {
   nodeEnv: string;
   database: { url?: string; host?: string; password?: string; schema: string };
-  agent: Pick<typeof config.agent, 'enabled' | 'apiKey' | 'model' | 'runtime' | 'timeoutMs' | 'maxToolCalls' | 'maxRows' | 'maxOutputTokens' | 'maxTotalTokens'>;
+  agent: Pick<typeof config.agent, 'enabled' | 'apiKey' | 'model' | 'timeoutMs' | 'maxToolCalls' | 'maxRows' | 'maxOutputTokens' | 'maxTotalTokens'>;
 }
 
 const DEFAULT_MODEL = 'deepseek-flash';
@@ -43,7 +37,6 @@ const SOURCE_CHECK = 'transactions_source_check';
 const PROPOSAL_STATUS_CHECK = 'agent_goal_proposals_status_check';
 const STATEMENT_TIMEOUT = '5s';
 const CONNECT_TIMEOUT_MS = 10_000;
-const BINARY_TIMEOUT_MS = 10_000;
 const NETWORK_TIMEOUT_MS = 5_000;
 const LIVE_BUDGET_MS = 90_000;
 const PROVIDER_URL = 'https://api.deepseek.com/anthropic';
@@ -52,9 +45,6 @@ const check = (status: Status, name: string, detail: string): Check => ({ status
 /** Model turns need both the flag and the key; host problems only block them then. */
 const modelTurnsExpected = (s: PreflightSettings) => s.agent.enabled && Boolean(s.agent.apiKey);
 const hostProblem = (s: PreflightSettings): Status => (modelTurnsExpected(s) ? 'FAIL' : 'WARN');
-/** The SDK's binary and private directories matter only while AGENT_RUNTIME=sdk; the direct runtime uses neither. */
-const sdkProblem = (s: PreflightSettings): Status => (s.agent.runtime === 'sdk' ? hostProblem(s) : 'WARN');
-const sdkOnly = (s: PreflightSettings) => (s.agent.runtime === 'sdk' ? '' : ' (only AGENT_RUNTIME=sdk needs it)');
 const describeError = (e: unknown) => {
   const { error, code } = errorSummary(e);
   return code ? `${error} ${code}` : error;
@@ -107,9 +97,6 @@ export function configChecks(s: PreflightSettings): Check[] {
   if (hasKey) checks.push(check('PASS', 'config.deepseek_key', 'present: yes'));
   else if (s.agent.enabled) checks.push(check('WARN', 'config.deepseek_key', 'present: no (history, edits, confirm and undo work; new turns unavailable)'));
   else checks.push(check('PASS', 'config.deepseek_key', 'present: no (not needed while disabled)'));
-  checks.push(check('PASS', 'config.agent_runtime', s.agent.runtime === 'direct'
-    ? 'direct (in-process HTTP client; no SDK child process)'
-    : 'sdk (Claude Agent SDK child process per turn; AGENT_RUNTIME=direct runs in-process)'));
   // The model id is printed only when it is a plain identifier, never raw env text.
   const model = s.agent.model;
   if (model === DEFAULT_MODEL) checks.push(check('PASS', 'config.deepseek_model', `default (${DEFAULT_MODEL})`));
@@ -268,103 +255,24 @@ async function databaseChecks(s: PreflightSettings): Promise<Check[]> {
 // ---------------------------------------------------------------------------
 // Host
 
-/** How SDK 0.3.300 picks its binary (sdk.mjs, FY/kqe): musl first on a libc-less Linux report. */
-export function binaryCandidates(platform: string, arch: string, preferMusl: boolean): string[] {
-  const base = '@anthropic-ai/claude-agent-sdk';
-  const ext = platform === 'win32' ? '.exe' : '';
-  const packages = platform === 'android' ? [`${base}-linux-${arch}-android`]
-    : platform === 'linux' ? (preferMusl ? [`${base}-linux-${arch}-musl`, `${base}-linux-${arch}`] : [`${base}-linux-${arch}`, `${base}-linux-${arch}-musl`])
-      : [`${base}-${platform}-${arch}`];
-  return packages.map(p => `${p}/claude${ext}`);
-}
-
-function isMusl(): boolean {
-  if (process.platform !== 'linux') return false;
-  const report = process.report?.getReport() as { header?: { glibcVersionRuntime?: string } } | undefined;
-  return report != null && report.header?.glibcVersionRuntime === undefined;
-}
-
 /**
- * The direct runtime's HTTP client. It is imported lazily on the first turn, so
- * a missing package would otherwise surface only as agent_provider_error.
+ * The HTTP client Pocky's runtime uses. It is imported lazily on the first turn,
+ * so a missing package would otherwise surface only as agent_provider_error.
  */
-export function directClientCheck(runtime: PreflightSettings['agent']['runtime'], resolve: (id: string) => string = require.resolve): Check {
+export function directClientCheck(resolve: (id: string) => string = require.resolve): Check {
   try {
     resolve('@anthropic-ai/sdk');
-    return check('PASS', 'host.direct_client', `@anthropic-ai/sdk installed${runtime === 'direct' ? '' : ' (only AGENT_RUNTIME=direct needs it)'}`);
+    return check('PASS', 'host.direct_client', '@anthropic-ai/sdk installed');
   } catch (error) {
-    return check(runtime === 'direct' ? 'FAIL' : 'WARN', 'host.direct_client', `@anthropic-ai/sdk not installed (${describeError(error)})${runtime === 'direct' ? '; every turn would fail' : ' (only AGENT_RUNTIME=direct needs it)'}`);
+    return check('FAIL', 'host.direct_client', `@anthropic-ai/sdk not installed (${describeError(error)}); every turn would fail`);
   }
 }
 
-async function hostChecks(s: PreflightSettings): Promise<Check[]> {
-  const checks: Check[] = [];
-  let scratch: string | undefined;
-  try {
-    scratch = await mkdtemp(join(tmpdir(), 'termpocket-preflight-'));
-    await mkdir(join(scratch, 'config'), { mode: 0o700 });
-    await writeFile(join(scratch, 'probe'), 'ok');
-    checks.push(check('PASS', 'host.tmpdir', 'writable (created and removed a private directory)'));
-  } catch (error) {
-    checks.push(check(sdkProblem(s), 'host.tmpdir', `not writable (${describeError(error)})${sdkOnly(s)}`));
-  }
-  const musl = isMusl();
-  checks.push(check('PASS', 'host.platform', `${process.platform}-${process.arch}${process.platform === 'linux' ? (musl ? ' musl' : ' glibc') : ''}, Node ${process.versions.node}`));
-  checks.push(directClientCheck(s.agent.runtime));
-
-  let binary: string | undefined;
-  let packageName = '';
-  try {
-    // Resolve from the SDK's own location, exactly as the SDK does.
-    const sdkRequire = createRequire(require.resolve('@anthropic-ai/claude-agent-sdk'));
-    for (const candidate of binaryCandidates(process.platform, process.arch, musl)) {
-      try {
-        const resolved = sdkRequire.resolve(candidate);
-        if (existsSync(resolved)) { binary = resolved; packageName = candidate.split('/')[1] ?? candidate; break; }
-      } catch { /* Not installed; try the next one. */ }
-    }
-  } catch (error) {
-    checks.push(check(sdkProblem(s), 'host.sdk_binary', `SDK not installed (${describeError(error)})${sdkOnly(s)}`));
-  }
-  if (binary) {
-    try {
-      accessSync(binary, fsConstants.X_OK);
-      checks.push(check('PASS', 'host.sdk_binary', `${packageName} installed and executable`));
-    } catch {
-      checks.push(check(sdkProblem(s), 'host.sdk_binary', `${packageName} installed but not executable${sdkOnly(s)}`));
-      binary = undefined;
-    }
-  } else if (!checks.some(c => c.name === 'host.sdk_binary')) {
-    checks.push(check(sdkProblem(s), 'host.sdk_binary', `no native binary for ${process.platform}-${process.arch}; reinstall without --omit=optional${sdkOnly(s)}`));
-  }
-  if (binary && scratch) checks.push(await binaryVersion(binary, scratch, s));
-  else checks.push(check('SKIP', 'host.sdk_launch', binary ? 'no temporary directory to launch in' : 'no executable binary'));
-  if (scratch) await rm(scratch, { recursive: true, force: true }).catch(() => {});
-  return checks;
-}
-
-/** `claude --version` under a closed environment like runtime.ts, with no credentials at all. */
-function binaryVersion(binary: string, scratch: string, s: PreflightSettings): Promise<Check> {
-  const configDir = join(scratch, 'config');
-  const env: Record<string, string> = {
-    PATH: `${dirname(process.execPath)}:/usr/bin:/bin`, CLAUDE_CONFIG_DIR: configDir, XDG_CONFIG_HOME: configDir,
-    HOME: scratch, TMPDIR: scratch, TMP: scratch, TEMP: scratch,
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
-  };
-  return new Promise(resolve => {
-    let stdout = '';
-    let settled = false;
-    const finish = (c: Check) => { if (!settled) { settled = true; clearTimeout(timer); resolve(c); } };
-    const child = spawn(binary, ['--version'], { cwd: scratch, env, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
-    const timer = setTimeout(() => { child.kill('SIGKILL'); finish(check(sdkProblem(s), 'host.sdk_launch', `no answer within ${BINARY_TIMEOUT_MS / 1000} s${sdkOnly(s)}`)); }, BINARY_TIMEOUT_MS);
-    child.stdout?.on('data', (chunk: Buffer) => { if (stdout.length < 4096) stdout += chunk.toString('utf8'); });
-    child.once('error', error => finish(check(sdkProblem(s), 'host.sdk_launch', `failed to launch (${describeError(error)}); check libc/arch${sdkOnly(s)}`)));
-    child.once('close', code => {
-      const version = /\d+\.\d+\.\d+/.exec(stdout)?.[0];
-      if (code === 0 && version) finish(check('PASS', 'host.sdk_launch', `claude --version ${version}`));
-      else finish(check(sdkProblem(s), 'host.sdk_launch', `exited ${code ?? 'by signal'}${version ? '' : ' without a version'}${sdkOnly(s)}`));
-    });
-  });
+function hostChecks(): Check[] {
+  return [
+    check('PASS', 'host.platform', `${process.platform}-${process.arch}, Node ${process.versions.node}`),
+    directClientCheck(),
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -412,11 +320,11 @@ async function liveCheck(s: PreflightSettings): Promise<Check> {
     });
     // Counts and timings only; the reply text and proposed rows are never printed.
     const rows = Array.isArray(result.proposedRows) ? result.proposedRows.length : 0;
-    const detail = `${s.agent.runtime} runtime, ${result.toolCalls} tool call(s), ${rows} row(s) proposed, ${result.usage.inputTokens} in / ${result.usage.outputTokens} out tokens, ${Date.now() - started} ms`;
+    const detail = `${result.toolCalls} tool call(s), ${rows} row(s) proposed, ${result.usage.inputTokens} in / ${result.usage.outputTokens} out tokens, ${Date.now() - started} ms`;
     return check(rows === 1 ? 'PASS' : 'WARN', 'live.turn', rows === 1 ? detail : `${detail}; expected one proposed row`);
   } catch (error) {
     const code = error instanceof AgentError ? error.code : errorSummary(error).error;
-    return check('FAIL', 'live.turn', `${s.agent.runtime} runtime: ${code} after ${Date.now() - started} ms`);
+    return check('FAIL', 'live.turn', `${code} after ${Date.now() - started} ms`);
   } finally {
     clearTimeout(budget);
   }
@@ -427,7 +335,7 @@ async function liveCheck(s: PreflightSettings): Promise<Check> {
 export async function runPreflight(s: PreflightSettings, options: { live: boolean }): Promise<Check[]> {
   const checks = configChecks(s);
   checks.push(...await databaseChecks(s));
-  checks.push(...await hostChecks(s));
+  checks.push(...hostChecks());
   checks.push(await networkCheck(s));
   checks.push(options.live ? await liveCheck(s) : check('SKIP', 'live.turn', 'pass --live to run one fictional turn'));
   return checks;

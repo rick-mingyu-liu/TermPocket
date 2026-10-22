@@ -6,9 +6,9 @@ import config = require('../config');
 import { AgentError, type AgentRecords } from '../services/agent/types';
 import logger = require('../utils/logger');
 
-// The direct runtime against a scripted fake HTTP client: no network, no child
-// process. Behaviour it shares with the SDK path is in agentRuntime.test.ts,
-// run against both; these cover the request it sends and the loop itself.
+// The runtime against a scripted fake HTTP client: no network. Turn behaviour
+// (tools, budgets, prompt envelope) is in agentRuntime.test.ts; these cover the
+// request it sends and the loop itself.
 
 config.agent.enabled = true; config.agent.apiKey = 'fictional-test-key';
 const unused = async () => assert.fail('records read without a tool call');
@@ -149,7 +149,7 @@ test('direct: invalid arguments get a repairable schema error naming fields, nev
   assert.match(resultText(bad!), /^agent_invalid_input: The arguments do not match the propose_transactions schema\. Fix: rows\.0\.amount \(invalid_type\), rows\.0 \(unrecognized_keys\)\.$/);
   assert.ok(!resultText(bad!).includes('Fictional'));
   assert.match(resultText(badRead!), /start \(invalid_type\), end_exclusive \(invalid_type\)/);
-  // Schema failures spend attempts like the SDK hook: nine of them stop the turn.
+  // Schema failures spend attempts: nine of them stop the turn.
   const many = scripted([uses(Array.from({ length: 9 }, () => ['list_goals', 'not an object'] as [string, unknown]))]);
   const { error, reason } = await limitReason(() => many.runtime(input));
   assert.equal(error.code, 'agent_limit_exceeded');
@@ -187,7 +187,7 @@ test('direct: each budget trips a 429 agent_limit_exceeded and logs its reason w
     { reason: 'assistant_chars', steps: [reply('x'.repeat(config.agent.maxToolOutputChars + config.agent.maxOutputChars + 1))] },
     { reason: 'final_chars', steps: [reply('x'.repeat(config.agent.maxOutputChars + 1))] },
     { reason: 'max_turns', steps: Array.from({ length: config.agent.maxTurns }, () => uses([['unknown', {}]])) },
-    // Cut off at max_tokens: the SDK's CLI would ask for more and overrun the output budget.
+    // Cut off at max_tokens: asking for more would overrun the output budget.
     { reason: 'max_tokens', steps: [reply('Partial', { input_tokens: 10, output_tokens: config.agent.maxOutputTokens }, 'max_tokens')] },
   ];
   // max_turns needs more attempts than the eight-attempt budget allows.

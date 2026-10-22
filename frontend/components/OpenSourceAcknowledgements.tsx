@@ -120,9 +120,7 @@ export default function OpenSourceAcknowledgements({ open, onOpenChange, classNa
           <section className="space-y-3 border-t pt-4">
             <h3 className="font-semibold">{t('agent.additionalSoftware')}</h3>
             <ProjectLinks projects={[
-              ['Claude Agent SDK — Anthropic', 'https://github.com/anthropics/claude-agent-sdk-typescript'],
-              [t('agent.sdkLicense'), 'https://github.com/anthropics/claude-agent-sdk-typescript/blob/main/LICENSE.md'],
-              [t('agent.sdkLegal'), 'https://code.claude.com/docs/en/legal-and-compliance'],
+              ['Anthropic TypeScript SDK — Anthropic (MIT)', 'https://github.com/anthropics/anthropic-sdk-typescript'],
             ]} />
             <p className="text-sm text-muted-foreground">{t('agent.sdkAcknowledgement')}</p>
           </section>

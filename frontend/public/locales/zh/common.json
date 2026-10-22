@@ -671,9 +671,7 @@
     "discardLocalReload": "放弃本地修改并重新加载",
     "acknowledgementsIntro": "TermPocket 使用以下开源项目、其他软件和外部服务。感谢维护者与贡献者。",
     "additionalSoftware": "其他软件",
-    "sdkLicense": "SDK 许可声明",
-    "sdkLegal": "Anthropic 法律协议",
-    "sdkAcknowledgement": "记账助手使用 Anthropic 的 Claude Agent SDK。其许可声明保留 Anthropic 的权利，并指向适用的 Anthropic 法律协议；详见所链接的声明与条款。",
+    "sdkAcknowledgement": "Pocky 通过 Anthropic 的 TypeScript SDK（MIT 许可的 HTTP 客户端）连接 AI 服务提供方。",
     "aiProviders": "当前 AI 服务商",
     "providerAcknowledgement": "配置后提供对话记账的 AI 处理服务"
   },

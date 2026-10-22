@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  binaryCandidates, classifyDatabase, directClientCheck, configChecks, exitCode, formatLine, formatReport, gatherFacts, secretsOf, skippedDatabase,
+  classifyDatabase, directClientCheck, configChecks, exitCode, formatLine, formatReport, gatherFacts, secretsOf, skippedDatabase,
   type Check, type Db, type DbFacts, type PreflightSettings,
 } from '../scripts/agentPreflight';
 
@@ -16,7 +16,7 @@ const FAKE_PASSWORD = 'pw-PREFLIGHT-FAKE-1b2c';
 const FAKE_HOST = 'ep-fictional-preflight-pooler.example.invalid';
 const FAKE_URL = `postgresql://owner:${FAKE_PASSWORD}@${FAKE_HOST}/mindgo?sslmode=require`;
 
-function settings(overrides: { enabled?: boolean; apiKey?: string; model?: string; runtime?: 'sdk' | 'direct'; nodeEnv?: string } = {}): PreflightSettings {
+function settings(overrides: { enabled?: boolean; apiKey?: string; model?: string; nodeEnv?: string } = {}): PreflightSettings {
   return {
     nodeEnv: overrides.nodeEnv ?? 'production',
     database: { url: FAKE_URL, password: '', schema: 'public' },
@@ -24,7 +24,6 @@ function settings(overrides: { enabled?: boolean; apiKey?: string; model?: strin
       enabled: overrides.enabled ?? false,
       apiKey: 'apiKey' in overrides ? overrides.apiKey : FAKE_KEY,
       model: overrides.model ?? 'deepseek-flash',
-      runtime: overrides.runtime ?? 'sdk',
       timeoutMs: 90_000, maxToolCalls: 8, maxRows: 12, maxOutputTokens: 4000, maxTotalTokens: 32_000,
     },
   };
@@ -120,13 +119,6 @@ describe('configuration', () => {
     const noKey = configChecks(settings({ enabled: true, apiKey: undefined }));
     assert.equal(find(noKey, 'config.deepseek_key').status, 'WARN');
     assert.equal(find(configChecks(settings({ apiKey: undefined })), 'config.deepseek_key').status, 'PASS');
-  });
-
-  test('the active runtime is reported', () => {
-    assert.match(find(configChecks(settings()), 'config.agent_runtime').detail, /^sdk \(/);
-    const direct = find(configChecks(settings({ runtime: 'direct' })), 'config.agent_runtime');
-    assert.equal(direct.status, 'PASS');
-    assert.match(direct.detail, /^direct \(in-process/);
   });
 
   test('NODE_ENV other than production warns', () => {
@@ -247,18 +239,10 @@ describe('gathering facts from a stubbed client', () => {
   });
 });
 
-test('binary candidates follow the SDK: glibc first on Linux unless musl is detected', () => {
-  assert.deepEqual(binaryCandidates('linux', 'x64', false), ['@anthropic-ai/claude-agent-sdk-linux-x64/claude', '@anthropic-ai/claude-agent-sdk-linux-x64-musl/claude']);
-  assert.deepEqual(binaryCandidates('linux', 'x64', true), ['@anthropic-ai/claude-agent-sdk-linux-x64-musl/claude', '@anthropic-ai/claude-agent-sdk-linux-x64/claude']);
-  assert.deepEqual(binaryCandidates('darwin', 'arm64', false), ['@anthropic-ai/claude-agent-sdk-darwin-arm64/claude']);
-  assert.deepEqual(binaryCandidates('win32', 'x64', false), ['@anthropic-ai/claude-agent-sdk-win32-x64/claude.exe']);
-});
-
-test('the direct client is required only under AGENT_RUNTIME=direct', () => {
+test('a missing HTTP client fails the preflight: every turn needs it', () => {
   const missing = (): string => { throw Object.assign(new Error('Cannot find module'), { code: 'MODULE_NOT_FOUND' }); };
-  assert.equal(directClientCheck('direct', missing).status, 'FAIL');
-  assert.equal(directClientCheck('sdk', missing).status, 'WARN');
-  assert.equal(directClientCheck('direct', () => '/x/index.js').status, 'PASS');
+  assert.equal(directClientCheck(missing).status, 'FAIL');
+  assert.equal(directClientCheck(() => '/x/index.js').status, 'PASS');
   // The real install, as Render's npm ci leaves it.
-  assert.equal(directClientCheck('direct').status, 'PASS');
+  assert.equal(directClientCheck().status, 'PASS');
 });

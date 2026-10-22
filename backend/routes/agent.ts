@@ -17,9 +17,9 @@ const available = () => config.agent.enabled && Boolean(config.agent.apiKey);
 router.get('/status', (_req,res) => { res.json({available:available(),storage:config.agent.enabled}); });
 router.use((_req,_res,next) => { next(config.agent.enabled ? undefined : new AgentError('agent_unavailable',503)); });
 
-// No background worker or polling: a request owns the SDK execution. PostgreSQL
+// No background worker or polling: a request owns the model execution. PostgreSQL
 // is the final admission/cancellation authority across processes. This map only
-// bounds local subprocesses and makes local cancellation prompt.
+// bounds local model requests and makes local cancellation prompt.
 const active = new Map<string,{userId:number;conversationId:string;controller:AbortController}>();
 let slots = 0;
 /** Slots held per user, from the moment one is taken: `active` is filled only once a run is admitted. */

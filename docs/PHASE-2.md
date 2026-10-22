@@ -34,7 +34,7 @@ These must be done before any public post. Status as of 2026-10-17; "owner check
 | Planning habits and projection start (second real question: 3-month baseline for "habits", a projection offered from a past date) | `fix/agent-planning-habits`: 12 months or term comparison for habits, projections from today |
 | A week of real use | Every wrong draft, wrong number or refusal is written down and added to `backend/eval/` as a fictional case |
 | Evaluation in the loop | `npm run agent:eval` passes before any prompt, tool or limit change merges |
-| Runtime | Direct in-process runtime (#89, #93, #99, #100) in production with `AGENT_RUNTIME=direct` (per the description of #102; the host preflight output is not in the repo: owner check). #102 removes the SDK runtime; it is a draft, gated until about 2026-10-22 |
+| Runtime | In-process runtime (#89, #93, #99, #100), the only one since #102 removed the Agent SDK on 2026-10-22 after a week in production |
 | Status | The week of real use has started; nothing is recorded in the repo yet. Evaluation cases added: #94 (dictated-style cases, bare "dollars" is the conversation currency), #112, #113 |
 
 ### C. Voice dictation
@@ -51,7 +51,7 @@ These must be done before any public post. Status as of 2026-10-17; "owner check
 
 Designed, not built: [`MEMORY.md`](MEMORY.md) (2026-10-21).
 
-Remembered facts (rent, co-op pay, reserve) that Pocky offers and only the Remember button saves, forgotten from chat or from Settings → Pocky memory. Built on the direct runtime after #102 removes the SDK, in three pull requests (storage and routes; Pocky's tool, prompt, card and the Settings list; privacy policy with a `termsVersion` bump). Saved plans and per-account currency, timezone and reply language were split out as later, smaller changes. **Done when** deleting a fact removes it from everything Pocky sees, and the evaluation set still passes.
+Remembered facts (rent, co-op pay, reserve) that Pocky offers and only the Remember button saves, forgotten from chat or from Settings → Pocky memory. Built on the in-process runtime (the SDK is gone, #102), in three pull requests (storage and routes; Pocky's tool, prompt, card and the Settings list; privacy policy with a `termsVersion` bump). Saved plans and per-account currency, timezone and reply language were split out as later, smaller changes. **Done when** deleting a fact removes it from everything Pocky sees, and the evaluation set still passes.
 
 ### E. Data growth
 
