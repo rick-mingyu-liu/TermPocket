@@ -126,7 +126,7 @@ export default function Register() {
         Swal.fire({
           icon: 'success',
           title: t('Registration successful!'),
-          text: t("Please check your email to verify your account. If it isn't in your inbox, check your Junk or Spam folder."),
+          text: t("Check your inbox for a verification email. If you don't see it, check Spam or Junk and mark it as \"Not spam.\""),
         })
       } else {
         localStorage.setItem('token', response.data.token)
@@ -141,7 +141,7 @@ export default function Register() {
     } catch (error: any) {
       // Custom error handling for already registered users
       if (error.response?.data?.error === 'User already exists') {
-        setRegisterError('This email is already registered. If you have not verified your email, please check your inbox (and spam folder) for the verification link. If you already verified, please log in.')
+        setRegisterError(t("This email is already registered. If you have not verified it, check your inbox or Spam/Junk for the verification email. If you find it in Spam/Junk, mark it as \"Not spam.\" If you already verified, please log in."))
       } else if (error.response?.data?.error) {
         setRegisterError(error.response.data.error)
       } else {
@@ -207,7 +207,7 @@ export default function Register() {
 
                 <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{t('Not in your inbox? Check your Junk or Spam folder, and mark the email as "Not junk" so the next one arrives normally.')}</p>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">{t("Check your inbox for a verification email. If you don't see it, check Spam or Junk and mark it as \"Not spam.\"")}</p>
                 </div>
 
                 <div className="space-y-2">

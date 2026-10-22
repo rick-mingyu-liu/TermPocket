@@ -113,7 +113,7 @@ export default function Login() {
       Swal.fire({
         icon: 'success',
         title: 'Verification email sent successfully!',
-        text: t('Not in your inbox? Check your Junk or Spam folder, and mark the email as "Not junk" so the next one arrives normally.'),
+        text: t("Check your inbox for a verification email. If you don't see it, check Spam or Junk and mark it as \"Not spam.\""),
       })
       setVerificationError('')
     } catch (error: any) {
