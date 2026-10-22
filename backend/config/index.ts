@@ -94,17 +94,15 @@ const config = {
     enabled: process.env.AGENT_ENABLED === 'true',
     apiKey: process.env.DEEPSEEK_API_KEY,
     model: process.env.DEEPSEEK_MODEL || 'deepseek-flash',
-    // How a turn executes. 'sdk' (default) spawns the Claude Agent SDK's
-    // binary per turn (~240 MB); 'direct' runs the same tool loop in this
-    // process over HTTP. Anything other than 'direct' means 'sdk'.
-    runtime: (process.env.AGENT_RUNTIME === 'direct' ? 'direct' : 'sdk') as 'sdk' | 'direct',
     timeoutMs: 90_000,
     maxTurns: 10,
     maxToolCalls: 8,
-    // Each turn spawns the Agent SDK's binary (~240 MB measured), so on a
-    // 512 MB instance a second simultaneous turn risks an out-of-memory restart.
-    // Extra turns are refused with agent_busy. Raise only with the memory to match.
-    maxConcurrentRuns: intFromEnv('AGENT_MAX_CONCURRENT_RUNS', 1),
+    // Model turns in flight on this process. A turn is an HTTP request and its
+    // tool results in memory (the whole process measured ~105 MB), so the cap
+    // bounds provider load more than memory. It was 1 while each turn spawned
+    // the Agent SDK's ~240 MB binary. Extra turns are refused with agent_server_busy
+    // (agent_busy when a busy slot is the user's own turn).
+    maxConcurrentRuns: intFromEnv('AGENT_MAX_CONCURRENT_RUNS', 4),
     maxTurnsPerHour: 20,
     // The provider bill is what these bound: sign-up is open, and the hourly
     // limit alone lets one account start 480 turns a day. Both are a rolling

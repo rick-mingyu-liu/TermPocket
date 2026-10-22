@@ -163,7 +163,7 @@ JWT-authenticated POST /agent/conversations/:id/messages
   → strict application input validation + process slot
   → store.beginTurn: owner lock, request identity, admission, user message
   → release database transaction
-  → runtime.runAgent: isolated SDK subprocess → DeepSeek
+  → runtime.runAgent: in-process tool loop over HTTP → DeepSeek
       ↔ one in-process MCP tool: propose_transactions
          validate whole pending batch; return pending_review only
   → store.finishTurn: recheck owner/run/lease, persist reply and draft revision
@@ -177,7 +177,7 @@ User reviews version + selected row IDs and presses Confirm
 
 ### Boundaries and write safety
 
-[routes/agent.ts](routes/agent.ts) derives identity exclusively from the verified JWT. [services/agent/types.ts](services/agent/types.ts) defines HTTP/service shapes independently of the SDK. [validation.ts](services/agent/validation.ts) validates decimal-string money, real calendar days, categories and currencies. PostgreSQL compound foreign keys enforce owner and conversation associations in addition to service checks.
+[routes/agent.ts](routes/agent.ts) derives identity exclusively from the verified JWT. [services/agent/types.ts](services/agent/types.ts) defines HTTP/service shapes independently of the provider client. [validation.ts](services/agent/validation.ts) validates decimal-string money, real calendar days, categories and currencies. PostgreSQL compound foreign keys enforce owner and conversation associations in addition to service checks.
 
 [store.ts](services/agent/store.ts) uses dedicated clients and short transactions, locking the owning user before conversations/receipts. A provider request never holds a database transaction open. Immutable draft revisions make confirmation version-bound. Confirmation hashes the conversation, version and sorted selection under a per-user request UUID; matching retries return existing state, while a changed request conflicts. Partial confirmation atomically writes selected rows and preserves remaining rows in a new revision.
 
@@ -185,9 +185,9 @@ The model only proposes rows. Chat messages such as “yes” cannot authorize f
 
 ### Runtime isolation and resource bounds
 
-[runtime.ts](services/agent/runtime.ts) lazily loads Claude Agent SDK `0.3.300` and Zod `4.6.7`, using DeepSeek's Anthropic-compatible endpoint and `deepseek-flash` by default. Each invocation creates private temporary configuration/cwd, uses `persistSession:false`, and removes those directories after completion, error, cancellation or timeout. A custom spawn implementation enforces an environment allowlist instead of inheriting backend secrets or user configuration. Built-in tools, filesystem settings and external MCP discovery are disabled; only the registered proposal tool is permitted. Tool handlers have no ledger-write or arbitrary shell/filesystem/SQL/network capability.
+[runtime.ts](services/agent/runtime.ts) runs the tool loop in the backend process with the plain Anthropic client (`@anthropic-ai/sdk` `0.131.0`, loaded lazily on the first turn) against DeepSeek's Anthropic-compatible endpoint, `deepseek-flash` by default, and Zod `4.6.7` schemas. Every client option is explicit (key, no bearer token, logging off), so nothing comes from the host's `ANTHROPIC_*` variables. The request carries only the system prompt, the JSON envelope, the eight tools' schemas and their results; there is no child process, temporary directory or session transcript. Tool handlers have no ledger-write or arbitrary shell/filesystem/SQL/network capability. Until 2026-10 the same loop ran through the Claude Agent SDK, which spawned a ~240 MB CLI process per turn and injected the host's date; it was removed after a week of production on the in-process loop.
 
-A hook counts tool attempts before SDK schema validation, and the handler separately limits executions. The handler checks the server-owned run-revocation callback before using a proposal. Unknown tools are denied, and unexpected SDK initialization tools fail closed. `AbortController`, the request deadline, process teardown and storage run/lease checks prevent late output from publishing after cancellation or deletion. Cross-process cancellation is enforced at tool invocation and final publication even if another process cannot immediately kill the original subprocess.
+Every `tool_use` block counts as an attempt before its name or arguments are checked, and the handler separately limits executions. The handler checks the server-owned run-revocation callback before running. Unknown tools and schema failures are answered with an error code and the turn goes on. `AbortController`, the request deadline and storage run/lease checks prevent late output from publishing after cancellation or deletion; each handler is raced against the turn, so a hung query cannot hold it past the deadline. Cross-process cancellation is enforced at tool invocation and final publication.
 
 | Bound | Enforcement |
 |---|---|
@@ -196,12 +196,12 @@ A hook counts tool attempts before SDK schema validation, and the handler separa
 | 100 conversations per user; 200 messages per conversation | Storage admission |
 | 4,000 input characters; 30 history messages / 24,000 history characters | Validation and context construction |
 | 12 pending rows | Tool schema, validation and database constraint |
-| Eight tool attempts/executions; ten SDK turns | Runtime hook/handler and SDK options |
+| Eight tool attempts/executions; ten model turns | Runtime attempt gate, handler and loop |
 | 4,000 generated tokens; 8,000 final reply characters; 32,000 cumulative tokens | Provider output option and runtime accounting |
 | 16,000 cumulative tool-output characters | Runtime handler |
 | 90-second execution / run lease | Router/runtime deadlines and storage checks |
 
-Usage stores token counts, never treats SDK USD estimates as authoritative DeepSeek charges. Raw SDK/provider errors and conversation text do not enter operational logs. The adapter maps failures to stable `agent_*` codes; a result with subtype `success` is still rejected when `is_error` is true.
+Usage stores the provider's real token counts. Raw provider errors and conversation text do not enter operational logs. The runtime maps failures to stable `agent_*` codes; any stop other than `end_turn` without tool calls is `agent_provider_error`, and `max_tokens` is `agent_limit_exceeded`.
 
 ### Availability, privacy and retention
 
@@ -209,12 +209,12 @@ Usage stores token counts, never treats SDK USD estimates as authoritative DeepS
 
 TermPocket stores messages until the user deletes the conversation. It sends the current message, bounded relevant history, pending draft and date/currency/timezone context to DeepSeek. Authorized administrators can access stored conversations. There is no end-to-end encryption guarantee and no promise that deleting local history erases provider-held data. The frontend discloses these boundaries; passwords and account credentials should not be submitted.
 
-Drafts expire 24 hours after the model proposal, enforced during reads/writes. Manual edits and partial confirmation preserve the deadline. Existing hourly maintenance removes expired drafts, terminal runs and admission records older than 30 days, and receipts after 30 days or after undo expiry when their conversation has been deleted. Receipts contain request hashes, transaction IDs and exact versions, not transaction descriptions or amounts. Admission records survive history deletion, preventing a budget reset through chat deletion. Messages survive run-metadata cleanup through a column-specific nullable run foreign key. No periodic polling, extra frequent cleanup schedule or native SDK transcript store is introduced.
+Drafts expire 24 hours after the model proposal, enforced during reads/writes. Manual edits and partial confirmation preserve the deadline. Existing hourly maintenance removes expired drafts, terminal runs and admission records older than 30 days, and receipts after 30 days or after undo expiry when their conversation has been deleted. Receipts contain request hashes, transaction IDs and exact versions, not transaction descriptions or amounts. Admission records survive history deletion, preventing a budget reset through chat deletion. Messages survive run-metadata cleanup through a column-specific nullable run foreign key. No periodic polling, extra frequent cleanup schedule or provider-side transcript store is introduced.
 
 ### Deployment and validation
 
 Fresh `schema.sql` and migration [`013_conversational_transactions.sql`](db/migrations/013_conversational_transactions.sql) require PostgreSQL 15+ for column-specific `ON DELETE SET NULL`. The migration audits transaction-source compatibility and aborts rather than rewriting incompatible financial records. Apply and verify locally or in staging first; production migration/enablement is a separate operator action, not performed by this implementation. Leave the feature flag false until its tables exist.
 
-The backend host must permit the SDK's platform-specific child process, install the corresponding optional package, allow writable temporary storage and outbound HTTPS to `https://api.deepseek.com/anthropic`, and allow HTTP requests longer than the 90-second deadline plus teardown. This is a Node-hosted backend feature. Local live-provider acceptance covers bilingual input, corrections, multiple tool roundtrips, hypotheticals, missing details, cancellation, deadlines and errors; target-host Linux compatibility, capacity and throttling still need verification.
+The backend host must allow outbound HTTPS to `https://api.deepseek.com/anthropic` and allow HTTP requests longer than the 90-second deadline plus teardown. This is a Node-hosted backend feature. Local live-provider acceptance covers bilingual input, corrections, multiple tool roundtrips, hypotheticals, missing details, cancellation, deadlines and errors; target-host Linux compatibility, capacity and throttling still need verification.
 
 Unit tests cover validation, HTTP isolation, runtime restrictions and maintenance without provider access. Storage and fresh/upgrade migration tests require explicit `TEST_DATABASE_URL` and isolated fictional data; they must never borrow a production database from `.env`.

@@ -596,7 +596,7 @@ export function parseArgs(argv: string[]): Options {
 }
 
 export interface MainDeps {
-  agent: { enabled: boolean; apiKey?: string; model: string; runtime?: string };
+  agent: { enabled: boolean; apiKey?: string; model: string };
   runtime: Runtime;
   out: (line: string) => void;
   err: (line: string) => void;
@@ -624,8 +624,7 @@ export async function main(argv: string[], deps: MainDeps): Promise<number> {
   const selected = options.cases.length ? file.cases.filter(c => options.cases.includes(c.id)) : file.cases;
 
   const model = /^[A-Za-z0-9._:-]{1,64}$/.test(deps.agent.model) ? deps.agent.model : '(custom)';
-  const runtime = deps.agent.runtime ?? 'sdk';
-  if (!options.json) out(`Evaluating Pocky: ${selected.length} case(s) x ${options.repeat}, model ${model}, runtime ${runtime}, today ${file.defaults.today} ${file.defaults.timezone}`);
+  if (!options.json) out(`Evaluating Pocky: ${selected.length} case(s) x ${options.repeat}, model ${model}, today ${file.defaults.today} ${file.defaults.timezone}`);
   const restore = installFixture(fixture);
   const reports: RunReport[] = [];
   try {
@@ -641,7 +640,7 @@ export async function main(argv: string[], deps: MainDeps): Promise<number> {
   }
   const totals = totalsOf(reports);
   const passed = options.minPass === undefined ? totals.failed === 0 : totals.passRate >= options.minPass;
-  if (options.json) out(JSON.stringify({ model, runtime, today: file.defaults.today, repeat: options.repeat, minPass: options.minPass ?? null, passed, totals, runs: reports }, null, 2));
+  if (options.json) out(JSON.stringify({ model, today: file.defaults.today, repeat: options.repeat, minPass: options.minPass ?? null, passed, totals, runs: reports }, null, 2));
   else out(`\n${passed ? 'Eval passed' : 'Eval FAILED'}: ${formatSummary(totals)}${options.minPass === undefined ? '' : ` (min pass ${(options.minPass * 100).toFixed(1)}%)`}`);
   return passed ? 0 : 1;
 }

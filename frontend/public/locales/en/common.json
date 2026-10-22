@@ -674,9 +674,7 @@
     "discardLocalReload": "Discard local edits and reload",
     "acknowledgementsIntro": "TermPocket uses the open source projects, additional software and external services below. Thank you to their maintainers and contributors.",
     "additionalSoftware": "Additional software",
-    "sdkLicense": "SDK license notice",
-    "sdkLegal": "Anthropic legal agreements",
-    "sdkAcknowledgement": "The transaction assistant uses Anthropic’s Claude Agent SDK. Its license notice reserves Anthropic’s rights and refers to the applicable Anthropic legal agreements; see the linked notice and terms.",
+    "sdkAcknowledgement": "Pocky reaches its AI provider through Anthropic’s TypeScript SDK, an MIT-licensed HTTP client.",
     "aiProviders": "Current AI providers",
     "providerAcknowledgement": "AI processing for conversational transaction recording when configured"
   },
