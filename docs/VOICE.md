@@ -178,7 +178,7 @@ With the flag added, the same nine cases (1 run each) got 8/9. The miss was `ama
 - **Envelope.** `'voice'` sets `AgentInput.dictated`, which adds `context.input = "dictated"` to the envelope. A typed turn's envelope is unchanged.
 - **System prompt.** One added paragraph: when the input is dictated, a 3- or 4-digit amount with no decimal point, no thousands comma and not ending in 00 may be dollars and cents run together, and a `$` doesn't settle it because Whisper adds one. Pocky doesn't draft that row, and asks which amount was meant, quoting both readings. Amounts in words, with a decimal or comma, ending in 00, or of one or two digits are clear. Without the flag, Pocky ignores the rule and never mentions dictation. That last sentence was added after a typed control run replied "Because this was dictated, I read 1249 as 1249.00".
 - **Eval harness.** Cases take `"input": "voice"` and pass it to the runtime as `dictated`.
-- **Tests.** `agentEval.test.ts` (validation and pass-through), `agentRoutes.test.ts` (default, `typed`, `voice`, and five invalid values) and `agentRuntime.test.ts` (envelope and system prompt, on both runtimes).
+- **Tests.** `agentEval.test.ts` (validation and pass-through), `agentRoutes.test.ts` (default, `typed`, `voice`, and five invalid values) and `agentRuntime.test.ts` (envelope and system prompt).
 
 **Pocky's results** (direct runtime, real squashed transcripts from round 1):
 

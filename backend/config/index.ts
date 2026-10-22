@@ -100,7 +100,8 @@ const config = {
     // Model turns in flight on this process. A turn is an HTTP request and its
     // tool results in memory (the whole process measured ~105 MB), so the cap
     // bounds provider load more than memory. It was 1 while each turn spawned
-    // the Agent SDK's ~240 MB binary. Extra turns are refused with agent_busy.
+    // the Agent SDK's ~240 MB binary. Extra turns are refused with agent_server_busy
+    // (agent_busy when a busy slot is the user's own turn).
     maxConcurrentRuns: intFromEnv('AGENT_MAX_CONCURRENT_RUNS', 4),
     maxTurnsPerHour: 20,
     // The provider bill is what these bound: sign-up is open, and the hourly
