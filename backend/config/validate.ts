@@ -44,8 +44,15 @@ function validateConfig(): void {
     }
   }
 
+  // The AI client sets every option it takes explicitly, but the SDK always adds
+  // this variable's headers to each request: whatever credential it holds for
+  // some other service would go to the AI provider.
+  if (process.env.ANTHROPIC_CUSTOM_HEADERS) {
+    errors.push('ANTHROPIC_CUSTOM_HEADERS is set — the AI client would send those headers to the AI provider. Remove it.');
+  }
+
   if (errors.length > 0) {
-    console.error('\n❌ Cannot start: required configuration is missing.\n');
+    console.error('\n❌ Cannot start: the configuration has a problem.\n');
     for (const error of errors) console.error(`   • ${error}`);
     console.error('\n   backend/.env.example lists every variable this app reads.\n');
     process.exit(1);

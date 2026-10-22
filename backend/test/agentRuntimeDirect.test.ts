@@ -1,7 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { MessageCreateParamsNonStreaming, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
-import { cacheOnSuccess, createDirectRuntime, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
+import { cacheOnSuccess, clientOptions, createDirectRuntime, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
 import config = require('../config');
 import { AgentError, type AgentRecords } from '../services/agent/types';
 import logger = require('../utils/logger');
@@ -390,5 +390,37 @@ test('direct: a response cut off at max_tokens never runs its tools', async () =
     assert.equal(reason, 'max_tokens');
     assert.deepEqual(fake.calls, []);
     assert.equal(s.requests.length, 1);
+  }
+});
+
+test('the HTTP client takes nothing from the host\'s ANTHROPIC_* variables, OpenTelemetry included', async () => {
+  // ANTHROPIC_CUSTOM_HEADERS is the exception the options cannot close; the startup check refuses it (configValidate.test.ts).
+  const host = { ANTHROPIC_API_KEY: 'fictional-host-key', ANTHROPIC_BASE_URL: 'https://example.invalid', ANTHROPIC_AUTH_TOKEN: 'fictional-token', ANTHROPIC_LOG: 'debug',
+    ANTHROPIC_OPEN_TELEMETRY: 'true', ANTHROPIC_OPEN_TELEMETRY_PROPAGATION: 'true', ANTHROPIC_OPEN_TELEMETRY_TRACES_CONTENT_MODE: 'content' };
+  const saved = Object.fromEntries(Object.keys(host).map((k) => [k, process.env[k]]));
+  Object.assign(process.env, host);
+  try {
+    // Loaded the way the runtime loads it.
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const client = new Anthropic(clientOptions());
+    assert.equal(client.logLevel, 'off');
+    assert.equal(client.openTelemetry.propagation, false);
+    assert.equal(client.openTelemetry.traces.enabled, false);
+
+    // And the request it actually sends.
+    const sent: { url: string; headers: Headers }[] = [];
+    const fetch = async (url: string | URL | Request, init?: RequestInit) => {
+      sent.push({ url: String(url), headers: new Headers(init?.headers) });
+      return new Response(JSON.stringify({ id: 'msg_1', type: 'message', role: 'assistant', model: 'm', content: [{ type: 'text', text: 'ok' }],
+        stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } }), { headers: { 'content-type': 'application/json' } });
+    };
+    await new Anthropic({ ...clientOptions(), fetch }).messages.create({ model: 'm', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] });
+    assert.equal(sent.length, 1);
+    const [request] = sent as [{ url: string; headers: Headers }];
+    assert.equal(request.url, 'https://api.deepseek.com/anthropic/v1/messages');
+    assert.equal(request.headers.get('x-api-key'), 'fictional-test-key');
+    for (const name of ['authorization', 'traceparent', 'tracestate', 'baggage']) assert.equal(request.headers.get(name), null, name);
+  } finally {
+    for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });

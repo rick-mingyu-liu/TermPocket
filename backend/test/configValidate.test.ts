@@ -103,6 +103,13 @@ describe('startup configuration check', () => {
     assert.match(output, /AGENT_RUNTIME is ignored/);
   });
 
+  test('refuses to start when ANTHROPIC_CUSTOM_HEADERS is set: the AI client would send them to the provider', () => {
+    const { code, output } = runWith({ JWT_SECRET: GOOD_SECRET, DATABASE_URL: 'postgres://x/y', ANTHROPIC_CUSTOM_HEADERS: 'X-Fictional: value' });
+    assert.equal(code, 1);
+    assert.match(output, /ANTHROPIC_CUSTOM_HEADERS is set/);
+    assert.doesNotMatch(output, /X-Fictional|value\b/);
+  });
+
   test('is silent when everything is present', () => {
     const { code, output } = runWith({
       JWT_SECRET: GOOD_SECRET,
