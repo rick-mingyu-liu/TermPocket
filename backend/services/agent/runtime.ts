@@ -369,11 +369,13 @@ export function cacheOnSuccess<T>(load: () => Promise<T>): () => Promise<T> {
 }
 
 /**
- * The HTTP client's settings. Every one is explicit so nothing comes from the
+ * The HTTP client's settings. Every one is explicit so none comes from the
  * host's ANTHROPIC_* variables: the key is DeepSeek's, no bearer token is sent,
  * the client never logs, and it neither records OpenTelemetry spans nor sends
  * trace headers (left unset, the SDK reads ANTHROPIC_OPEN_TELEMETRY_* and could
- * put request content in spans).
+ * put request content in spans). ANTHROPIC_CUSTOM_HEADERS, which the SDK adds
+ * to every request whatever the options say, is refused at startup instead
+ * (config/validate.ts).
  */
 export function clientOptions(): ClientOptions {
   return {
