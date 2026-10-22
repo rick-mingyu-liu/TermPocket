@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+// The ESM typings, which the client's import() below resolves to.
+import type { ClientOptions } from '@anthropic-ai/sdk' with { 'resolution-mode': 'import' };
 import type { ContentBlock, ContentBlockParam, Message, MessageCreateParamsNonStreaming, MessageParam, Tool, ToolResultBlockParam, ToolUseBlock } from '@anthropic-ai/sdk/resources/messages';
 import config = require('../../config');
 import logger = require('../../utils/logger');
@@ -367,16 +369,24 @@ export function cacheOnSuccess<T>(load: () => Promise<T>): () => Promise<T> {
 }
 
 /**
- * One HTTP client per process, created on the first turn. Every setting
- * is explicit so nothing comes from the host's ANTHROPIC_* variables: the key is
- * DeepSeek's, no bearer token is sent, and the client never logs.
+ * The HTTP client's settings. Every one is explicit so nothing comes from the
+ * host's ANTHROPIC_* variables: the key is DeepSeek's, no bearer token is sent,
+ * the client never logs, and it neither records OpenTelemetry spans nor sends
+ * trace headers (left unset, the SDK reads ANTHROPIC_OPEN_TELEMETRY_* and could
+ * put request content in spans).
  */
-const deepseekClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic({
-  apiKey:config.agent.apiKey ?? null, authToken:null, baseURL:providerUrl,
-  // A momentary provider error is retried (the request only; tools never
-  // re-run), always inside the run deadline.
-  maxRetries:2, timeout:config.agent.timeoutMs, logLevel:'off',
-})));
+export function clientOptions(): ClientOptions {
+  return {
+    apiKey:config.agent.apiKey ?? null, authToken:null, baseURL:providerUrl,
+    // A momentary provider error is retried (the request only; tools never
+    // re-run), always inside the run deadline.
+    maxRetries:2, timeout:config.agent.timeoutMs, logLevel:'off',
+    openTelemetry:{propagation:false, traces:false},
+  };
+}
+
+/** One HTTP client per process, created on the first turn. */
+const deepseekClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
 
 /** The model's content, echoed back as request params: only the fields the API defines, never extras. */
 function echo(content: ContentBlock[]): ContentBlockParam[] {

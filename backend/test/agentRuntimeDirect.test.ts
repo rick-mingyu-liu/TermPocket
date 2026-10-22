@@ -1,7 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { MessageCreateParamsNonStreaming, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
-import { cacheOnSuccess, createDirectRuntime, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
+import { cacheOnSuccess, clientOptions, createDirectRuntime, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
 import config = require('../config');
 import { AgentError, type AgentRecords } from '../services/agent/types';
 import logger = require('../utils/logger');
@@ -390,5 +390,24 @@ test('direct: a response cut off at max_tokens never runs its tools', async () =
     assert.equal(reason, 'max_tokens');
     assert.deepEqual(fake.calls, []);
     assert.equal(s.requests.length, 1);
+  }
+});
+
+test('the HTTP client takes nothing from the host\'s ANTHROPIC_* variables, OpenTelemetry included', async () => {
+  const host = { ANTHROPIC_BASE_URL: 'https://example.invalid', ANTHROPIC_AUTH_TOKEN: 'fictional-token', ANTHROPIC_LOG: 'debug',
+    ANTHROPIC_OPEN_TELEMETRY: 'true', ANTHROPIC_OPEN_TELEMETRY_PROPAGATION: 'true', ANTHROPIC_OPEN_TELEMETRY_TRACES_CONTENT_MODE: 'content' };
+  const saved = Object.fromEntries(Object.keys(host).map((k) => [k, process.env[k]]));
+  Object.assign(process.env, host);
+  try {
+    // Loaded the way the runtime loads it.
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const client = new Anthropic(clientOptions());
+    assert.equal(client.baseURL, 'https://api.deepseek.com/anthropic');
+    assert.equal(client.authToken, null);
+    assert.equal(client.logLevel, 'off');
+    assert.equal(client.openTelemetry.propagation, false);
+    assert.equal(client.openTelemetry.traces.enabled, false);
+  } finally {
+    for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });

@@ -39,7 +39,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
