@@ -81,7 +81,7 @@ export interface SavingsGoalRow {
 }
 
 // Conversational transaction storage (migration 013).
-import type { Conversation, Message, Draft, Receipt, Run, GoalFields } from '../services/agent/types';
+import type { Conversation, Message, Draft, Receipt, Run, GoalFields, MemoryFields } from '../services/agent/types';
 export interface AgentConversationRow extends Conversation { user_id: number; draft_version: number }
 export interface AgentRunRow extends Run {
   conversation_id: string; user_id: number; request_hash: string;
@@ -115,4 +115,23 @@ export interface SchemaMigrationRow {
   name: string;
   checksum: string;
   applied_at: Date;
+}
+
+// Approved memories and their button-confirmed proposal lifecycle (migration 022).
+export interface AgentMemoryRow extends MemoryFields {
+  id: string; user_id: number;
+  source_conversation_id: string | null;
+  created_at: Date; updated_at: Date;
+}
+
+export interface AgentMemoryProposalRow {
+  id: string; conversation_id: string; user_id: number; run_id: string | null;
+  action: 'remember' | 'update' | 'forget'; kind: AgentMemoryRow['kind'];
+  memory_id: string | null; expected_updated_at: string | null;
+  before: MemoryFields | null;
+  after: MemoryFields | null;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'superseded' | 'conflict' | 'expired';
+  request_id: string | null; request_hash: string | null; result_memory_id: string | null;
+  error_code: 'agent_memory_full' | 'agent_memory_conflict' | null;
+  created_at: Date; expires_at: Date; decided_at: Date | null; redacted_at: Date | null;
 }

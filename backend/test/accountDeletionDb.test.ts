@@ -15,7 +15,7 @@ import bcrypt from 'bcryptjs';
  * table added later without being listed fails here rather than relying on a
  * cascade nobody wrote down.
  *
- * Needs an explicit TEST_DATABASE_URL (with migrations 013, 015 and 016),
+ * Needs an explicit TEST_DATABASE_URL (with migrations 013, 015, 016 and 022),
  * never the .env database. Users are fictional and removed afterwards; the
  * demo account, if the test database has one, is only read.
  */
@@ -69,6 +69,23 @@ describe('account deletion against the database', { skip: !enabled }, () => {
       goalProposal: { action: 'create', goal_id: null, expected_updated_at: null, before: null, after: { name: 'Fictional trip', target_amount: '2000.00', current_amount: '0.00', currency: 'CAD', target_date: '2027-05-01', description: null } },
     });
 
+    // A remembered fact and a pending offer, using the same button-owned
+    // lifecycle as the app. Both must disappear with the account.
+    const remembered = await store.createConversation(owner, settings);
+    const memoryRun = randomUUID();
+    await store.beginTurn(owner, remembered.id, { ...settings, requestId: memoryRun, content: 'Fictional rent is 950 CAD a month' });
+    const memoryDraft = {
+      action: 'remember', kind: 'expense', memory_id: null, expected_updated_at: null, before: null,
+      after: { kind: 'expense', text: 'Fictional rent', amount: '950.00', currency: 'CAD', cadence: 'month' },
+    };
+    const offered = await store.finishTurn(owner, remembered.id, memoryRun, { text: 'Review this memory.', memoryProposal: memoryDraft });
+    await store.confirmMemoryProposal(owner, remembered.id, { proposalId: offered.memoryProposal!.id, requestId: randomUUID() });
+    const pendingRun = randomUUID();
+    await store.beginTurn(owner, remembered.id, { ...settings, requestId: pendingRun, content: 'Fictional reserve is 1000 CAD' });
+    await store.finishTurn(owner, remembered.id, pendingRun, { text: 'Review this memory.', memoryProposal: {
+      ...memoryDraft, kind: 'reserve', after: { ...memoryDraft.after, kind: 'reserve', text: 'Fictional reserve', amount: '1000.00', cadence: null },
+    } });
+
     // A receipt detached from deleted history (conversation_id SET NULL).
     const detached = await store.createConversation(owner, settings);
     const r3 = randomUUID();
@@ -93,9 +110,9 @@ describe('account deletion against the database', { skip: !enabled }, () => {
     accounts = require('../services/accountService');
     tokens = require('../services/accessTokens');
     const probe = await db.query<{ present: boolean }>(
-      "SELECT to_regclass('agent_goal_proposals') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='users' AND column_name='transaction_retention_terms') AS present"
+      "SELECT to_regclass('agent_goal_proposals') IS NOT NULL AND to_regclass('agent_memories') IS NOT NULL AND to_regclass('agent_memory_proposals') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='users' AND column_name='transaction_retention_terms') AS present"
     );
-    assert.ok(probe.rows[0]!.present, 'the test database needs migrations 015 and 016 (npm run db:setup against TEST_DATABASE_URL)');
+    assert.ok(probe.rows[0]!.present, 'the test database needs migrations 015, 016 and 022 (npm run db:setup against TEST_DATABASE_URL)');
     alice = await user('alice');
     bob = await user('bob');
     const existingDemo = (await db.query<{ id: number }>('SELECT id FROM users WHERE is_demo')).rows[0];

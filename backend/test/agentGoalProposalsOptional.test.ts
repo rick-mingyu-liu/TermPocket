@@ -25,7 +25,7 @@ beforeEach(() => {
   const client = {
     query: async (text: string) => {
       statements.push(text);
-      if (text.includes('to_regclass')) return { rowCount: 1, rows: [{ present }] };
+      if (text.includes('to_regclass')) return { rowCount: 1, rows: [{ present: text.includes("agent_goal_proposals") && present }] };
       if (text.includes('agent_goal_proposals')) {
         assert.ok(present, `queried a table that does not exist: ${text}`);
         if (failProposalCleanup && text.startsWith('UPDATE agent_goal_proposals')) throw Object.assign(new Error('secret row text'), { code: '57014' });
@@ -56,7 +56,7 @@ test('without the table: no goal proposal, unavailable buttons, dropped proposal
   assert.equal(finished.goalProposal, null);
   assert.ok(statements.some(s => s.startsWith("INSERT INTO agent_messages")), 'the reply was still stored');
   assert.equal(await store.cleanupAgentData(), 2);
-  assert.ok(!statements.some(s => s.includes('SAVEPOINT')));
+  assert.ok(!statements.some(s => s.includes('SAVEPOINT goal_proposals')));
   assert.deepEqual(touched(), []);
   assert.equal(statements.at(-1), 'COMMIT');
 });
@@ -67,7 +67,7 @@ test('once the table appears it is used without a restart, and a failing proposa
   assert.equal(touched().length, 1);
   failProposalCleanup = true; statements = [];
   assert.equal(await store.cleanupAgentData(), 2);
-  const order = statements.filter(s => /SAVEPOINT|^COMMIT|^ROLLBACK/.test(s));
+  const order = statements.filter(s => /SAVEPOINT|^COMMIT|^ROLLBACK/.test(s) && !s.includes('memory_proposals'));
   assert.deepEqual(order, ['SAVEPOINT goal_proposals', 'ROLLBACK TO SAVEPOINT goal_proposals', 'COMMIT']);
   assert.ok(statements.some(s => s.startsWith('DELETE FROM agent_drafts')));
   assert.match(JSON.stringify(printed), /Agent goal proposal cleanup failed/);

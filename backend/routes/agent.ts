@@ -48,6 +48,22 @@ function dayInZone(timezone:string):string {
 function route(handler:(req:Request,res:Response)=>Promise<void>) {
   return (req:Request,res:Response,next:NextFunction) => { void handler(req,res).catch(next); };
 }
+// Memory changes are button-only server operations. No model execution is needed.
+router.get('/memories',route(async(req,res)=>{res.json(await store.getMemories(req.user.userId));}));
+router.delete('/memories/:id',route(async(req,res)=>{
+  await store.forgetMemories(req.user.userId,[validateUuid(req.params.id)]);res.json({deleted:true});
+}));
+router.delete('/memories',route(async(req,res)=>{
+  await store.forgetMemories(req.user.userId,'all');abortOwned(req.user.userId);res.json({deleted:true});
+}));
+router.post('/conversations/:id/memory-proposal/confirm',route(async(req,res)=>{
+  const body=object(req.body,['proposalId','requestId']);
+  res.json(await store.confirmMemoryProposal(req.user.userId,validateUuid(req.params.id),{proposalId:validateUuid(body.proposalId),requestId:validateUuid(body.requestId)}));
+}));
+router.delete('/conversations/:id/memory-proposal',route(async(req,res)=>{
+  const body=object(req.body,['proposalId']);
+  res.json(await store.cancelMemoryProposal(req.user.userId,validateUuid(req.params.id),validateUuid(body.proposalId)));
+}));
 router.get('/conversations',route(async(req,res)=>{res.json({conversations:await store.listConversations(req.user.userId)});}));
 router.post('/conversations',route(async(req,res)=>{
   const settings=validateSettings(object(req.body,['currency','timezone','language']));
