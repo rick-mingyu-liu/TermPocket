@@ -513,7 +513,7 @@
     "examplePlan": "“If co-op pays $2,400 a month from January, can I save $3,000 by August?”",
     "open": "Open conversation",
     "reviewHint": "Messages never save transactions. Only the confirmation buttons do.",
-    "privacy": "Conversations are stored by TermPocket and may be accessed by authorized administrators. Avoid including passwords or account credentials.",
+    "privacy": "Conversations, and the facts you ask Pocky to remember, are stored by TermPocket and may be accessed by authorized administrators. Avoid including passwords or account credentials.",
     "privacyLink": "See the Privacy Policy.",
     "back": "Back to dashboard",
     "new": "New conversation",
