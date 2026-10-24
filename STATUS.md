@@ -110,7 +110,7 @@ Limitations:
 - Currency conversion uses today's rates. The new model evaluation covers mixed currencies with fixed fictional rates; the live exchange-rate service was not exercised by that evaluation.
 - Monthly goal targets count whole calendar months, so they err high.
 - The prior x64 Linux rehearsal failed under emulation on this Apple-silicon Mac. A check on the production host is still needed to verify the deployed x64 runtime.
-- There are no saved plans or remembered facts yet, so planning inputs must be repeated in each conversation.
+- There are no saved plans yet, so planning inputs other than remembered facts must be repeated in each conversation.
 - The on-screen privacy notice does not name DeepSeek, by the owner's decision. DeepSeek is named in Open Source Acknowledgements.
 
 ## Hardening
