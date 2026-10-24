@@ -21,7 +21,7 @@ Out of scope for this design:
 | Field | Rule |
 | --- | --- |
 | `kind` | `income`, `expense`, `reserve`, `preference` or `other` |
-| `text` | The fact in the user's words, 1–120 characters, control and bidi characters replaced by spaces |
+| `text` | The fact in the user's words, 1–120 characters, control and bidi characters replaced by spaces; lone surrogates replaced with U+FFFD (`toWellFormed()`) |
 | `amount` | Optional; a positive two-decimal string, the same `DECIMAL(10,2)` range as `transactions.amount` |
 | `currency` | Required when `amount` is set; one of the six currencies |
 | `cadence` | Optional, only with an amount: `week`, `two_weeks`, `month` or `once`. The first three are `calculate_scenario`'s `repeat.every` values; `once` maps to no repeat (`repeat: null`) |
@@ -68,7 +68,7 @@ The three deletion paths below share one store function. Each runs in one transa
 | --- | --- | --- |
 | Settings → Delete (`DELETE /agent/memories/:id`) | The fact (owned, or 404) | Every proposal with that `memory_id` or `result_memory_id` is redacted. A pending one is also marked `superseded` |
 | Confirmed `forget` | The fact | The same. The confirming forget proposal itself is kept, redacted, so a replay of its `requestId` still returns state |
-| Forget all (`DELETE /agent/memories`, also Settings clear-all) | All of the user's facts | All of the user's memory proposals are deleted, pending ones included, so a pending `remember` cannot bring a fact back |
+| Forget all (`DELETE /agent/memories`, also Settings clear-all) | All of the user's facts | All of the user's memory proposals are deleted, pending ones included, so a pending `remember` cannot bring a fact back. Running Pocky turns are cancelled in the same transaction so their late output cannot recreate a proposal |
 
 **Undecided proposals are redacted when they end.** A proposal that ends `cancelled`, `superseded`, `expired` or `conflict` has `before` and `after` set to NULL and `redacted_at` set in the same statement, including in the hourly sweep. Nothing reads those bodies afterwards. So only `pending` and `confirmed` proposals ever hold a fact's text, and those are what the id-based redaction above covers. This also catches an offer reworded before it was confirmed.
 
@@ -92,13 +92,13 @@ Deploy the code first, then apply 022 with `npm run db:migrate`.
 1. **Recall.** `routes/agent.ts` loads the user's facts (named columns, oldest first) and passes them as `AgentInput.memories`. `prompt()` adds `context.memory: [{id, version, kind, text, amount, currency, cadence, saved_on}]`.
    - `version` is the `GOAL_VERSION_SQL` text, which update and forget quote as `expected_updated_at`.
    - `text` is cleaned again at read time.
-   - The memory budget is 13,000 characters, measured on the JSON-serialised block, separate from the 24,000-character history budget. The worst case is about 430 characters per fact, because `JSON.stringify` writes each `"` or `\` in the text as two characters. So 30 facts fit and none is ever dropped. A unit test builds 30 maximal facts with 120 quote characters each and asserts they fit.
+   - The memory budget is 14,000 characters, measured on the JSON-serialised block, separate from the 24,000-character history budget. The worst case is 13,231 characters for 30 facts, because `JSON.stringify` writes each `"` or `\` in the text as two characters. Lone surrogates are replaced with U+FFFD before storage and again on recall; otherwise JSON escaping would expand each to six characters. So 30 facts fit and none is ever dropped. A unit test builds 30 maximal facts with 120 quote characters each and asserts they fit.
    - The runtime still has no database access.
 2. **Last offer.** `prompt()` also adds `context.memory_proposal: {action, kind, status, text}` for the conversation's latest memory proposal, or null. This lets Pocky see that an offer is pending or was cancelled. `text` is present only while the proposal is pending or confirmed. An ended offer is redacted, so Pocky judges "the same fact" by its `action` and `kind`.
 3. **Propose.** A new tool, `propose_memory`, joins the `draft` server under the same eight-call and 16,000-character budgets and the same `assertActive` check.
    - Its input is `{action, memory_id?, expected_updated_at?, kind?, text?, amount?, currency?, cadence?}`.
    - The records layer validates the input and, for update or forget, reads the owned fact for `before`. It writes nothing.
-   - A success travels in `AgentResult.memoryProposal` and is stored only by `finishTurn`, after `active()`, superseding the conversation's pending memory proposal.
+   - A success travels in `AgentResult.memoryProposal` and is stored only by `finishTurn`, after `active()`, superseding the conversation's pending memory proposal. Before storing update/forget snapshots, it rechecks the owned fact and its version; a stale proposal is dropped while the reply can still complete.
    - Failures are repairable tool errors with fixed hints:
      - `agent_invalid_input`
      - `agent_memory_not_found` (another user's fact too)
@@ -171,7 +171,7 @@ Added to the system prompt:
 
 No database:
 - validation of the tool and the routes
-- the envelope: `context.memory` with `version`, the worst case fitting 10,000 characters, cleaning, demo excluded, `context.memory_proposal`
+- the envelope: `context.memory` with `version`, the worst case fitting 14,000 characters, cleaning, demo excluded, `context.memory_proposal`
 - the direct runtime carrying `memoryProposal`
 - logging: no fact text in any log line
 - behaviour before 022

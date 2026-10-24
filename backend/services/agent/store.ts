@@ -2,10 +2,11 @@ import { randomUUID, createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { getPool } from '../../db/connection';
 import config = require('../../config');
-import type { AgentConversationRow, AgentDraftRow, AgentGoalProposalRow, AgentRunRow, AgentReceiptRow, AgentTransactionVersion } from '../../types/db';
-import { AgentError, type RunUsage, type Conversation, type ConversationSettings, type ConversationState, type GoalProposal, type Message, type DraftRow, type TurnInput, type TurnResult, type BeginTurnResult } from './types';
+import type { AgentConversationRow, AgentMemoryProposalRow, AgentDraftRow, AgentGoalProposalRow, AgentRunRow, AgentReceiptRow, AgentTransactionVersion } from '../../types/db';
+import { AgentError, type RunUsage, type Conversation, type ConversationSettings, type ConversationState, type GoalProposal, type MemoryProposal, type MemoryFact, type Message, type DraftRow, type TurnInput, type TurnResult, type BeginTurnResult } from './types';
 import { validateSettings, validateRows, validateUuid, validateMessage } from './validation';
 import { validateGoalDraft, goalProposalsAvailable, GOAL_VERSION_SQL } from './planning';
+import { validateMemoryDraft, memoriesAvailable, listMemories, deleteMemories, isDemoUser } from './memory';
 import logger = require('../../utils/logger');
 import { errorSummary } from '../../utils/errorSummary';
 
@@ -14,6 +15,7 @@ const conversationColumns = 'id,title,currency,timezone,language,created_at,upda
 const receiptColumns = 'id,request_id,transaction_ids,undo_until,undone_at,created_at';
 const runColumns = 'id,status,error_code';
 const proposalColumns = 'id,action,goal_id,before,after,status,expires_at,result_goal_id';
+const memoryProposalColumns = 'id,conversation_id,user_id,run_id,action,kind,memory_id,expected_updated_at,before,after,status,request_id,request_hash,result_memory_id,error_code,created_at,expires_at,decided_at,redacted_at';
 const limits = config.agent;
 /** pg_advisory_xact_lock key for the all-users daily admission count; any fixed bigint nothing else uses. */
 const ADMISSION_LOCK = 7_406_221_501;
@@ -63,7 +65,8 @@ async function state(client: PoolClient, userId: number, id: string): Promise<Co
   // in practice) shows nothing. Without migration 015 there are none.
   const proposals = await goalProposalsAvailable(sql=>client.query(sql)) ? await client.query<Pick<AgentGoalProposalRow,'id'|'action'|'goal_id'|'before'|'after'|'status'|'expires_at'|'result_goal_id'> & {expired:boolean}>(`SELECT ${proposalColumns},(status='pending' AND expires_at<=now()) AS expired FROM agent_goal_proposals WHERE conversation_id=$1 AND user_id=$2 ORDER BY created_at DESC,id DESC LIMIT 1`, [id,userId]) : {rows:[]};
   const proposal = proposals.rows[0]?.status==='superseded' ? undefined : proposals.rows[0];
-  return { conversation: c.rows[0], messages: messages.rows,
+  const memoryProposal = await memoryState(client,userId,id);
+  return { conversation: c.rows[0], messages: messages.rows, memoryProposal,
     draft: draft ? { id:draft.id,version:draft.version,status: draft.expired && draft.status==='pending' ? 'expired' : draft.status, rows: draft.expired ? [] : draft.rows,expires_at:draft.expires_at } : null,
     receipts: receipts.rows,run: runs.rows[0] ?? null,
     goalProposal: proposal ? { id:proposal.id,action:proposal.action,goal_id:proposal.goal_id,before:proposal.before,after:proposal.after,status:proposal.expired?'expired':proposal.status as GoalProposal['status'],expires_at:proposal.expires_at,result_goal_id:proposal.result_goal_id } : null };
@@ -162,6 +165,7 @@ export async function finishTurn(userId:number,id:string,runId:string,result:Tur
   if(typeof result.text!=='string'||!result.text.trim()||result.text.length>16000||result.text.includes('\0')) throw new AgentError('agent_invalid_proposal');
   const rows=result.proposedRows===undefined?undefined:validateRows(result.proposedRows,true);
   const goal=result.goalProposal===undefined?undefined:validateGoalDraft(result.goalProposal);
+  const memory=result.memoryProposal===undefined?undefined:validateMemoryDraft(result.memoryProposal);
   return owned(userId,async client=>{
     await conversation(client,userId,id);await active(client,userId,id,runId);
     if(rows!==undefined) await revision(client,userId,id,rows,rows.length?'pending':'cancelled');
@@ -171,6 +175,17 @@ export async function finishTurn(userId:number,id:string,runId:string,result:Tur
       await client.query("UPDATE agent_goal_proposals SET status='superseded',decided_at=now() WHERE conversation_id=$1 AND user_id=$2 AND status='pending'",[id,userId]);
       await client.query('INSERT INTO agent_goal_proposals(id,conversation_id,user_id,run_id,action,goal_id,expected_updated_at,before,after) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [randomUUID(),id,userId,runId,goal.action,goal.goal_id,goal.expected_updated_at,goal.before===null?null:JSON.stringify(goal.before),JSON.stringify(goal.after)]);
+    }
+    if(memory!==undefined && await memoriesAvailable(sql=>client.query(sql))) {
+      if(await isDemoUser(client,userId)) throw new AgentError('agent_memory_demo',403);
+      // The fact may have been changed or forgotten while the model was running.
+      // Never persist a stale snapshot after deletion; the unrelated reply can still finish.
+      const current=memory.action==='remember'?null:await client.query<{version:string}>(`SELECT ${GOAL_VERSION_SQL} AS version FROM agent_memories WHERE id=$1 AND user_id=$2 FOR UPDATE`,[memory.memory_id,userId]);
+      if(memory.action==='remember'||current?.rows[0]?.version===memory.expected_updated_at) {
+        await client.query("UPDATE agent_memory_proposals SET status='superseded',decided_at=now(),before=NULL,after=NULL,redacted_at=now() WHERE conversation_id=$1 AND user_id=$2 AND status='pending'",[id,userId]);
+        await client.query('INSERT INTO agent_memory_proposals(id,conversation_id,user_id,run_id,action,kind,memory_id,expected_updated_at,before,after) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+          [randomUUID(),id,userId,runId,memory.action,memory.kind,memory.memory_id,memory.expected_updated_at,memory.before===null?null:JSON.stringify(memory.before),memory.after===null?null:JSON.stringify(memory.after)]);
+      }
     }
     await client.query("INSERT INTO agent_messages(id,conversation_id,user_id,run_id,role,content,status) VALUES($1,$2,$3,$4,'assistant',$5,'complete')",[randomUUID(),id,userId,runId,result.text.trim()]);
     await client.query("UPDATE agent_runs SET status='complete',finished_at=now(),input_tokens=$2,output_tokens=$3,tool_calls=$4 WHERE id=$1",[runId,result.usage?.inputTokens??null,result.usage?.outputTokens??null,result.toolCalls??null]);
@@ -330,6 +345,119 @@ export async function cleanupAgentData():Promise<number> {
         logger.error('Agent goal proposal cleanup failed',errorSummary(error));
       }
     }
-    await client.query('COMMIT');client.release();return (drafts.rowCount??0)+(runs.rowCount??0)+(receipts.rowCount??0)+(admissions.rowCount??0)+proposals;
+    let memoryProposals=0;
+    // Probe inside the savepoint too: a failure here cannot undo other maintenance.
+    await client.query('SAVEPOINT memory_proposals');
+    try {
+      if(await memoriesAvailable(sql=>client.query(sql))) {
+        const expired=await client.query("UPDATE agent_memory_proposals SET status='expired',decided_at=now(),before=NULL,after=NULL,redacted_at=now() WHERE status='pending' AND expires_at<=now()");
+        const removed=await client.query("DELETE FROM agent_memory_proposals WHERE status<>'pending' AND COALESCE(decided_at,created_at)<now()-interval '30 days'");
+        memoryProposals=(expired.rowCount??0)+(removed.rowCount??0);
+      }
+      await client.query('RELEASE SAVEPOINT memory_proposals');
+    } catch(error) {
+      await client.query('ROLLBACK TO SAVEPOINT memory_proposals');
+      logger.error('Agent memory proposal cleanup failed',errorSummary(error));
+    }
+    await client.query('COMMIT');client.release();return (drafts.rowCount??0)+(runs.rowCount??0)+(receipts.rowCount??0)+(admissions.rowCount??0)+proposals+memoryProposals;
   }catch(error){return rollback(client,error);}
+}
+
+async function memoriesReady(client:PoolClient):Promise<void> {
+  if(!(await memoriesAvailable(sql=>client.query(sql)))) throw new AgentError('agent_unavailable',503);
+}
+async function memoryState(client:PoolClient,userId:number,id:string):Promise<MemoryProposal|null> {
+  if(!(await memoriesAvailable(sql=>client.query(sql)))) return null;
+  const result=await client.query<AgentMemoryProposalRow & {expired:boolean}>(`SELECT ${memoryProposalColumns},(status='pending' AND expires_at<=now()) AS expired FROM agent_memory_proposals WHERE conversation_id=$1 AND user_id=$2 ORDER BY created_at DESC,id DESC LIMIT 1`,[id,userId]);
+  const p=result.rows[0];if(!p||p.status==='superseded')return null;
+  // An overdue offer never re-exposes its text while waiting for hourly maintenance.
+  return {id:p.id,action:p.action,kind:p.kind,memory_id:p.memory_id,
+    before:p.expired?null:p.before,after:p.expired?null:p.after,status:p.expired?'expired':p.status as MemoryProposal['status'],
+    expires_at:p.expires_at,result_memory_id:p.result_memory_id,redacted_at:p.redacted_at,error_code:p.error_code};
+}
+export async function getMemories(userId:number,timezone='UTC'):Promise<{available:boolean;memories:MemoryFact[]}> {
+  // Like other settings, unavailable storage is readable without a model key.
+  if(!(await memoriesAvailable())) return {available:false,memories:[]};
+  return owned(userId,async client=>({available:true,memories:await isDemoUser(client,userId)?[]:await listMemories(userId,timezone,client)}));
+}
+export async function forgetMemories(userId:number,ids:string[]|'all'):Promise<void> {
+  if(ids!=='all') {if(!ids.length||ids.length>30)throw new AgentError('agent_invalid_input');ids.forEach(validateUuid);}
+  await owned(userId,async client=>{
+    await memoriesReady(client);await deleteMemories(client,userId,ids);
+    if(ids==='all') {
+      // A pre-delete run may carry a remember proposal with no fact id to recheck.
+      // Cancel it atomically so a late result cannot restore any cleared snapshot.
+      await client.query(`WITH cancelled AS (UPDATE agent_runs SET status='cancelled',error_code='agent_cancelled',finished_at=now()
+        WHERE user_id=$1 AND status='running' RETURNING id)
+        UPDATE agent_messages SET status='cancelled' WHERE user_id=$1 AND run_id IN (SELECT id FROM cancelled) AND role='user'`,[userId]);
+    }
+  });
+}
+
+/** All proposal decisions share the owner's transaction lock with deletion.
+ * Conflict/expiry outcomes commit their redaction before becoming HTTP errors. */
+export async function confirmMemoryProposal(userId:number,id:string,input:{proposalId:string;requestId:string}):Promise<ConversationState> {
+  const proposalId=validateUuid(input.proposalId),requestId=validateUuid(input.requestId);
+  const requestHash=hash({id,proposalId});
+  const outcome=await owned<{error?:string;state?:ConversationState}>(userId,async client=>{
+    await memoriesReady(client);await conversation(client,userId,id);
+    if(await isDemoUser(client,userId))throw new AgentError('agent_memory_demo',403);
+    const prior=await client.query<AgentMemoryProposalRow>(`SELECT ${memoryProposalColumns} FROM agent_memory_proposals WHERE user_id=$1 AND request_id=$2`,[userId,requestId]);
+    if(prior.rows[0]) {
+      if(prior.rows[0].request_hash!==requestHash)throw new AgentError('agent_request_conflict',409);
+      return prior.rows[0].error_code?{error:prior.rows[0].error_code}:{state:await state(client,userId,id)};
+    }
+    const selected=await findMemoryProposal(client,userId,id,proposalId);
+    await noActiveRun(client,userId,id);
+    if(selected.status==='expired'||(selected.status==='pending'&&selected.expired)) {
+      await endMemoryProposal(client,selected.id,'expired');return {error:'agent_expired'};
+    }
+    if(selected.status!=='pending')throw new AgentError('agent_version_conflict',409);
+    const conflict=async(code:'agent_memory_full'|'agent_memory_conflict')=>{
+      await client.query("UPDATE agent_memory_proposals SET status='conflict',before=NULL,after=NULL,redacted_at=now(),decided_at=now(),request_id=$2,request_hash=$3,error_code=$4 WHERE id=$1",[proposalId,requestId,requestHash,code]);return {error:code};
+    };
+    // Revalidate the exact server-owned payload. Request bodies cannot replace it.
+    const proposed=validateMemoryDraft({action:selected.action,kind:selected.kind,memory_id:selected.memory_id,expected_updated_at:selected.expected_updated_at,before:selected.before,after:selected.after});
+    let memoryId=selected.memory_id;
+    if(selected.action==='remember') {
+      const count=await client.query<{count:string}>('SELECT count(*) FROM agent_memories WHERE user_id=$1',[userId]);
+      if(Number(count.rows[0]!.count)>=30)return conflict('agent_memory_full');
+      memoryId=randomUUID();const f=proposed.after!;
+      await client.query('INSERT INTO agent_memories(id,user_id,kind,text,amount,currency,cadence,source_conversation_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[memoryId,userId,f.kind,f.text,f.amount,f.currency,f.cadence,id]);
+    } else {
+      const current=await client.query<{version:string}>(`SELECT ${GOAL_VERSION_SQL} AS version FROM agent_memories WHERE id=$1 AND user_id=$2 FOR UPDATE`,[memoryId,userId]);
+      if(!current.rows[0]||current.rows[0].version!==selected.expected_updated_at)return conflict('agent_memory_conflict');
+      if(selected.action==='forget')await deleteMemories(client,userId,[memoryId!]);
+      else {
+        const f=proposed.after!;
+        await client.query('UPDATE agent_memories SET kind=$3,text=$4,amount=$5,currency=$6,cadence=$7,source_conversation_id=$8 WHERE id=$1 AND user_id=$2',[memoryId,userId,f.kind,f.text,f.amount,f.currency,f.cadence,id]);
+      }
+    }
+    await client.query("UPDATE agent_memory_proposals SET status='confirmed',request_id=$2,request_hash=$3,result_memory_id=$4,decided_at=now() WHERE id=$1",[proposalId,requestId,requestHash,memoryId]);
+    return {state:await state(client,userId,id)};
+  });
+  if(outcome.error||!outcome.state)throw new AgentError(outcome.error??'agent_memory_conflict',409);
+  return outcome.state;
+}
+async function findMemoryProposal(client:PoolClient,userId:number,id:string,proposalId:string):Promise<AgentMemoryProposalRow & {expired:boolean}> {
+  const found=await client.query<AgentMemoryProposalRow & {expired:boolean}>(`SELECT ${memoryProposalColumns},expires_at<=now() AS expired FROM agent_memory_proposals WHERE conversation_id=$1 AND user_id=$2 AND id=$3 FOR UPDATE`,[id,userId,proposalId]);
+  if(!found.rows[0])throw new AgentError('agent_memory_proposal_gone',404);
+  const latest=await client.query<{id:string}>('SELECT id FROM agent_memory_proposals WHERE conversation_id=$1 AND user_id=$2 ORDER BY created_at DESC,id DESC LIMIT 1',[id,userId]);
+  if(latest.rows[0]?.id!==proposalId)throw new AgentError('agent_version_conflict',409);
+  return found.rows[0];
+}
+async function endMemoryProposal(client:PoolClient,id:string,status:'cancelled'|'expired'):Promise<void> {
+  await client.query('UPDATE agent_memory_proposals SET status=$2,before=NULL,after=NULL,redacted_at=COALESCE(redacted_at,now()),decided_at=COALESCE(decided_at,now()) WHERE id=$1',[id,status]);
+}
+export async function cancelMemoryProposal(userId:number,id:string,proposalId:string):Promise<ConversationState> {
+  validateUuid(proposalId);
+  const outcome=await owned<{error?:string;state?:ConversationState}>(userId,async client=>{
+    await memoriesReady(client);await conversation(client,userId,id);
+    const p=await findMemoryProposal(client,userId,id,proposalId);await noActiveRun(client,userId,id);
+    if(p.status==='expired'||(p.status==='pending'&&p.expired)) {await endMemoryProposal(client,p.id,'expired');return {error:'agent_expired'};}
+    if(p.status!=='pending')throw new AgentError('agent_version_conflict',409);
+    await endMemoryProposal(client,p.id,'cancelled');return {state:await state(client,userId,id)};
+  });
+  if(outcome.error||!outcome.state)throw new AgentError(outcome.error??'agent_version_conflict',409);
+  return outcome.state;
 }

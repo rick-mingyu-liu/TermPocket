@@ -34,6 +34,8 @@ import { getPool } from '../db/connection';
 
 /** Per-user tables, children before parents. Constants, never user input. */
 const OWNED_TABLES = [
+  'agent_memory_proposals',
+  'agent_memories',
   'agent_goal_proposals',
   'agent_messages',
   'agent_drafts',
@@ -100,7 +102,7 @@ async function deleteAccount(userId: number, password: string): Promise<DeletedC
     if (!(await bcrypt.compare(password, user.password_hash))) throw new AccountPasswordError();
 
     // The agent tables exist only after migration 013, goal proposals only
-    // after 015; a deployment without them has nothing there to delete.
+    // after 015, and memories after 022; absent tables have nothing to delete.
     const present = await client.query<{ name: OwnedTable }>(
       'SELECT name FROM unnest($1::text[]) AS name WHERE to_regclass(name) IS NOT NULL',
       [OWNED_TABLES]

@@ -14,7 +14,7 @@ test('agent migration: fresh twice, legacy upgrade twice, audit refuses incompat
   try {
     await client.query(`CREATE SCHEMA ${schema}`);await client.query(`SET search_path TO ${schema}`);
     await client.query(desired);await client.query(desired);
-    assert.equal((await client.query("SELECT count(*) FROM information_schema.tables WHERE table_schema=$1 AND table_name LIKE 'agent_%'",[schema])).rows[0].count,'7');
+    assert.equal((await client.query("SELECT count(*) FROM information_schema.tables WHERE table_schema=$1 AND table_name LIKE 'agent_%'",[schema])).rows[0].count,'9');
     await client.query(`DROP SCHEMA ${schema} CASCADE`);await client.query(`CREATE SCHEMA ${schema}`);await client.query(`SET search_path TO ${schema}`);
     // Build the pre-013 state from the synchronized source: retain the seven
     // original tables and existing triggers, without conversational tables.
