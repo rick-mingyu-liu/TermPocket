@@ -245,7 +245,7 @@ const config = {
   // a way users should agree to again — every account is then asked once more.
   // A date, by convention the `updated` date in public/locales/*/legal.json.
   legal: {
-    termsVersion: '2026-10-20',
+    termsVersion: '2026-10-27',
   },
 
   validation: {

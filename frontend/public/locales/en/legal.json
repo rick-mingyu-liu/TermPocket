@@ -1,5 +1,5 @@
 {
-  "updated": "20 October 2026",
+  "updated": "27 October 2026",
   "privacy": {
     "intro": [
       "TermPocket is a free personal finance app for university students, run from Canada by its developer, [rick-mingyu-liu](https://github.com/rick-mingyu-liu) (“we”, “us”). This page explains what TermPocket stores, where it goes, how long it is kept, and how to ask for a copy or for deletion.",
@@ -12,7 +12,8 @@
           "Your account: first and last name, email address, language, email preferences, whether your address is verified, and which version of the Terms of Service and this policy you accepted and when. Your password is stored only as a bcrypt hash, never as the password itself.",
           "Your records: the transactions you enter or import (amount, currency, date, type, category, description and how it was added) and your savings goals (name, amounts, currency, target date and description).",
           "Screenshot imports: a count of how many rows each import saved and how many you edited. The screenshot itself is not stored (see below).",
-          "Pocky conversations: your messages and Pocky’s replies, the entries it drafts for you to review, goal changes it proposes, and each conversation’s currency, timezone and language settings. We also keep technical records of each request (status, token counts, error codes, time) and short receipts that let you undo a save; receipts hold record IDs and version stamps, not amounts or descriptions.",
+          "Pocky conversations: your messages and Pocky’s replies, the entries it drafts for you to review, goal changes it proposes, the facts it offers to remember, and each conversation’s currency, timezone and language settings. We also keep technical records of each request (status, token counts, error codes, time) and short receipts that let you undo a save; receipts hold record IDs and version stamps, not amounts or descriptions.",
+          "Pocky memory: the facts you ask Pocky to remember, such as your rent, your pay or a cash reserve you want to keep, up to 30. Each holds a short text in your words, an optional amount, currency and how often it repeats, the conversation it came from, and when it was saved or last changed. Pocky can only offer to remember something; a fact is saved only when you press Remember.",
           "AI connections: for each personal access token you create, its name, when it was created, last used and revoked, and a SHA-256 hash of the token. The token itself is shown to you once and is not stored.",
           "Request logs: like most web services, our server logs each request, including your IP address, the time, the address requested and your browser’s user agent. These logs are kept by our hosting provider, Render."
         ]
@@ -32,6 +33,7 @@
         "items": [
           "your message and the recent part of the conversation (up to 30 earlier messages);",
           "the entries currently waiting for your review;",
+          "every fact in your Pocky memory, with every message, whether or not the message is about it;",
           "the conversation’s currency, timezone and reply language, today’s date and term dates, and whether the message was dictated;",
           "when Pocky looks up your records to answer a question or plan: the dates, amounts, currencies, descriptions and categories of the matching transactions, totals by category, and your savings goals (names, amounts, target dates and descriptions);",
           "any amounts or plans you describe, such as pay, rent or a savings target."
@@ -94,6 +96,7 @@
           "Your account and records: kept until you delete them or ask us to delete your account, except as automatic deletion below removes old transactions.",
           "Automatic deletion: off unless you turn it on in Settings → Automatic deletion. You can choose to keep the last 3, 6, 9 or 12 terms, the current term included; transactions dated before the first kept term are then deleted by a job that runs about once an hour, and this cannot be undone. Only transactions are deleted, not savings goals, Pocky conversations or AI connections. It is not available on the demo account.",
           "Pocky conversations: kept until you delete them, one at a time or all at once. Deleting a conversation does not delete the transactions you saved from it.",
+          "Pocky memory: each fact is kept until you delete it in Settings → Pocky memory, ask Pocky to forget it and press Forget, or delete your account. Offers to remember a fact expire 24 hours after Pocky makes them. An offer you cancel, or that expires or is replaced, keeps no copy of the fact; offers are deleted 30 days after you decide on them, and forgetting a fact also removes it from every offer. Forgetting a fact does not change your conversations: a conversation in which the fact was mentioned keeps those messages, and Pocky still reads them in that conversation, until you delete it. The demo account has no memory.",
           "Pocky drafts and goal proposals: they expire 24 hours after Pocky proposes them. Expired drafts are removed; goal proposals that were confirmed, cancelled or expired are deleted 30 days later.",
           "Pocky request records and undo receipts: deleted after 30 days, or sooner. Records used for usage limits are kept for up to 30 days even after you delete your conversations.",
           "The demo account: it is shared by everyone and reset periodically, which deletes anything added to it.",
@@ -103,8 +106,8 @@
       {
         "h": "Deleting your data",
         "p": [
-          "Settings → Danger zone → Clear All Data deletes all of your transactions, all of your savings goals and all of your Pocky conversations (with their messages, drafts and goal proposals). It does not delete your account itself (name, email address, password hash and preferences), your AI connection tokens (revoke those in Settings → AI connections), the import counts, or the short-lived records described above, which expire on their own.",
-          "Settings → Danger zone → Delete account deletes your account itself and everything linked to it, at once: your name, email address, password hash and preferences, your transactions, savings goals, Pocky conversations (with their messages, drafts, goal proposals, undo receipts and usage records), AI connection tokens and import counts. It asks for your password first. The shared demo account cannot be deleted."
+          "Settings → Danger zone → Clear All Data deletes all of your transactions, all of your savings goals and all of your Pocky conversations (with their messages, drafts and goal proposals) and your Pocky memory. It does not delete your account itself (name, email address, password hash and preferences), your AI connection tokens (revoke those in Settings → AI connections), the import counts, or the short-lived records described above, which expire on their own.",
+          "Settings → Danger zone → Delete account deletes your account itself and everything linked to it, at once: your name, email address, password hash and preferences, your transactions, savings goals, Pocky conversations (with their messages, drafts, goal proposals, undo receipts and usage records), your Pocky memory, AI connection tokens and import counts. It asks for your password first. The shared demo account cannot be deleted."
         ]
       },
       {
@@ -118,7 +121,7 @@
       {
         "h": "Security",
         "p": [
-          "Passwords are stored as bcrypt hashes and access tokens as SHA-256 hashes. Stored data is not end-to-end encrypted: people who administer TermPocket can access it, including conversations. When you sign in, a login token valid for seven days is kept in your browser’s local storage, so anyone using your browser can use your account. Sign out on shared computers. No system is perfectly secure, and we cannot guarantee that your information will never be accessed without permission."
+          "Passwords are stored as bcrypt hashes and access tokens as SHA-256 hashes. Stored data is not end-to-end encrypted: people who administer TermPocket can access it, including conversations and Pocky memory. When you sign in, a login token valid for seven days is kept in your browser’s local storage, so anyone using your browser can use your account. Sign out on shared computers. No system is perfectly secure, and we cannot guarantee that your information will never be accessed without permission."
         ]
       },
       {
