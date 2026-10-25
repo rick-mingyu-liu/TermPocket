@@ -138,6 +138,10 @@ const config = {
     // Per user: creating and revoking MCP access tokens together. Each create
     // mints a credential, and a person managing a handful needs few.
     accessTokenMax: intFromEnv('RATE_LIMIT_ACCESS_TOKEN_MAX', 20),
+    // Per user: POST /access-tokens refused for a wrong password. Creating
+    // checks the password, so this bounds guessing it with a stolen login
+    // token the same way accountDeleteMax does for account deletion.
+    accessTokenPasswordMax: intFromEnv('RATE_LIMIT_ACCESS_TOKEN_PASSWORD_MAX', 5),
     // Per user: DELETE /auth/account attempts. Each checks the password, so
     // this bounds guessing it with a stolen login token; a person deleting
     // their account needs one, or a few after typos.
@@ -225,6 +229,14 @@ const config = {
     // first run after someone opts in with years of history finishes over
     // several hours rather than as one long statement.
     transactionRetentionBatch: 5000,
+  },
+
+  // Personal access tokens for POST /mcp (services/accessTokens.ts). A new
+  // token stops opening /mcp this many days after it is created (migration
+  // 023; before it is applied, tokens do not expire). Interpolated into SQL
+  // as a parameter, so it must stay a whole number.
+  accessTokens: {
+    ttlDays: 90,
   },
 
   // The Terms of Service and Privacy Policy as one version: a user who has

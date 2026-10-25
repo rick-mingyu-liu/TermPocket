@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { createToken, listTokens, revokeToken, MAX_TOKENS_PER_USER, DemoTokenError } from '../services/accessTokens';
+import { createToken, listTokens, revokeToken, MAX_TOKENS_PER_USER, DemoTokenError, TokenPasswordError } from '../services/accessTokens';
 import { errorSummary } from '../utils/errorSummary';
 
 /**
@@ -24,14 +24,21 @@ const accessTokenController = {
   async create(req: Request, res: Response) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      // errors.array() would echo the submitted values, the password among them.
+      return res.status(400).json({ errors: errors.array().map((e) => ({ msg: e.msg, path: 'path' in e ? e.path : undefined })) });
     }
     try {
-      const { token, summary } = await createToken(req.user.userId, req.body.name);
+      const { token, summary } = await createToken(req.user.userId, req.body.name, { password: req.body.password as string });
       res.status(201).json({ token: summary, secret: token });
     } catch (error) {
       if (error instanceof DemoTokenError) {
         return res.status(403).json({ error: 'The demo account cannot create access tokens.', code: 'access_token_demo' });
+      }
+      // 403, not 401: the client treats a 401 as a lapsed login and signs out.
+      if (error instanceof TokenPasswordError) {
+        // Counted by accessTokenPasswordLimiter (wrong passwords only).
+        res.locals.accessTokenPasswordRefused = true;
+        return res.status(403).json({ error: 'The password is incorrect.', code: 'access_token_password_incorrect' });
       }
       if (error instanceof RangeError) {
         return res.status(409).json({ error: `You can have at most ${MAX_TOKENS_PER_USER} active tokens. Revoke one first.`, code: 'token_limit' });

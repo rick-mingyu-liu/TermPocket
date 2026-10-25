@@ -3,6 +3,7 @@ import { BookOpen, Check, Copy, KeyRound, PlugZap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'next-i18next'
 import { AccessToken, MCP_ENDPOINT_URL, accessTokenAPI } from '@/utils/api'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -50,9 +51,11 @@ function formatInstant(value: string, locale: string, withTime: boolean): string
     : date.toLocaleDateString(locale, { dateStyle: 'medium' })
 }
 
-function errorStatus(error: unknown): { status?: number, code?: string } {
-  const response = (error as { response?: { status?: number, data?: { code?: string } } }).response
-  return { status: response?.status, code: response?.data?.code }
+function errorStatus(error: unknown): { status?: number, code?: string, paths: string[] } {
+  const response = (error as { response?: { status?: number, data?: { code?: string, errors?: Array<{ path?: unknown }> } } }).response
+  const errors = Array.isArray(response?.data?.errors) ? response.data.errors : []
+  const paths = errors.map((e) => e?.path).filter((path): path is string => typeof path === 'string')
+  return { status: response?.status, code: response?.data?.code, paths }
 }
 
 /**
@@ -73,8 +76,12 @@ export default function AiConnections() {
   const listRequestRef = useRef(0)
 
   const [name, setName] = useState('')
+  // The account password, sent once with the create request. Only in this
+  // state, cleared as soon as the request settles, never stored.
+  const [password, setPassword] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [passwordWrong, setPasswordWrong] = useState(false)
 
   const [secret, setSecret] = useState<string | null>(null)
   const [secretName, setSecretName] = useState('')
@@ -126,7 +133,11 @@ export default function AiConnections() {
     return () => clearTimeout(timer)
   }, [copied])
 
-  const active = (tokens ?? []).filter((token) => !token.revoked_at)
+  // Expired tokens no longer open /mcp and do not count toward the limit, but
+  // stay in the list (marked expired) until revoked, so the owner sees which
+  // app needs a new token.
+  const active = (tokens ?? []).filter((token) => !token.revoked_at && !token.expired)
+  const listed = (tokens ?? []).filter((token) => !token.revoked_at)
   const revoked = (tokens ?? []).filter((token) => token.revoked_at)
   const atLimit = active.length >= limit
   const trimmed = name.trim()
@@ -161,23 +172,36 @@ export default function AiConnections() {
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault()
-    if (creating || secret || !trimmed || trimmed.length > NAME_MAX || atLimit) return
+    if (creating || secret || !trimmed || trimmed.length > NAME_MAX || !password || atLimit) return
     setCreating(true)
     setCreateError(null)
+    setPasswordWrong(false)
+    const typed = password
+    // Cleared now, whatever the answer: a retry means typing it again.
+    setPassword('')
     try {
-      const { data } = await accessTokenAPI.create(trimmed)
+      const { data } = await accessTokenAPI.create(trimmed, typed)
       setSecretName(data.token.name)
       setSecret(data.secret)
       setName('')
       setTokens((current) => [data.token, ...(current ?? [])])
       load()
     } catch (error) {
-      const { status, code } = errorStatus(error)
+      const { status, code, paths } = errorStatus(error)
       if (status === 409 || code === 'token_limit') {
         setCreateError(t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit }))
         load()
       } else if (code === 'access_token_demo') {
         setCreateError(t('The demo account cannot create AI connections. Sign up to connect your own.'))
+      } else if (code === 'access_token_password_incorrect') {
+        setPasswordWrong(true)
+        setCreateError(t('That password is incorrect. Enter your TermPocket password to create a connection.'))
+      } else if (code === 'access_token_password_rate_limited') {
+        setPasswordWrong(true)
+        setCreateError(t('Too many wrong passwords. Wait a few minutes, then try again.'))
+      } else if (status === 400 && paths.includes('password') && !paths.includes('name')) {
+        setPasswordWrong(true)
+        setCreateError(t('Enter your TermPocket password.'))
       } else if (status === 400) {
         setCreateError(t('Give the connection a name of 1 to 60 characters.'))
       } else if (status === undefined || status < 500) {
@@ -240,6 +264,9 @@ export default function AiConnections() {
           </p>
           <p className="text-sm text-muted-foreground">
             {t('The AI app handles these numbers under its own privacy terms.')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t('Connections expire after 90 days. When one expires, create a new token and give it to the app.')}
           </p>
         </div>
 
@@ -306,13 +333,25 @@ export default function AiConnections() {
               placeholder={t('e.g. Claude on my laptop')}
               disabled={Boolean(secret) || atLimit || creating || tokens === null}
               aria-describedby="ai-connection-hint"
-              aria-invalid={createError ? true : undefined}
+              aria-invalid={createError && !passwordWrong ? true : undefined}
               autoComplete="off"
+            />
+            <Input
+              id="ai-connection-password"
+              type="password"
+              value={password}
+              onChange={(event) => { setPassword(event.target.value); setCreateError(null); setPasswordWrong(false) }}
+              placeholder={t('Your TermPocket password')}
+              aria-label={t('Your TermPocket password')}
+              disabled={Boolean(secret) || atLimit || creating || tokens === null}
+              aria-invalid={passwordWrong ? true : undefined}
+              autoComplete="current-password"
+              maxLength={1024}
             />
             <Button
               type="submit"
               className="shrink-0"
-              disabled={Boolean(secret) || !trimmed || atLimit || creating || tokens === null}
+              disabled={Boolean(secret) || !trimmed || !password || atLimit || creating || tokens === null}
             >
               <KeyRound className="w-4 h-4 mr-2" aria-hidden />
               {creating ? t('Creating...') : t('Create token')}
@@ -323,7 +362,7 @@ export default function AiConnections() {
               ? t('Copy this token and dismiss its panel before creating another connection.')
               : atLimit
               ? t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit })
-              : t('Name it after the app or device that will use it. {{used}} of {{limit}} in use.', { used: active.length, limit })}
+              : t('Name it after the app or device that will use it, and confirm with your password. {{used}} of {{limit}} in use.', { used: active.length, limit })}
           </p>
           {/* At the limit the hint above already says why; don't say it twice. */}
           {createError && !atLimit && (
@@ -340,16 +379,16 @@ export default function AiConnections() {
             </div>
           ) : tokens === null ? (
             <p className="text-sm text-muted-foreground">{t('Loading...')}</p>
-          ) : active.length === 0 ? (
+          ) : listed.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               {t('No connections yet.')}
             </p>
           ) : (
             <ul className="divide-y rounded-lg border">
-              {active.map((token) => (
+              {listed.map((token) => (
                 <li key={token.id} className="flex items-center justify-between gap-3 p-4">
                   <div className="min-w-0">
-                    <p className="font-medium break-words">{token.name}</p>
+                    <p className={cn('font-medium break-words', token.expired && 'text-muted-foreground')}>{token.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {t('Created {{date}}', { date: formatInstant(token.created_at, locale, false) })}
                       <span aria-hidden> · </span>
@@ -358,6 +397,16 @@ export default function AiConnections() {
                         ? t('Last used {{date}}', { date: formatInstant(token.last_used_at, locale, true) })
                         : t('Never used')}
                     </p>
+                    {/* expired implies expires_at; a token without one never expires. */}
+                    {token.expires_at && token.expired ? (
+                      <p className="text-sm font-medium text-destructive">
+                        {t('Expired {{date}} — create a new token for this app', { date: formatInstant(token.expires_at, locale, false) })}
+                      </p>
+                    ) : token.expires_at ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t('Expires {{date}}', { date: formatInstant(token.expires_at, locale, false) })}
+                      </p>
+                    ) : null}
                   </div>
                   <Button
                     type="button"
@@ -575,7 +624,7 @@ export default function AiConnections() {
             <details className="border-t pt-3">
               <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('mcpGuide.troubleshooting')}</summary>
               <div className="mt-3 space-y-3">
-                <p>{t('If an app reports 401, the token is wrong or revoked, or the header lacks “Bearer ”. Create a new token. Your TermPocket login does not work here.')}</p>
+                <p>{t('If an app reports 401, the token is wrong, revoked or expired, or the header lacks “Bearer ”. Create a new token. Your TermPocket login does not work here.')}</p>
               </div>
             </details>
           </div>

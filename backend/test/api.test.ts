@@ -42,6 +42,9 @@ if (HAVE_DB) {
   process.env.RATE_LIMIT_AUTH_MAX = '10000';
   process.env.RATE_LIMIT_API_MAX = '10000';
   process.env.RATE_LIMIT_ACCESS_TOKEN_MAX = '10000';
+  // The wrong-password limiter counts every create on arrival (so parallel
+  // guesses count), which ten concurrent creates by one user would exceed.
+  process.env.RATE_LIMIT_ACCESS_TOKEN_PASSWORD_MAX = '10000';
 }
 
 describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to run' }, () => {
@@ -462,7 +465,7 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
 
   describe('MCP access tokens, managed from the web', () => {
     const asUser = (req: Test, token: string): Test => req.set('Authorization', `Bearer ${token}`);
-    const create = (token: string, name = 'agent'): Test => asUser(request(app).post('/access-tokens'), token).send({ name });
+    const create = (token: string, name = 'agent'): Test => asUser(request(app).post('/access-tokens'), token).send({ name, password: PASSWORD });
     const mcp = (secret: string, body: object): Test =>
       request(app).post('/mcp').set('Authorization', `Bearer ${secret}`).send(body);
 
@@ -534,7 +537,7 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
     test('the service itself holds the limit when called in parallel, as the CLI calls it', async () => {
       const service: typeof import('../services/accessTokens') = require('../services/accessTokens');
       const dave = await seedUser();
-      const results = await Promise.allSettled(Array.from({ length: 10 }, (_, i) => service.createToken(dave.id, `direct ${i}`)));
+      const results = await Promise.allSettled(Array.from({ length: 10 }, (_, i) => service.createToken(dave.id, `direct ${i}`, { operator: true })));
       const fulfilled = results.filter((r) => r.status === 'fulfilled');
       const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
       assert.equal(fulfilled.length, service.MAX_TOKENS_PER_USER);
@@ -545,6 +548,41 @@ describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to 
         'SELECT COUNT(*)::int AS n FROM access_tokens WHERE user_id = $1 AND revoked_at IS NULL', [dave.id]
       );
       assert.equal(active.rows[0]!.n, service.MAX_TOKENS_PER_USER);
+    });
+
+    test('a wrong password creates nothing and answers 403 access_token_password_incorrect', async () => {
+      const erin = await seedUser();
+      const res = await login(erin.email);
+      const wrong = await asUser(request(app).post('/access-tokens'), res.body.token).send({ name: 'agent', password: 'not-the-password' });
+      assert.equal(wrong.status, 403);
+      assert.equal(wrong.body.code, 'access_token_password_incorrect');
+      assert.ok(!JSON.stringify(wrong.body).includes('not-the-password'));
+      const n = await db.query<{ n: number }>('SELECT COUNT(*)::int AS n FROM access_tokens WHERE user_id = $1', [erin.id]);
+      assert.equal(n.rows[0]!.n, 0);
+    });
+
+    test('a new token expires 90 days out; an expired one is refused by /mcp, listed as expired, and frees its slot', async () => {
+      const frank = await seedUser();
+      const res = await login(frank.email);
+      const frankToken: string = res.body.token;
+      const created = await create(frankToken);
+      assert.equal(created.status, 201, JSON.stringify(created.body));
+      const { token, secret } = created.body as { token: { id: number; expires_at: string; expired: boolean }; secret: string };
+      assert.equal(token.expired, false);
+      const days = (new Date(token.expires_at).getTime() - Date.now()) / 86_400_000;
+      assert.ok(days > 89.9 && days <= 90, `expires in ${days} days`);
+      assert.equal((await mcp(secret, { jsonrpc: '2.0', id: 1, method: 'tools/list' })).status, 200);
+
+      await db.query("UPDATE access_tokens SET expires_at = now() - interval '1 second' WHERE id = $1", [token.id]);
+      assert.equal((await mcp(secret, { jsonrpc: '2.0', id: 2, method: 'tools/list' })).status, 401);
+      const list = await asUser(request(app).get('/access-tokens'), frankToken);
+      const listed = list.body.tokens.find((t: { id: number }) => t.id === token.id);
+      assert.equal(listed.expired, true);
+
+      // Four more active plus the expired one: the limit counts only the four.
+      for (let i = 0; i < 4; i += 1) assert.equal((await create(frankToken, `more ${i}`)).status, 201);
+      assert.equal((await create(frankToken, 'fifth active')).status, 201);
+      assert.equal((await create(frankToken, 'sixth active')).status, 409);
     });
   });
 });

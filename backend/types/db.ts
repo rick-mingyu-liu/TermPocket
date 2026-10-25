@@ -65,6 +65,8 @@ export interface AccessTokenRow {
   created_at: Date | null;
   last_used_at: Date | null;
   revoked_at: Date | null;
+  /** Migration 023. NULL is treated as created_at + ttlDays, never as "never"; the service reports null before 023. */
+  expires_at: Date | null;
 }
 
 export interface SavingsGoalRow {

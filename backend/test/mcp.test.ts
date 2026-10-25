@@ -5,7 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import db = require('../db/connection');
 import exchangeRateService = require('../services/exchangeRateService');
-import { hashToken, revokeToken } from '../services/accessTokens';
+import { hashToken, revokeToken, resetExpiryProbe } from '../services/accessTokens';
 import { currentTerm, previousTerm, boundsOf, labelOf } from '../utils/terms';
 
 /**
@@ -35,6 +35,8 @@ let totals: Record<string, Array<{ currency: string; type: string; category: str
 let goals: Array<Record<string, unknown>>;
 /** Whether the stubbed token's last_used_at is old enough to be written. */
 let lookupStale = true;
+/** Whether the stubbed token has passed its expires_at (migration 023). */
+let tokenExpired = false;
 
 before(async () => {
   delete require.cache[routerPath];
@@ -58,10 +60,16 @@ beforeEach(() => {
   totals = {};
   goals = [];
   lookupStale = true;
+  tokenExpired = false;
+  resetExpiryProbe();
   mock.method(db, 'query', async (text: string, params: unknown[]) => {
+    // Migration 023's column probe: present, and not recorded, so the
+    // assertions below see the same queries before and after it is cached.
+    if (text.includes('information_schema.columns')) return { rowCount: 1, rows: [{ present: true }] };
     queries.push({ text, params });
     if (text.includes('FROM access_tokens WHERE token_hash')) {
-      return { rowCount: params[0] === hashToken(TOKEN) ? 1 : 0, rows: params[0] === hashToken(TOKEN) ? [{ id: 1, user_id: 7, stale: lookupStale }] : [] };
+      const known = params[0] === hashToken(TOKEN) && !(tokenExpired && text.includes('COALESCE(expires_at, created_at + make_interval(days => $2)) > now()') && params[1] === 90);
+      return { rowCount: known ? 1 : 0, rows: known ? [{ id: 1, user_id: 7, stale: lookupStale }] : [] };
     }
     if (text.includes('GROUP BY currency')) return { rowCount: 0, rows: totals[`${String(params[1])}|${String(params[2])}`] ?? totals[String(params[1])] ?? [] };
     if (text.includes('COUNT(DISTINCT')) return { rowCount: 1, rows: [{ months: '10' }] };
@@ -108,6 +116,14 @@ describe('who gets in', () => {
     assert.match(queries[0]?.text ?? '', /revoked_at IS NULL/);
   });
 
+  test('an expired token: 401, decided by the database\'s clock', async () => {
+    tokenExpired = true;
+    const res = await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+    assert.equal(res.status, 401);
+    assert.match(queries[0]?.text ?? '', /revoked_at IS NULL AND COALESCE\(expires_at, created_at \+ make_interval\(days => \$2\)\) > now\(\)/);
+    assert.equal(queries.length, 1, 'an expired token reached a tool or a write');
+  });
+
   test('last_used_at is written only when it is more than five minutes old', async () => {
     await rpc({ jsonrpc: '2.0', id: 1, method: 'ping' });
     assert.match(queries[0]!.text, /^SELECT id, user_id/);
@@ -121,7 +137,7 @@ describe('who gets in', () => {
 
   test('the token is looked up by its hash, never stored or compared in the clear', async () => {
     await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
-    assert.deepEqual(queries[0]?.params, [hashToken(TOKEN)]);
+    assert.deepEqual(queries[0]?.params, [hashToken(TOKEN), 90]);
     assert.ok(!JSON.stringify(queries).includes(TOKEN));
   });
 });
