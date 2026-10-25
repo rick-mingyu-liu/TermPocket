@@ -10,7 +10,7 @@ export const currencies = ['CAD', 'USD', 'EUR', 'GBP', 'AUD', 'CNY'];
 export function cleanMemoryText(text: string): string {
   // These are deliberately matched so untrusted text cannot hide instructions.
   // eslint-disable-next-line no-control-regex
-  return text.toWellFormed().replace(/[\u0000-\u001f\u007f‪-‮⁦-⁩]/g, ' ');
+  return text.toWellFormed().replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, ' ');
 }
 export const categories = {
   income: ['Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund', 'Other Income'],

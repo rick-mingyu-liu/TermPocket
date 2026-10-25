@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import config = require('../config');
 import db = require('../db/connection');
-import { prepareMemoryProposal, listMemories } from '../services/agent/memory';
+import { prepareMemoryProposal, listMemories, memoriesForTurn } from '../services/agent/memory';
 import { recordsFor } from '../services/agent/investigation';
 
 // propose_memory's server side with the database stubbed: what it validates,
@@ -102,4 +102,21 @@ test('listing rejects a bad timezone as input, including one only PostgreSQL ref
   }) as unknown as typeof db.query };
   await assert.rejects(listMemories(userId, 'America/Toronto', { query: client.query }), { code: 'agent_invalid_input' });
   for (const zone of ['Not/AZone', 5, ['UTC'], 'x'.repeat(101)]) await assert.rejects(listMemories(userId, zone, { query: client.query }), { code: 'agent_invalid_input' });
+});
+
+test('a turn whose zone only PostgreSQL refuses falls back to UTC for saved_on, behind a savepoint', async () => {
+  const statements: string[] = [];
+  const fact = { id, kind: 'other', text: 'Fictional', amount: null, currency: null, cadence: null, version, saved_on: '2026-10-23' };
+  const client = (failure: { code: string }) => ({ query: (async (text: string, params: unknown[] = []) => {
+    const sql = text.replace(/\s+/g, ' ').trim(); statements.push(params[1] === undefined ? sql : `${sql.slice(0, 20)} [${String(params[1])}]`);
+    if (sql.includes('to_regclass')) return { rows: [{ present: true }] };
+    if (sql.includes('is_demo')) return { rows: [{ is_demo: false }] };
+    if (sql.startsWith('SELECT id,kind,text') && params[1] !== 'UTC') throw Object.assign(new Error('time zone "US/Pacific-New" not recognized'), failure);
+    if (sql.startsWith('SELECT id,kind,text')) return { rows: [fact] };
+    return { rows: [] };
+  }) as unknown as typeof db.query });
+  assert.deepEqual(await memoriesForTurn(userId, 'US/Pacific-New', client({ code: '22023' })), [fact]);
+  assert.deepEqual(statements.filter(s => !s.includes('to_regclass') && !s.includes('is_demo')), ['SAVEPOINT memory_zone', 'SELECT id,kind,text, [US/Pacific-New]', 'ROLLBACK TO SAVEPOINT memory_zone', 'SELECT id,kind,text, [UTC]']);
+  // Any other failure still fails the turn.
+  await assert.rejects(memoriesForTurn(userId, 'US/Pacific-New', client({ code: '57014' })), { code: '57014' });
 });

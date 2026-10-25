@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Brain, MessageSquare, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -42,6 +42,15 @@ export default function PockyMemory() {
     // A failed read leaves the section hidden rather than showing a wrong list.
     load().catch(() => setMemories(null))
   }, [load])
+
+  // The card's "Manage memory" link lands on #pocky-memory, which exists only
+  // once the list has loaded, after the browser's own jump to the anchor.
+  const scrolled = useRef(false)
+  useEffect(() => {
+    if (memories === null || scrolled.current || window.location.hash !== '#pocky-memory') return
+    scrolled.current = true
+    document.getElementById('pocky-memory')?.scrollIntoView({ block: 'start' })
+  }, [memories])
 
   const remove = async (id: string) => {
     if (busy) return

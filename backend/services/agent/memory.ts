@@ -103,11 +103,24 @@ export async function listMemories(userId: number, timezone: unknown = 'UTC', cl
 /**
  * What a turn's prompt carries: undefined before migration 022 and for the
  * demo account, so context.memory is omitted rather than shown as empty.
+ * `client` must be inside a transaction (beginTurn's). A conversation zone
+ * that Intl accepts but PostgreSQL does not (22023) must not fail every turn,
+ * so saved_on falls back to UTC behind a savepoint; only GET /agent/memories
+ * answers such a zone with a 400.
  */
-export async function memoriesForTurn(userId: number, timezone: unknown, client: MemoryClient = { query }): Promise<MemoryFact[] | undefined> {
+export async function memoriesForTurn(userId: number, timezone: unknown, client: MemoryClient): Promise<MemoryFact[] | undefined> {
   const zone = timezoneOf(timezone);
   if (!(await memoriesAvailable(sql => client.query(sql))) || await isDemoUser(client, userId)) return undefined;
-  return readMemories(client, userId, zone);
+  await client.query('SAVEPOINT memory_zone');
+  try {
+    const facts = await readMemories(client, userId, zone);
+    await client.query('RELEASE SAVEPOINT memory_zone');
+    return facts;
+  } catch (error) {
+    if (!(error instanceof AgentError && error.code === 'agent_invalid_input')) throw error;
+    await client.query('ROLLBACK TO SAVEPOINT memory_zone');
+    return readMemories(client, userId, 'UTC');
+  }
 }
 
 const toolKeys = ['action', 'memory_id', 'expected_updated_at', ...fields];

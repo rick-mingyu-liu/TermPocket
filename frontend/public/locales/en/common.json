@@ -653,7 +653,7 @@
       "notSaved": "Not saved.",
       "kept": "Kept. Pocky still remembers this fact.",
       "expired": "This offer expired before you answered. Ask Pocky again if you still want it remembered.",
-      "full": "You already have 30 saved facts. Forget one in Settings first, then ask Pocky again.",
+      "full": "Pocky already has as many saved facts as it can keep. Forget one in Settings first, then ask Pocky again.",
       "conflict": "This fact changed since Pocky offered this. Ask Pocky again with the current fact.",
       "kinds": {
         "income": "Income",
@@ -671,7 +671,7 @@
       "errors": {
         "agent_version_conflict": "This memory offer changed in another request. Refresh and review the latest one.",
         "agent_expired": "This memory offer has expired. Ask Pocky again if you still want it remembered.",
-        "agent_memory_full": "You already have 30 saved facts. Forget one in Settings first, then ask Pocky again.",
+        "agent_memory_full": "Pocky already has as many saved facts as it can keep. Forget one in Settings first, then ask Pocky again.",
         "agent_memory_conflict": "This fact changed since Pocky offered this. Ask Pocky again with the current fact.",
         "agent_memory_demo": "The demo account cannot save facts to Pocky's memory.",
         "agent_busy": "Another request is running. Wait for it to finish, then try again.",

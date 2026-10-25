@@ -79,7 +79,8 @@ test('direct: one tool call sends the same prompt, envelope and tools, then retu
   assert.deepEqual(first!.messages.length, 1);
   const envelope = JSON.parse(String(first!.messages[0]!.content)) as Record<string, unknown>;
   assert.deepEqual(Object.keys(envelope), ['currentMessage', 'history', 'pendingRows', 'context']);
-  assert.deepEqual(first!.tools!.map(t => (t as { name: string }).name), ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal', 'propose_memory']);
+  // No memories (before 022, the demo account): propose_memory is not offered.
+  assert.deepEqual(first!.tools!.map(t => (t as { name: string }).name), ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal']);
   for (const t of first!.tools!) {
     const schema = (t as { input_schema: Record<string, unknown> }).input_schema;
     assert.equal(schema.type, 'object');

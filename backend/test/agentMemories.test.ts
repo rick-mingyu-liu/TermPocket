@@ -74,6 +74,15 @@ describe('approved memory lifecycle', { skip: !url }, () => {
     assert.deepEqual(begun.memories!.map(f=>[f.id,f.kind,f.version]),[[facts[0]!.id,'reserve',facts[0]!.version]]);
     assert.equal(begun.state.memoryProposal!.status,'confirmed');
   });
+  test('a conversation zone only PostgreSQL refuses still starts turns, dating facts in UTC; the listing refuses it',async()=>{
+    // Intl (Node 22 and later) accepts this retired link; PostgreSQL 17's tzdata does not.
+    const zone='US/Pacific-New';new Intl.DateTimeFormat('en',{timeZone:zone});
+    await db.query("INSERT INTO agent_memories(id,user_id,kind,text,updated_at) VALUES($1,$2,'other','Fictional late fact','2026-10-23T23:30:00Z')",[randomUUID(),alice]);
+    const c=await store.createConversation(alice,{...settings,timezone:zone});
+    const begun=await store.beginTurn(alice,c.id,{...settings,timezone:zone,requestId:randomUUID(),content:'Fictional turn'});
+    assert.equal(begun.started,true);assert.deepEqual(begun.memories!.map(f=>f.saved_on),['2026-10-23']);
+    await assert.rejects(store.getMemories(alice,zone),{code:'agent_invalid_input'});
+  });
   test('the tool reads the owned fact through the real database and writes nothing',async()=>{
     const {prepareMemoryProposal}=require('../services/agent/memory') as typeof import('../services/agent/memory');
     const saved=await confirm(await propose());const fact=(await store.getMemories(alice)).memories[0]!;

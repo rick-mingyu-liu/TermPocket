@@ -142,6 +142,9 @@ export async function beginTurn(userId:number,id:string,input:TurnInput,canStart
     if(Number(admitted.rows[0]!.count)>=limits.maxTurnsPerHour) throw new AgentError('agent_rate_limited',429);
     const today=await client.query<{count:string}>("SELECT count(*) FROM agent_admissions WHERE user_id=$1 AND created_at>now()-interval '24 hours'",[userId]);
     if(Number(today.rows[0]!.count)>=limits.maxTurnsPerDay) throw new AgentError('agent_daily_limit',429);
+    // Read in the admitting transaction, dated in the conversation's timezone,
+    // and before the all-users lock so this read never holds up other users.
+    const memories=await memoriesForTurn(userId,settings.timezone,client);
     // The owner lock only serializes one user's admissions; this one serializes
     // everyone's until COMMIT, so concurrent users cannot overshoot the total.
     await client.query('SELECT pg_advisory_xact_lock($1)',[ADMISSION_LOCK]);
@@ -155,9 +158,6 @@ export async function beginTurn(userId:number,id:string,input:TurnInput,canStart
     await client.query("INSERT INTO agent_runs(id,conversation_id,user_id,request_hash,status) VALUES($1,$2,$3,$4,'running')",[requestId,id,userId,requestHash]);
     await client.query("INSERT INTO agent_messages(id,conversation_id,user_id,run_id,role,content,status) VALUES($1,$2,$3,$4,'user',$5,'complete')",[randomUUID(),id,userId,requestId,content]);
     await client.query('UPDATE agent_conversations SET currency=$3,timezone=$4,language=$5,title=CASE WHEN $6 THEN $7 ELSE title END,updated_at=now() WHERE id=$1 AND user_id=$2',[id,userId,settings.currency,settings.timezone,settings.language,Number(count.rows[0]!.count)===0,content.slice(0,80)]);
-    // Read in the admitting transaction, dated in the conversation's timezone;
-    // a zone PostgreSQL rejects is the request's 400 and admits nothing.
-    const memories=await memoriesForTurn(userId,settings.timezone,client);
     return {started:true,state:await state(client,userId,id),history:historyBound(prior.messages),pendingRows:prior.draft?.status==='pending'?prior.draft.rows:[],...(memories===undefined?{}:{memories})};
   });
 }

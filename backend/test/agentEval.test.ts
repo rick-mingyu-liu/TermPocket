@@ -349,6 +349,10 @@ describe('memory in the evaluation harness', () => {
     assert.match(run({ memoryProposal: { action: 'update' } }).join(' '), /no memory proposal/);
     const wrong = run({ memoryProposal: { action: 'forget', kind: 'income', ref: 'm1', amount: '950.00' } }, update).join(' ');
     for (const reason of [/action update, expected forget/, /kind expense, expected income/, /names m2, expected m1/, /amount "1050.00", expected "950.00"/]) assert.match(wrong, reason);
+    // optional: none passes, but a duplicate remember where an update was allowed fails.
+    assert.deepEqual(run({ memoryProposal: { action: 'update', ref: 'm2', optional: true } }), []);
+    assert.match(run({ memoryProposal: { action: 'update', ref: 'm2', optional: true } }, { ...update, action: 'remember' as never, memory_id: null as never }).join(' '), /action remember, expected update/);
+    assert.throws(() => validateCaseFile({ defaults: file.defaults, cases: [withMemory({ memoryProposal: { action: 'update', ref: 'm2', optional: false as never } })] }), /optional can only be true/);
   });
   test('runCase hands the case\'s facts and last offer to the runtime, and tracks propose_memory', async () => {
     const seen: Array<{ memories?: unknown; memoryProposal?: unknown }> = [];

@@ -62,8 +62,9 @@ export interface Expectations {
   /**
    * null: no memory proposal may be produced. ref names the case's own fact
    * (m1 is the first of `memories`), which the proposal's memory_id must be.
+   * optional: no proposal also passes, but one that is produced must match.
    */
-  memoryProposal?: null | { action: 'remember' | 'update' | 'forget'; kind?: MemoryKind; ref?: string; amount?: string | null };
+  memoryProposal?: null | { action: 'remember' | 'update' | 'forget'; kind?: MemoryKind; ref?: string; amount?: string | null; optional?: true };
   reply?: { mustContain?: string[]; mustContainAny?: string[][]; mustNotContain?: string[]; mustMatch?: string[]; mustNotMatch?: string[] };
 }
 /** A remembered fact as a case states it; the harness gives it a fictional id and version. */
@@ -170,7 +171,8 @@ export function validateCaseFile(raw: unknown): CaseFile {
       const facts = Array.isArray(c.memories) ? c.memories.length : 0;
       if (!isObject(m) || !['remember', 'update', 'forget'].includes(String(m.action))) problems.push(`${at}: memoryProposal.action`);
       else {
-        for (const k of unknownKeys(m, ['action', 'kind', 'ref', 'amount'])) problems.push(`${at}: memoryProposal.${k}`);
+        for (const k of unknownKeys(m, ['action', 'kind', 'ref', 'amount', 'optional'])) problems.push(`${at}: memoryProposal.${k}`);
+        if (m.optional !== undefined && m.optional !== true) problems.push(`${at}: memoryProposal.optional can only be true`);
         if (m.kind !== undefined && !MEMORY_KINDS.includes(m.kind as MemoryKind)) problems.push(`${at}: memoryProposal.kind`);
         const ref = typeof m.ref === 'string' ? /^m([1-9]\d?)$/.exec(m.ref) : null;
         if (m.ref !== undefined && (!ref || Number(ref[1]) > facts)) problems.push(`${at}: memoryProposal.ref must name one of the case's memories`);
@@ -573,7 +575,7 @@ export function scoreRun(c: EvalCase, outcome: RunOutcome): string[] {
   if (e.memoryProposal) {
     const got = result.memoryProposal;
     const want = e.memoryProposal;
-    if (!got) failures.push(`no memory proposal (expected ${want.action})`);
+    if (!got) { if (!want.optional) failures.push(`no memory proposal (expected ${want.action})`); }
     else {
       if (got.action !== want.action) failures.push(`memory proposal action ${got.action}, expected ${want.action}`);
       if (want.kind !== undefined && got.kind !== want.kind) failures.push(`memory proposal kind ${got.kind}, expected ${want.kind}`);
