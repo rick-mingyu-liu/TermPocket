@@ -65,6 +65,7 @@
   "Create token": "创建令牌",
   "{{limit}} of {{limit}} connections in use — revoke one to add another.": "已使用 {{limit}}/{{limit}} 个连接——请撤销一个后再添加。",
   "Name it after the app or device that will use it. {{used}} of {{limit}} in use.": "建议以将要使用它的应用或设备命名。已使用 {{used}}/{{limit}} 个。",
+  "The demo account cannot create AI connections. Sign up to connect your own.": "演示账户无法创建 AI 连接。注册后即可连接你自己的服务。",
   "Give the connection a name of 1 to 60 characters.": "请为连接输入 1 至 60 个字符的名称。",
   "Could not create the connection. Please try again.": "无法创建连接，请重试。",
   "Active connections": "有效连接",

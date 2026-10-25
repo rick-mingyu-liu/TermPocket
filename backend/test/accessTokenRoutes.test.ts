@@ -51,6 +51,7 @@ let stored: StoredToken[];
 let released: number;
 /** Makes the client's INSERT throw, with the bound values in the message as pg's own errors can have. */
 let failInsert: boolean;
+let demo = false;
 let printed: unknown[][];
 
 async function listen(app: express.Express): Promise<{ server: Server; baseUrl: string }> {
@@ -91,6 +92,7 @@ beforeEach(() => {
   queries = [];
   released = 0;
   failInsert = false;
+  demo = false;
   printed = [];
   const created = new Date('2026-10-01T12:00:00Z');
   stored = [
@@ -107,6 +109,7 @@ beforeEach(() => {
     if (/^SELECT id, name, created_at, last_used_at, revoked_at FROM access_tokens/.test(text.trim())) {
       return { rowCount: 0, rows: stored.filter((t) => t.user_id === params[0]).map(({ user_id: _owner, ...rest }) => rest) };
     }
+    if (text.includes('SELECT is_demo FROM users')) return { rowCount: 1, rows: [{ is_demo: demo }] };
     if (text.includes('SET revoked_at')) {
       const hit = stored.find((t) => t.id === params[0] && t.user_id === params[1] && t.revoked_at === null);
       if (hit) hit.revoked_at = new Date();
@@ -241,10 +244,20 @@ describe('POST /access-tokens', () => {
     // land on different connections and the lock would guard nothing.
     assert.deepEqual(queries.map((q) => q.via), ['client', 'client', 'client', 'client', 'client']);
     const steps = queries.map((q) => q.text.trim().split(/\s+/).slice(0, 2).join(' '));
-    assert.deepEqual(steps, ['BEGIN', 'SELECT id', 'SELECT COUNT(*)::int', 'INSERT INTO', 'COMMIT']);
+    assert.deepEqual(steps, ['BEGIN', 'SELECT is_demo', 'SELECT COUNT(*)::int', 'INSERT INTO', 'COMMIT']);
     assert.match(queries[1]!.text, /FROM users WHERE id = \$1 FOR NO KEY UPDATE/);
     assert.deepEqual(queries[1]!.params, [USER]);
     assert.match(queries[2]!.text, /user_id = \$1 AND revoked_at IS NULL/);
+    assert.equal(released, 1);
+  });
+
+  test('the demo account: 403 access_token_demo, rolled back, nothing inserted', async () => {
+    demo = true;
+    const res = await call('POST', '', { body: { name: 'shared' } });
+    assert.equal(res.status, 403);
+    assert.equal(res.body.code, 'access_token_demo');
+    assert.ok(!queries.some((q) => q.text.includes('INSERT') || q.text.includes('COUNT(*)')));
+    assert.equal(queries.at(-1)?.text, 'ROLLBACK');
     assert.equal(released, 1);
   });
 

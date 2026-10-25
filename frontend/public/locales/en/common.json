@@ -65,6 +65,7 @@
   "Create token": "Create token",
   "{{limit}} of {{limit}} connections in use — revoke one to add another.": "{{limit}} of {{limit}} connections in use — revoke one to add another.",
   "Name it after the app or device that will use it. {{used}} of {{limit}} in use.": "Name it after the app or device that will use it. {{used}} of {{limit}} in use.",
+  "The demo account cannot create AI connections. Sign up to connect your own.": "The demo account cannot create AI connections. Sign up to connect your own.",
   "Give the connection a name of 1 to 60 characters.": "Give the connection a name of 1 to 60 characters.",
   "Could not create the connection. Please try again.": "Could not create the connection. Please try again.",
   "Active connections": "Active connections",

@@ -44,11 +44,13 @@ app.use(helmet());
 // redactUrl first. The stock :url and :referrer printed every email
 // verification token: the request is GET /auth/verify-email/<token>, and the
 // page that sends it is /verify-email?token=<token>. Every other field is
-// 'combined''s own.
+// 'combined''s own, except :remote-user, which is dropped: it prints the
+// username of an `Authorization: Basic` header, and a client that sends an
+// access token or a password that way would write it to the log.
 morgan.token<Request, Response>('redacted-url', (req) => redactUrl(req.originalUrl || req.url));
 morgan.token<Request, Response>('redacted-referrer', (req) => redactUrl(req.headers.referer || req.headers.referrer));
 app.use(morgan(
-  ':remote-addr - :remote-user [:date[clf]] ":method :redacted-url HTTP/:http-version" :status :res[content-length] ":redacted-referrer" ":user-agent"'
+  ':remote-addr - - [:date[clf]] ":method :redacted-url HTTP/:http-version" :status :res[content-length] ":redacted-referrer" ":user-agent"'
 ));
 app.use(cors(config.cors));
 // Parsed here, before the app-wide parser, because the default 100 kB limit is
@@ -56,10 +58,17 @@ app.use(cors(config.cors));
 // body that has already been read.
 app.use('/import', express.json({ limit: config.import.bodyLimit }));
 // /mcp speaks JSON-RPC, so a body that isn't JSON is the client's parse error
-// (-32700, 400), not the 500 the global handler would make of it.
-app.use('/mcp', express.json(), (error: unknown, _req: Request, res: Response, next: express.NextFunction) => {
-  if ((error as { type?: string })?.type === 'entity.parse.failed') {
+// (-32700, 400), and any other refused body (too large, compressed, an
+// unknown charset) is its own 4xx with a JSON-RPC error, not the 500 the
+// global handler would make of it. No MCP request needs a compressed body or
+// more than a few hundred bytes, so neither is accepted.
+app.use('/mcp', express.json({ inflate: false, limit: '16kb' }), (error: unknown, _req: Request, res: Response, next: express.NextFunction) => {
+  const { type, status } = (error ?? {}) as { type?: string; status?: number };
+  if (type === 'entity.parse.failed') {
     return res.status(400).json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+  }
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    return res.status(status).json({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } });
   }
   next(error);
 });

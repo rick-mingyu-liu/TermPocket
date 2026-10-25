@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { query, getPool } from '../db/connection';
 import type { AccessTokenRow } from '../types/db';
+import { errorSummary } from '../utils/errorSummary';
 
 /**
  * Personal access tokens: how another app reads your numbers without your
@@ -23,10 +24,35 @@ export const looksLikeToken = (value: unknown): value is string => typeof value 
 /** A token as its owner may see it: everything but the hash and the user id. */
 export type TokenSummary = Omit<AccessTokenRow, 'token_hash' | 'user_id'>;
 
+/** The shared demo account cannot create access tokens. */
+export class DemoTokenError extends Error {}
+
+/**
+ * Hashes of tokens that authenticated in the last five minutes, so /mcp's
+ * per-IP failure budget throttles only unknown tokens: a valid client behind
+ * a shared address is not locked out by someone else's stale one. It decides
+ * nothing about access — every request is still looked up.
+ */
+const recentlyValid = new Map<string, number>();
+const RECENT_MS = 5 * 60 * 1000;
+const RECENT_MAX = 1000;
+export function authenticatedRecently(token: string): boolean {
+  if (!looksLikeToken(token)) return false;
+  const at = recentlyValid.get(hashToken(token));
+  return at !== undefined && Date.now() - at < RECENT_MS;
+}
+function rememberValid(hash: string): void {
+  recentlyValid.delete(hash);
+  const oldest = recentlyValid.keys().next();
+  if (recentlyValid.size >= RECENT_MAX && !oldest.done) recentlyValid.delete(oldest.value);
+  recentlyValid.set(hash, Date.now());
+}
+
 /**
  * Creates a token for a user. Returns the token itself, which is never stored
  * and cannot be shown again, and the row as listTokens would show it.
  */
+
 export async function createToken(userId: number, name: string): Promise<{ id: number; token: string; summary: TokenSummary }> {
   const token = PREFIX + randomBytes(32).toString('base64url');
   // The limit must hold when two requests create at once, which the web UI
@@ -43,7 +69,9 @@ export async function createToken(userId: number, name: string): Promise<{ id: n
   const client: PoolClient = await getPool().connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE', [userId]);
+    const user = await client.query<{ is_demo: boolean }>('SELECT is_demo FROM users WHERE id = $1 FOR NO KEY UPDATE', [userId]);
+    // The demo login is public: its tokens would be anyone's to use and revoke.
+    if (user.rows[0]?.is_demo === true) throw new DemoTokenError();
     const active = await client.query<{ n: number }>(
       'SELECT COUNT(*)::int AS n FROM access_tokens WHERE user_id = $1 AND revoked_at IS NULL',
       [userId]
@@ -71,13 +99,24 @@ export async function createToken(userId: number, name: string): Promise<{ id: n
 /** The user a token belongs to, or null when it is unknown or revoked. Marks it used. */
 export async function userForToken(token: string): Promise<number | null> {
   if (!looksLikeToken(token)) return null;
-  const found = await query<Pick<AccessTokenRow, 'id' | 'user_id'>>(
-    `UPDATE access_tokens SET last_used_at = CURRENT_TIMESTAMP
-     WHERE token_hash = $1 AND revoked_at IS NULL
-     RETURNING id, user_id`,
-    [hashToken(token)]
+  // A read, and a write of last_used_at at most every five minutes per token,
+  // so a busy client does not turn every request into a row update.
+  const hash = hashToken(token);
+  const found = await query<Pick<AccessTokenRow, 'id' | 'user_id'> & { stale: boolean }>(
+    `SELECT id, user_id, (last_used_at IS NULL OR last_used_at < now() - interval '5 minutes') AS stale
+     FROM access_tokens WHERE token_hash = $1 AND revoked_at IS NULL`,
+    [hash]
   );
-  return found.rows[0]?.user_id ?? null;
+  const row = found.rows[0];
+  // A revoked token is throttled again from its first refusal.
+  if (row === undefined) { recentlyValid.delete(hash); return null; }
+  rememberValid(hash);
+  // Bookkeeping: a failed write must not refuse a request the token allows.
+  if (row.stale) {
+    await query('UPDATE access_tokens SET last_used_at = now() WHERE id = $1', [row.id])
+      .catch((error: unknown) => console.error('Access token last_used_at write failed:', { tokenId: row.id, ...errorSummary(error) }));
+  }
+  return row.user_id;
 }
 
 /** A user's tokens, newest first, without their hashes. */

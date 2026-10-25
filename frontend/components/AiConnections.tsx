@@ -176,6 +176,8 @@ export default function AiConnections() {
       if (status === 409 || code === 'token_limit') {
         setCreateError(t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit }))
         load()
+      } else if (code === 'access_token_demo') {
+        setCreateError(t('The demo account cannot create AI connections. Sign up to connect your own.'))
       } else if (status === 400) {
         setCreateError(t('Give the connection a name of 1 to 60 characters.'))
       } else if (status === undefined || status < 500) {
