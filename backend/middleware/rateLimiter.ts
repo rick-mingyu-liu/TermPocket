@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import config = require('../config');
 
@@ -60,17 +61,38 @@ const accountDeleteLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// POST /mcp, keyed on the token's owner, so a user's five tokens share one
-// budget. Mount after the token check. The refusal is a JSON-RPC error.
+/** A JSON-RPC refusal for /mcp, echoing the request's id when it is a valid one. */
+function rpcTooMany(req: Request, res: Response) {
+  const id = (req.body as { id?: unknown } | undefined)?.id;
+  res.status(429).json({
+    jsonrpc: '2.0',
+    id: typeof id === 'string' || typeof id === 'number' ? id : null,
+    error: { code: -32000, message: 'Too many requests, please wait a few minutes.', data: { code: 'mcp_rate_limited' } },
+  });
+}
+
+// POST /mcp with a valid token, keyed on the token's owner, so a user's five
+// tokens share one budget. Mount after the token check.
 const mcpLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.mcpMax,
-  keyGenerator: (req) => `user:${req.user.userId}`,
-  handler: (_req, res) => {
-    res.status(429).json({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Too many requests, please wait a few minutes.' } });
-  },
-  standardHeaders: true,
+  keyGenerator: (req) => `mcp:user:${req.user.userId}`,
+  handler: rpcTooMany,
+  standardHeaders: 'draft-8',
   legacyHeaders: false,
 });
 
-export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accountDeleteLimiter, mcpLimiter };
+// POST /mcp requests refused as 401, per IP. A well-formed but unknown token
+// costs a database lookup (and keeps Neon awake), so failures get a budget of
+// their own, far below the general one. Mount before the token check.
+const mcpAuthFailureLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.mcpAuthFailureMax,
+  requestWasSuccessful: (_req, res) => res.statusCode !== 401,
+  skipSuccessfulRequests: true,
+  handler: rpcTooMany,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+
+export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accountDeleteLimiter, mcpLimiter, mcpAuthFailureLimiter };

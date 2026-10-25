@@ -86,6 +86,41 @@ describe('request log', () => {
     assert.ok(line);
     assert.match(line, /"GET \/health\?probe=1 HTTP\/1\.1" 200 \d+ "-" /);
   });
+
+  test('a credential sent as HTTP Basic is not logged as the remote user', async () => {
+    const secret = 'mgo_' + crypto.randomBytes(32).toString('base64url');
+    const res = await request(app).post('/mcp').auth(secret, 'x').send({ jsonrpc: '2.0', id: 1, method: 'ping' });
+    assert.equal(res.status, 401);
+    await new Promise((resolve) => setImmediate(resolve));
+    const line = written.find((w) => w.includes('"POST /mcp'));
+    assert.ok(line, `no access-log line was written; saw ${util.inspect(written)}`);
+    assert.match(line, /^\S+ - - \[/);
+    assert.ok(!written.some((w) => w.includes(secret)), 'the credential reached the log');
+  });
+});
+
+describe('POST /mcp refused bodies', () => {
+  let request: typeof import('supertest');
+  let app: typeof import('../app');
+  before(() => {
+    request = require('supertest');
+    app = require('../app');
+  });
+
+  test('too large, compressed or an unknown charset: a 4xx JSON-RPC error, never a 500', async () => {
+    const zlib: typeof import('node:zlib') = require('node:zlib');
+    const big = await request(app).post('/mcp').set('Content-Type', 'application/json')
+      .send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping', pad: 'x'.repeat(20_000) }));
+    assert.equal(big.status, 413);
+    assert.deepEqual(big.body, { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } });
+    const gz = await request(app).post('/mcp').set('Content-Type', 'application/json').set('Content-Encoding', 'gzip')
+      .send(zlib.gzipSync(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' })));
+    assert.equal(gz.status, 415);
+    assert.equal(gz.body.error.code, -32600);
+    const charset = await request(app).post('/mcp').set('Content-Type', 'application/json; charset=klingon').send('{}');
+    assert.equal(charset.status, 415);
+    assert.equal(charset.body.error.code, -32600);
+  });
 });
 
 describe('sendEmailVerification logging', () => {

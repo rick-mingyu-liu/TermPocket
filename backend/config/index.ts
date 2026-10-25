@@ -144,9 +144,12 @@ const config = {
     accountDeleteMax: intFromEnv('RATE_LIMIT_ACCOUNT_DELETE_MAX', 5),
     // Per user: POST /mcp calls with a valid access token, all of the user's
     // tokens together. The per-IP limit alone lets a stolen token spread
-    // requests across addresses; an agent answering questions needs a few
-    // calls per question.
-    mcpMax: intFromEnv('RATE_LIMIT_MCP_MAX', 60),
+    // requests across addresses. A session handshake is three requests and a
+    // chatty agent conversation 10-30 tool calls.
+    mcpMax: intFromEnv('RATE_LIMIT_MCP_MAX', 120),
+    // Per IP: POST /mcp requests refused as 401. Each well-formed unknown
+    // token is a database lookup; a real client with a typo needs a few.
+    mcpAuthFailureMax: intFromEnv('RATE_LIMIT_MCP_AUTH_FAILURE_MAX', 20),
   },
 
   // Screenshot import. The OCR itself runs in the browser; these bound what

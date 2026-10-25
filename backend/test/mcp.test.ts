@@ -33,6 +33,8 @@ let queries: Query[];
 /** Rows the stub answers per kind of query. */
 let totals: Record<string, Array<{ currency: string; type: string; category: string; total: string }>>;
 let goals: Array<Record<string, unknown>>;
+/** Whether the stubbed token's last_used_at is old enough to be written. */
+let lookupStale = true;
 
 before(async () => {
   delete require.cache[routerPath];
@@ -55,10 +57,11 @@ beforeEach(() => {
   queries = [];
   totals = {};
   goals = [];
+  lookupStale = true;
   mock.method(db, 'query', async (text: string, params: unknown[]) => {
     queries.push({ text, params });
-    if (text.includes('UPDATE access_tokens')) {
-      return { rowCount: params[0] === hashToken(TOKEN) ? 1 : 0, rows: params[0] === hashToken(TOKEN) ? [{ id: 1, user_id: 7 }] : [] };
+    if (text.includes('FROM access_tokens WHERE token_hash')) {
+      return { rowCount: params[0] === hashToken(TOKEN) ? 1 : 0, rows: params[0] === hashToken(TOKEN) ? [{ id: 1, user_id: 7, stale: lookupStale }] : [] };
     }
     if (text.includes('GROUP BY currency')) return { rowCount: 0, rows: totals[`${String(params[1])}|${String(params[2])}`] ?? totals[String(params[1])] ?? [] };
     if (text.includes('COUNT(DISTINCT')) return { rowCount: 1, rows: [{ months: '10' }] };
@@ -105,6 +108,17 @@ describe('who gets in', () => {
     assert.match(queries[0]?.text ?? '', /revoked_at IS NULL/);
   });
 
+  test('last_used_at is written only when it is more than five minutes old', async () => {
+    await rpc({ jsonrpc: '2.0', id: 1, method: 'ping' });
+    assert.match(queries[0]!.text, /^SELECT id, user_id/);
+    assert.match(queries[1]?.text ?? '', /^UPDATE access_tokens SET last_used_at = now\(\) WHERE id = \$1$/);
+    assert.deepEqual(queries[1]?.params, [1]);
+    queries = [];
+    lookupStale = false;
+    await rpc({ jsonrpc: '2.0', id: 2, method: 'ping' });
+    assert.equal(queries.length, 1, 'a fresh token is a read only');
+  });
+
   test('the token is looked up by its hash, never stored or compared in the clear', async () => {
     await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
     assert.deepEqual(queries[0]?.params, [hashToken(TOKEN)]);
@@ -136,6 +150,13 @@ describe('the protocol', () => {
     assert.equal(unknown.error.code, -32601);
     const batch = (await (await rpc([{ jsonrpc: '2.0', id: 4, method: 'tools/list' }])).json()) as { error: { code: number } };
     assert.equal(batch.error.code, -32600);
+  });
+
+  test('an id that is not a string or a number, or a string id over 200 characters, is an invalid request', async () => {
+    for (const id of [{ a: 1 }, [1], true, 'x'.repeat(201)]) {
+      const body = await (await rpc({ jsonrpc: '2.0', id, method: 'ping' })).json();
+      assert.deepEqual(body, { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } });
+    }
   });
 
   test('GET is refused', async () => {
@@ -213,6 +234,21 @@ describe('the tools', () => {
     assert.equal(out[3].percent, 99, '99.6% is not reported as done');
   });
 
+  test('a RangeError from inside a tool is a fault: a generic answer, logged by name only', async () => {
+    mock.method(db, 'query', async (text: string) => {
+      if (text.includes('FROM access_tokens WHERE token_hash')) return { rowCount: 1, rows: [{ id: 1, user_id: 7, stale: false }] };
+      if (text.includes('FROM savings_goals')) throw new RangeError('Invalid time value: internal detail');
+      return { rowCount: 0, rows: [] };
+    });
+    const logged: unknown[][] = [];
+    mock.method(console, 'error', (...args: unknown[]) => { logged.push(args); });
+    const out = await callTool('money_goals');
+    assert.equal(out.isError, true);
+    assert.equal(out.text, 'TermPocket could not read that right now.');
+    assert.equal(logged.length, 1);
+    assert.ok(!JSON.stringify(logged).includes('internal detail'));
+  });
+
   test('an unknown tool is a protocol error, -32602', async () => {
     const res = await rpc({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'delete_everything' } });
     const body = (await res.json()) as { error: { code: number } };
@@ -242,7 +278,8 @@ describe('the tools', () => {
     await callTool('money_term_summary');
     await callTool('money_baseline');
     await callTool('money_goals');
-    const reads = queries.filter((q) => !q.text.trim().startsWith('UPDATE access_tokens SET last_used_at'));
+    // The token lookup is checked under "who gets in"; the rest are the tools'.
+    const reads = queries.filter((q) => !q.text.includes('access_tokens'));
     assert.ok(reads.length >= 5);
     for (const q of reads) {
       const sql = q.text.trim();

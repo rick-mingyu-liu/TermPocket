@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { createToken, listTokens, revokeToken, MAX_TOKENS_PER_USER } from '../services/accessTokens';
+import { createToken, listTokens, revokeToken, MAX_TOKENS_PER_USER, DemoTokenError } from '../services/accessTokens';
 import { errorSummary } from '../utils/errorSummary';
 
 /**
@@ -30,6 +30,9 @@ const accessTokenController = {
       const { token, summary } = await createToken(req.user.userId, req.body.name);
       res.status(201).json({ token: summary, secret: token });
     } catch (error) {
+      if (error instanceof DemoTokenError) {
+        return res.status(403).json({ error: 'The demo account cannot create access tokens.', code: 'access_token_demo' });
+      }
       if (error instanceof RangeError) {
         return res.status(409).json({ error: `You can have at most ${MAX_TOKENS_PER_USER} active tokens. Revoke one first.`, code: 'token_limit' });
       }

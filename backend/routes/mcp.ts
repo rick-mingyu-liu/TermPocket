@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { userForToken } from '../services/accessTokens';
 import { termSummary, monthlyBaseline, goalProgress } from '../services/moneyFacts';
 import { errorSummary } from '../utils/errorSummary';
-import { mcpLimiter } from '../middleware/rateLimiter';
+import { mcpLimiter, mcpAuthFailureLimiter } from '../middleware/rateLimiter';
 
 /**
  * POST /mcp — TermPocket as an MCP server, so a personal agent can read your
@@ -74,16 +74,19 @@ async function tokenAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-router.use(tokenAuth, mcpLimiter);
+router.use(mcpAuthFailureLimiter, tokenAuth, mcpLimiter);
 
 const reply = (id: unknown, result: unknown) => ({ jsonrpc: '2.0', id, result });
 const failure = (id: unknown, code: number, message: string) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
+
+/** A tool argument the caller got wrong: safe to show them and not logged. Any other error is a fault. */
+class ToolArgumentError extends Error {}
 
 async function callTool(userId: number, name: unknown, args: Record<string, unknown>): Promise<unknown> {
   switch (name) {
     case 'money_term_summary': {
       const term = args.term ?? 'current';
-      if (term !== 'current' && term !== 'previous') throw new RangeError('term must be current or previous');
+      if (term !== 'current' && term !== 'previous') throw new ToolArgumentError('term must be current or previous');
       return termSummary(userId, term);
     }
     case 'money_baseline':
@@ -91,7 +94,7 @@ async function callTool(userId: number, name: unknown, args: Record<string, unkn
     case 'money_goals':
       return { goals: await goalProgress(userId) };
     default:
-      throw new RangeError(`unknown tool: ${String(name).slice(0, 60)}`);
+      throw new ToolArgumentError(`unknown tool: ${String(name).slice(0, 60)}`);
   }
 }
 
@@ -109,6 +112,10 @@ router.post('/', async (req: Request, res: Response) => {
 
   // A notification (no id) gets no body.
   if (id === undefined) return res.status(202).end();
+  // JSON-RPC ids are strings or numbers (null is for errors only).
+  if (!(typeof id === 'number' && Number.isFinite(id)) && !(typeof id === 'string' && id.length <= 200)) {
+    return res.json(failure(null, -32600, 'Invalid request'));
+  }
 
   switch (method) {
     case 'initialize':
@@ -132,8 +139,8 @@ router.post('/', async (req: Request, res: Response) => {
       } catch (error) {
         // A bad argument is the caller's to fix and safe to repeat; anything
         // else is logged by name only and answered generically.
-        const message = error instanceof RangeError ? error.message : 'TermPocket could not read that right now.';
-        if (!(error instanceof RangeError)) console.error('MCP tool error:', { userId: req.user.userId, tool: String(params.name), ...errorSummary(error) });
+        const message = error instanceof ToolArgumentError ? error.message : 'TermPocket could not read that right now.';
+        if (!(error instanceof ToolArgumentError)) console.error('MCP tool error:', { userId: req.user.userId, tool: String(params.name), ...errorSummary(error) });
         return res.json(reply(id, { content: [{ type: 'text', text: message }], isError: true }));
       }
     }
