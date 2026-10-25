@@ -42,6 +42,9 @@ if (HAVE_DB) {
   process.env.RATE_LIMIT_AUTH_MAX = '10000';
   process.env.RATE_LIMIT_API_MAX = '10000';
   process.env.RATE_LIMIT_ACCESS_TOKEN_MAX = '10000';
+  // The wrong-password limiter counts every create on arrival (so parallel
+  // guesses count), which ten concurrent creates by one user would exceed.
+  process.env.RATE_LIMIT_ACCESS_TOKEN_PASSWORD_MAX = '10000';
 }
 
 describe('API integration', { skip: HAVE_DB ? false : 'set TEST_DATABASE_URL to run' }, () => {

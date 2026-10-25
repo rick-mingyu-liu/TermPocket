@@ -138,6 +138,10 @@ const config = {
     // Per user: creating and revoking MCP access tokens together. Each create
     // mints a credential, and a person managing a handful needs few.
     accessTokenMax: intFromEnv('RATE_LIMIT_ACCESS_TOKEN_MAX', 20),
+    // Per user: POST /access-tokens refused for a wrong password. Creating
+    // checks the password, so this bounds guessing it with a stolen login
+    // token the same way accountDeleteMax does for account deletion.
+    accessTokenPasswordMax: intFromEnv('RATE_LIMIT_ACCESS_TOKEN_PASSWORD_MAX', 5),
     // Per user: DELETE /auth/account attempts. Each checks the password, so
     // this bounds guessing it with a stolen login token; a person deleting
     // their account needs one, or a few after typos.

@@ -52,6 +52,24 @@ const accessTokenLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Wrong passwords on POST /access-tokens, keyed on the user. Mount after auth
+// and before accessTokenLimiter. Every request counts on arrival, so parallel
+// guesses are counted too, and is taken back when it finishes without the
+// controller flagging a wrong password (res.locals.accessTokenPasswordRefused).
+const accessTokenPasswordLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.accessTokenPasswordMax,
+  keyGenerator: (req) => `user:${req.user.userId}`,
+  skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.locals.accessTokenPasswordRefused !== true,
+  message: {
+    error: 'Too many wrong passwords, please wait a few minutes.',
+    code: 'access_token_password_rate_limited',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Deleting the account, keyed on the user. Mount after auth.
 const accountDeleteLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
@@ -107,4 +125,4 @@ const mcpAuthFailureLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accountDeleteLimiter, mcpLimiter, mcpAuthFailureLimiter };
+export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accessTokenPasswordLimiter, accountDeleteLimiter, mcpLimiter, mcpAuthFailureLimiter };

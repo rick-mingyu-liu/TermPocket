@@ -17,7 +17,8 @@ import { errorSummary } from '../utils/errorSummary';
  * Tokens expire config.accessTokens.ttlDays after creation (migration 023,
  * `expires_at`, compared with the database's now()). The code runs before 023
  * too: it probes for the column, caching only a positive answer, and without
- * it tokens never expire, exactly as before.
+ * it tokens never expire, exactly as before. After 023 a NULL expires_at
+ * (a create racing the migration) expires ttlDays after created_at.
  */
 
 /** Every token starts with this, so one pasted somewhere it shouldn't be is recognisable. */
@@ -31,8 +32,9 @@ export const looksLikeToken = (value: unknown): value is string => typeof value 
 
 /**
  * A token as its owner may see it: everything but the hash and the user id,
- * plus whether it has expired by the database's clock. Before migration 023
- * `expires_at` is null and `expired` false.
+ * plus whether it has expired by the database's clock. After migration 023
+ * `expires_at` is the effective expiry (a NULL column is reported as
+ * created_at + ttlDays); before it, `expires_at` is null and `expired` false.
  */
 export type TokenSummary = Omit<AccessTokenRow, 'token_hash' | 'user_id'> & { expired: boolean };
 
@@ -72,15 +74,28 @@ export function resetExpiryProbe(): void {
   expirySeen = false;
 }
 
+/**
+ * After 023, when a token stops working. A NULL expires_at never means
+ * "never": it can only come from a create that probed before 023 committed
+ * and inserted after its backfill, and such a token expires ttlDays after it
+ * was created. `ttl` is the placeholder bound to config.accessTokens.ttlDays.
+ * A row with neither date (created_at has a default, so none should exist)
+ * counts as expired.
+ */
+const effectiveExpiry = (ttl: string): string => `COALESCE(expires_at, created_at + make_interval(days => ${ttl}))`;
+
 /** The SQL that yields `expires_at` and `expired` for a summary, with and without 023. */
-const summaryColumns = (withExpiry: boolean): string => withExpiry
-  ? 'id, name, created_at, last_used_at, revoked_at, expires_at, (expires_at IS NOT NULL AND expires_at <= now()) AS expired'
+const summaryColumns = (withExpiry: boolean, ttl: string): string => withExpiry
+  ? `id, name, created_at, last_used_at, revoked_at, ${effectiveExpiry(ttl)} AS expires_at, (${effectiveExpiry(ttl)} <= now()) IS NOT FALSE AS expired`
   : 'id, name, created_at, last_used_at, revoked_at, NULL::timestamptz AS expires_at, FALSE AS expired';
 
 /** Not revoked and, after 023, not expired: what opens /mcp and counts toward the limit. */
-const usable = (withExpiry: boolean): string => withExpiry
-  ? 'revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())'
+const usable = (withExpiry: boolean, ttl: string): string => withExpiry
+  ? `revoked_at IS NULL AND ${effectiveExpiry(ttl)} > now()`
   : 'revoked_at IS NULL';
+
+/** The ttl parameter, bound only when the SQL uses it (after 023). */
+const ttlParam = (withExpiry: boolean): number[] => (withExpiry ? [config.accessTokens.ttlDays] : []);
 
 /**
  * Hashes of tokens that authenticated in the last five minutes, so /mcp's
@@ -146,8 +161,8 @@ export async function createToken(userId: number, name: string, authorization: C
     }
     const withExpiry = await expiryAvailable((text) => client.query<{ present: boolean }>(text));
     const active = await client.query<{ n: number }>(
-      `SELECT COUNT(*)::int AS n FROM access_tokens WHERE user_id = $1 AND ${usable(withExpiry)}`,
-      [userId]
+      `SELECT COUNT(*)::int AS n FROM access_tokens WHERE user_id = $1 AND ${usable(withExpiry, '$2')}`,
+      [userId, ...ttlParam(withExpiry)]
     );
     if ((active.rows[0]?.n ?? 0) >= MAX_TOKENS_PER_USER) {
       throw new RangeError(`at most ${MAX_TOKENS_PER_USER} active tokens; revoke one first`);
@@ -155,12 +170,12 @@ export async function createToken(userId: number, name: string, authorization: C
     const created = withExpiry
       ? await client.query<TokenSummary>(
         `INSERT INTO access_tokens (user_id, name, token_hash, expires_at) VALUES ($1, $2, $3, now() + make_interval(days => $4))
-         RETURNING ${summaryColumns(true)}`,
+         RETURNING ${summaryColumns(true, '$4')}`,
         [userId, name.slice(0, 60), hashToken(token), config.accessTokens.ttlDays]
       )
       : await client.query<TokenSummary>(
         `INSERT INTO access_tokens (user_id, name, token_hash) VALUES ($1, $2, $3)
-         RETURNING ${summaryColumns(false)}`,
+         RETURNING ${summaryColumns(false, '')}`,
         [userId, name.slice(0, 60), hashToken(token)]
       );
     await client.query('COMMIT');
@@ -186,8 +201,8 @@ export async function userForToken(token: string): Promise<number | null> {
   const withExpiry = await expiryAvailable();
   const found = await query<Pick<AccessTokenRow, 'id' | 'user_id'> & { stale: boolean }>(
     `SELECT id, user_id, (last_used_at IS NULL OR last_used_at < now() - interval '5 minutes') AS stale
-     FROM access_tokens WHERE token_hash = $1 AND ${usable(withExpiry)}`,
-    [hash]
+     FROM access_tokens WHERE token_hash = $1 AND ${usable(withExpiry, '$2')}`,
+    [hash, ...ttlParam(withExpiry)]
   );
   const row = found.rows[0];
   // A revoked or expired token is throttled again from its first refusal.
@@ -205,9 +220,9 @@ export async function userForToken(token: string): Promise<number | null> {
 export async function listTokens(userId: number): Promise<TokenSummary[]> {
   const withExpiry = await expiryAvailable();
   const rows = await query<TokenSummary>(
-    `SELECT ${summaryColumns(withExpiry)} FROM access_tokens
+    `SELECT ${summaryColumns(withExpiry, '$2')} FROM access_tokens
      WHERE user_id = $1 ORDER BY created_at DESC, id DESC`,
-    [userId]
+    [userId, ...ttlParam(withExpiry)]
   );
   return rows.rows;
 }

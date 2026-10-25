@@ -68,6 +68,8 @@
   "Name it after the app or device that will use it, and confirm with your password. {{used}} of {{limit}} in use.": "Name it after the app or device that will use it, and confirm with your password. {{used}} of {{limit}} in use.",
   "Your TermPocket password": "Your TermPocket password",
   "That password is incorrect. Enter your TermPocket password to create a connection.": "That password is incorrect. Enter your TermPocket password to create a connection.",
+  "Too many wrong passwords. Wait a few minutes, then try again.": "Too many wrong passwords. Wait a few minutes, then try again.",
+  "Enter your TermPocket password.": "Enter your TermPocket password.",
   "The demo account cannot create AI connections. Sign up to connect your own.": "The demo account cannot create AI connections. Sign up to connect your own.",
   "Give the connection a name of 1 to 60 characters.": "Give the connection a name of 1 to 60 characters.",
   "Could not create the connection. Please try again.": "Could not create the connection. Please try again.",

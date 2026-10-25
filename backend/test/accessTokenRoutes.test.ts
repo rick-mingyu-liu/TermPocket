@@ -63,6 +63,7 @@ let expiryColumn: boolean;
 let baseUrl: string;
 let savedSecret: string | undefined;
 let savedLimit: number;
+let savedPasswordLimit: number;
 let queries: Query[];
 let stored: StoredToken[];
 let released: number;
@@ -88,9 +89,11 @@ function loadRouter(): express.Router {
 before(async () => {
   savedSecret = config.jwt.secret;
   savedLimit = config.rateLimit.accessTokenMax;
+  savedPasswordLimit = config.rateLimit.accessTokenPasswordMax;
   config.jwt.secret = SECRET;
-  // The limiter is built at module load; its own test below loads a tight one.
+  // The limiters are built at module load; their own tests below load tight ones.
   config.rateLimit.accessTokenMax = 10000;
+  config.rateLimit.accessTokenPasswordMax = 10000;
   const app = express();
   app.use(express.json());
   app.use('/access-tokens', loadRouter());
@@ -101,6 +104,7 @@ after(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   config.jwt.secret = savedSecret;
   config.rateLimit.accessTokenMax = savedLimit;
+  config.rateLimit.accessTokenPasswordMax = savedPasswordLimit;
   delete require.cache[limiterPath];
   delete require.cache[routerPath];
 });
@@ -126,10 +130,12 @@ beforeEach(() => {
   // wrong user shows up as the wrong rows, not just a wrong parameter. When
   // the SQL names expires_at the column must exist; the model then answers
   // as the database would, by its own clock.
-  const isExpired = (t: StoredToken) => t.expires_at != null && t.expires_at.getTime() <= Date.now();
+  // After 023 a NULL expires_at means created_at + ttlDays, never "never".
+  const effective = (t: StoredToken) => t.expires_at ?? new Date(t.created_at.getTime() + config.accessTokens.ttlDays * DAY);
+  const isExpired = (t: StoredToken) => effective(t).getTime() <= Date.now();
   const summary = (t: StoredToken, withExpiry: boolean) => {
     const { user_id: _owner, token_hash: _hash, expires_at: expiresAt, ...rest } = t;
-    return { ...rest, expires_at: withExpiry ? expiresAt ?? null : null, expired: withExpiry && isExpired(t) };
+    return { ...rest, expires_at: withExpiry ? expiresAt ?? effective(t) : null, expired: withExpiry && isExpired(t) };
   };
   const answer = (via: Query['via']) => async (text: string, params: unknown[] = []) => {
     queries.push({ text, params, via });
@@ -259,7 +265,8 @@ describe('GET /access-tokens', () => {
     stored[0]!.expires_at = new Date(Date.now() - 1000);
     const res = await call('GET', '');
     assert.equal(res.body.tokens[0].expired, true);
-    assert.match(queries.at(-1)!.text, /expires_at <= now\(\)/);
+    assert.match(queries.at(-1)!.text, /\(COALESCE\(expires_at, created_at \+ make_interval\(days => \$2\)\) <= now\(\)\) IS NOT FALSE AS expired/);
+    assert.deepEqual(queries.at(-1)!.params, [USER, config.accessTokens.ttlDays]);
   });
 
   test('is scoped by the JWT\'s user id and never selects the hash', async () => {
@@ -267,7 +274,7 @@ describe('GET /access-tokens', () => {
     const listing = queries.filter((q) => !q.text.includes('information_schema'));
     assert.equal(listing.length, 1);
     const { text, params } = listing[0]!;
-    assert.deepEqual(params, [USER]);
+    assert.deepEqual(params, [USER, config.accessTokens.ttlDays]);
     assert.match(text, /WHERE user_id = \$1/);
     assert.doesNotMatch(text, /token_hash|\*/);
   });
@@ -317,7 +324,8 @@ describe('POST /access-tokens', () => {
     assert.deepEqual(steps, ['BEGIN', 'SELECT is_demo,', 'SELECT EXISTS', 'SELECT COUNT(*)::int', 'INSERT INTO', 'COMMIT']);
     assert.match(queries[1]!.text, /FROM users WHERE id = \$1 FOR NO KEY UPDATE/);
     assert.deepEqual(queries[1]!.params, [USER]);
-    assert.match(queries[3]!.text, /user_id = \$1 AND revoked_at IS NULL AND \(expires_at IS NULL OR expires_at > now\(\)\)/);
+    assert.match(queries[3]!.text, /user_id = \$1 AND revoked_at IS NULL AND COALESCE\(expires_at, created_at \+ make_interval\(days => \$2\)\) > now\(\)/);
+    assert.deepEqual(queries[3]!.params, [USER, config.accessTokens.ttlDays]);
     assert.equal(released, 1);
   });
 
@@ -405,6 +413,25 @@ describe('POST /access-tokens', () => {
       id: i + 1, user_id: USER, name: `t${i}`, created_at: new Date(), last_used_at: null, revoked_at: i === 0 ? new Date() : null,
     }));
     assert.equal((await create('replacement')).status, 201);
+  });
+
+  test('after 023, a NULL expires_at with an old created_at is expired: refused, not counted, listed expired', async () => {
+    const old = new Date(Date.now() - (config.accessTokens.ttlDays + 1) * DAY);
+    stored = [];
+    const { token } = await createToken(USER, 'racing the migration', { operator: true });
+    // As if the create had probed before 023 committed and inserted after its backfill.
+    Object.assign(stored[0]!, { created_at: old, expires_at: null });
+    stored.push(...Array.from({ length: MAX_TOKENS_PER_USER - 1 }, (_, i) => ({
+      id: 100 + i, user_id: USER, name: `t${i}`, created_at: new Date(), last_used_at: null, revoked_at: null, expires_at: null,
+    })));
+    assert.equal(await userForToken(token), null, 'a NULL expiry was treated as never');
+    const lookup = queries.filter((q) => q.text.includes('WHERE token_hash')).at(-1)!;
+    assert.deepEqual(lookup.params, [hashToken(token), config.accessTokens.ttlDays]);
+    // Four live tokens with a NULL expiry (recent created_at) plus the stale one: the limit sees four.
+    assert.equal((await create('fifth')).status, 201);
+    const listed = (await call('GET', '')).body.tokens.find((t: { name: string }) => t.name === 'racing the migration');
+    assert.equal(listed.expired, true);
+    assert.equal(listed.expires_at, new Date(old.getTime() + config.accessTokens.ttlDays * DAY).toISOString());
   });
 
   test('expired tokens do not count towards the limit', async () => {
@@ -596,5 +623,52 @@ describe('rate limit', () => {
     assert.equal((await send('GET', '', USER)).status, 200);
     // Keyed on the user, so another account is unaffected.
     assert.equal((await send('POST', '', 9, { name: 'c', password: PASSWORD })).status, 201);
+  });
+});
+
+describe('wrong-password limit', () => {
+  let limited: { server: Server; baseUrl: string };
+
+  before(async () => {
+    config.rateLimit.accessTokenPasswordMax = 3;
+    const app = express();
+    app.use(express.json());
+    app.use('/access-tokens', loadRouter());
+    limited = await listen(app);
+    config.rateLimit.accessTokenPasswordMax = 10000;
+  });
+
+  after(async () => {
+    await new Promise<void>((resolve) => limited.server.close(() => resolve()));
+  });
+
+  const send = (userId: number, password: string) => fetch(`${limited.baseUrl}/access-tokens`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${login(userId)}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'agent', password }),
+  });
+
+  test('only wrong passwords count; past the budget even the right one is refused with 429, before bcrypt', async () => {
+    // Successes and other refusals spend nothing.
+    for (let i = 0; i < 4; i += 1) assert.equal((await send(USER, PASSWORD)).status, 201);
+    demo = true;
+    assert.equal((await send(USER, 'fictional-wrong')).status, 403, 'the demo refusal');
+    demo = false;
+    stored = [];
+    for (let i = 0; i < 3; i += 1) {
+      const res = await send(USER, 'fictional-wrong');
+      assert.equal(res.status, 403);
+      assert.equal(((await res.json()) as { code: string }).code, 'access_token_password_incorrect');
+    }
+    queries = [];
+    const refused = await send(USER, PASSWORD);
+    assert.equal(refused.status, 429);
+    assert.equal(refused.headers.get('cache-control'), 'no-store');
+    const body = await refused.text();
+    assert.equal(JSON.parse(body).code, 'access_token_password_rate_limited');
+    assert.ok(!body.includes(PASSWORD));
+    assert.equal(queries.length, 0, 'a request past the budget reached the database');
+    // Keyed on the user, so another account is unaffected.
+    assert.equal((await send(9, PASSWORD)).status, 201);
   });
 });

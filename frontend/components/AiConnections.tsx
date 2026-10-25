@@ -51,9 +51,11 @@ function formatInstant(value: string, locale: string, withTime: boolean): string
     : date.toLocaleDateString(locale, { dateStyle: 'medium' })
 }
 
-function errorStatus(error: unknown): { status?: number, code?: string } {
-  const response = (error as { response?: { status?: number, data?: { code?: string } } }).response
-  return { status: response?.status, code: response?.data?.code }
+function errorStatus(error: unknown): { status?: number, code?: string, paths: string[] } {
+  const response = (error as { response?: { status?: number, data?: { code?: string, errors?: Array<{ path?: unknown }> } } }).response
+  const errors = Array.isArray(response?.data?.errors) ? response.data.errors : []
+  const paths = errors.map((e) => e?.path).filter((path): path is string => typeof path === 'string')
+  return { status: response?.status, code: response?.data?.code, paths }
 }
 
 /**
@@ -185,7 +187,7 @@ export default function AiConnections() {
       setTokens((current) => [data.token, ...(current ?? [])])
       load()
     } catch (error) {
-      const { status, code } = errorStatus(error)
+      const { status, code, paths } = errorStatus(error)
       if (status === 409 || code === 'token_limit') {
         setCreateError(t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit }))
         load()
@@ -194,6 +196,12 @@ export default function AiConnections() {
       } else if (code === 'access_token_password_incorrect') {
         setPasswordWrong(true)
         setCreateError(t('That password is incorrect. Enter your TermPocket password to create a connection.'))
+      } else if (code === 'access_token_password_rate_limited') {
+        setPasswordWrong(true)
+        setCreateError(t('Too many wrong passwords. Wait a few minutes, then try again.'))
+      } else if (status === 400 && paths.includes('password') && !paths.includes('name')) {
+        setPasswordWrong(true)
+        setCreateError(t('Enter your TermPocket password.'))
       } else if (status === 400) {
         setCreateError(t('Give the connection a name of 1 to 60 characters.'))
       } else if (status === undefined || status < 500) {

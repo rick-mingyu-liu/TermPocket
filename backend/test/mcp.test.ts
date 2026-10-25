@@ -68,7 +68,7 @@ beforeEach(() => {
     if (text.includes('information_schema.columns')) return { rowCount: 1, rows: [{ present: true }] };
     queries.push({ text, params });
     if (text.includes('FROM access_tokens WHERE token_hash')) {
-      const known = params[0] === hashToken(TOKEN) && !(tokenExpired && text.includes('expires_at > now()'));
+      const known = params[0] === hashToken(TOKEN) && !(tokenExpired && text.includes('COALESCE(expires_at, created_at + make_interval(days => $2)) > now()') && params[1] === 90);
       return { rowCount: known ? 1 : 0, rows: known ? [{ id: 1, user_id: 7, stale: lookupStale }] : [] };
     }
     if (text.includes('GROUP BY currency')) return { rowCount: 0, rows: totals[`${String(params[1])}|${String(params[2])}`] ?? totals[String(params[1])] ?? [] };
@@ -120,7 +120,7 @@ describe('who gets in', () => {
     tokenExpired = true;
     const res = await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
     assert.equal(res.status, 401);
-    assert.match(queries[0]?.text ?? '', /revoked_at IS NULL AND \(expires_at IS NULL OR expires_at > now\(\)\)/);
+    assert.match(queries[0]?.text ?? '', /revoked_at IS NULL AND COALESCE\(expires_at, created_at \+ make_interval\(days => \$2\)\) > now\(\)/);
     assert.equal(queries.length, 1, 'an expired token reached a tool or a write');
   });
 
@@ -137,7 +137,7 @@ describe('who gets in', () => {
 
   test('the token is looked up by its hash, never stored or compared in the clear', async () => {
     await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
-    assert.deepEqual(queries[0]?.params, [hashToken(TOKEN)]);
+    assert.deepEqual(queries[0]?.params, [hashToken(TOKEN), 90]);
     assert.ok(!JSON.stringify(queries).includes(TOKEN));
   });
 });

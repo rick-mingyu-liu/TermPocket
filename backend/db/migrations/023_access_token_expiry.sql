@@ -1,9 +1,10 @@
 -- Personal access tokens (POST /mcp) expire 90 days after they are created.
 --
--- access_tokens.expires_at is when a token stops opening /mcp; NULL means it
--- never expires, which only a row created before this migration (by code that
--- had not yet seen the column) can be. New tokens get now() plus
--- config.accessTokens.ttlDays (90) from the application.
+-- access_tokens.expires_at is when a token stops opening /mcp. New tokens get
+-- now() plus config.accessTokens.ttlDays (90) from the application. A NULL
+-- can only come from a create that checked for the column just before this
+-- committed; the application treats it as created_at + ttlDays, never as
+-- "never expires".
 --
 -- Every token still active when this runs gets now() + 90 days, so nobody's
 -- connection breaks on the day it is applied. Revoked tokens stay NULL: they

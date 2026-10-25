@@ -508,6 +508,7 @@ In the web app, **Settings → AI connections**:
 - A token **expires 90 days** after it is created; from then on its requests get `401`. Settings shows each token's expiry date and marks an expired one; create a new token and give it to the app. (Tokens that existed when expiry was introduced were given 90 days from that day.)
 - **Revoke** takes effect at once: the next request from that client gets `401`.
 - At most 5 tokens per account can be active at a time. Revoked and expired tokens do not count.
+- Five wrong passwords within 15 minutes pause token creation for that account (`429 access_token_password_rate_limited`), the same budget as deleting the account.
 - Creating and revoking a token each write an audit line with the user id and token id only.
 
 The CLI still works, and enforces the same limit through the same transaction. It is an operator tool, run with the database's credentials, so it does not ask for the account's password; its tokens expire after 90 days too:

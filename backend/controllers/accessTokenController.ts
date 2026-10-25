@@ -36,6 +36,8 @@ const accessTokenController = {
       }
       // 403, not 401: the client treats a 401 as a lapsed login and signs out.
       if (error instanceof TokenPasswordError) {
+        // Counted by accessTokenPasswordLimiter (wrong passwords only).
+        res.locals.accessTokenPasswordRefused = true;
         return res.status(403).json({ error: 'The password is incorrect.', code: 'access_token_password_incorrect' });
       }
       if (error instanceof RangeError) {

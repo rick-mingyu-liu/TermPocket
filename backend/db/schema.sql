@@ -77,8 +77,9 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     last_used_at TIMESTAMPTZ,
     revoked_at TIMESTAMPTZ,
     -- When the token stops opening /mcp (migration 023): creation plus
-    -- config.accessTokens.ttlDays. NULL never expires; only a token created
-    -- before 023 by code that had not seen the column can be NULL.
+    -- config.accessTokens.ttlDays. Only a token created by code that had not
+    -- yet seen the column can be NULL, and the application then treats it as
+    -- expiring ttlDays after created_at, never as "never".
     expires_at TIMESTAMPTZ
 );
 

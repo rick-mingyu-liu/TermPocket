@@ -18,8 +18,9 @@ import { packageRoot } from '../utils/packageRoot';
  */
 const ADDED = `    revoked_at TIMESTAMPTZ,
     -- When the token stops opening /mcp (migration 023): creation plus
-    -- config.accessTokens.ttlDays. NULL never expires; only a token created
-    -- before 023 by code that had not seen the column can be NULL.
+    -- config.accessTokens.ttlDays. Only a token created by code that had not
+    -- yet seen the column can be NULL, and the application then treats it as
+    -- expiring ttlDays after created_at, never as "never".
     expires_at TIMESTAMPTZ
 );`;
 const BEFORE = `    revoked_at TIMESTAMPTZ
@@ -75,6 +76,9 @@ test('migration 023: idempotent on the pre-023 schema and on a fresh one, and ma
     const first = (await client.query<{ name: string; expires_at: Date | null; days: number | null }>(
       "SELECT name, expires_at, extract(epoch FROM expires_at - now()) / 86400 AS days FROM access_tokens ORDER BY id"
     )).rows;
+    // Exactly 90 x 24 hours. This catches a missing SET LOCAL TIME ZONE 'UTC'
+    // only when the test server's own zone has daylight saving inside the next
+    // 90 days (a UTC server, like CI's, passes either way).
     assert.ok(first[0]!.days !== null && Number(first[0]!.days) > 89.99 && Number(first[0]!.days) <= 90, `active token expires in ${first[0]!.days} days`);
     assert.equal(first[1]!.expires_at, null, 'a revoked token was given an expiry');
 

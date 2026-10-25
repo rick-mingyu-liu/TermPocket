@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import auth = require('../middleware/auth');
-import { accessTokenLimiter } from '../middleware/rateLimiter';
+import { accessTokenLimiter, accessTokenPasswordLimiter } from '../middleware/rateLimiter';
 import accessTokenController = require('../controllers/accessTokenController');
 
 const router = express.Router();
@@ -33,7 +33,9 @@ const idValidation = [
 
 router.get('/', accessTokenController.list);
 // Limiter after auth: it is keyed on the user.
-router.post('/', accessTokenLimiter, createValidation, accessTokenController.create);
+// The wrong-password budget first, so a guess past it is refused before it
+// spends the shared create/revoke budget or reaches bcrypt.
+router.post('/', accessTokenPasswordLimiter, accessTokenLimiter, createValidation, accessTokenController.create);
 router.delete('/:id', accessTokenLimiter, idValidation, accessTokenController.revoke);
 
 export = router;
