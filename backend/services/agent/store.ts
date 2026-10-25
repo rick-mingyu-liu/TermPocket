@@ -6,7 +6,7 @@ import type { AgentConversationRow, AgentMemoryProposalRow, AgentDraftRow, Agent
 import { AgentError, type RunUsage, type Conversation, type ConversationSettings, type ConversationState, type GoalProposal, type MemoryProposal, type MemoryFact, type Message, type DraftRow, type TurnInput, type TurnResult, type BeginTurnResult } from './types';
 import { validateSettings, validateRows, validateUuid, validateMessage } from './validation';
 import { validateGoalDraft, goalProposalsAvailable, GOAL_VERSION_SQL } from './planning';
-import { validateMemoryDraft, memoriesAvailable, listMemories, deleteMemories, isDemoUser } from './memory';
+import { validateMemoryDraft, memoriesAvailable, memoriesForTurn, listMemories, deleteMemories, isDemoUser } from './memory';
 import logger = require('../../utils/logger');
 import { errorSummary } from '../../utils/errorSummary';
 
@@ -155,7 +155,10 @@ export async function beginTurn(userId:number,id:string,input:TurnInput,canStart
     await client.query("INSERT INTO agent_runs(id,conversation_id,user_id,request_hash,status) VALUES($1,$2,$3,$4,'running')",[requestId,id,userId,requestHash]);
     await client.query("INSERT INTO agent_messages(id,conversation_id,user_id,run_id,role,content,status) VALUES($1,$2,$3,$4,'user',$5,'complete')",[randomUUID(),id,userId,requestId,content]);
     await client.query('UPDATE agent_conversations SET currency=$3,timezone=$4,language=$5,title=CASE WHEN $6 THEN $7 ELSE title END,updated_at=now() WHERE id=$1 AND user_id=$2',[id,userId,settings.currency,settings.timezone,settings.language,Number(count.rows[0]!.count)===0,content.slice(0,80)]);
-    return {started:true,state:await state(client,userId,id),history:historyBound(prior.messages),pendingRows:prior.draft?.status==='pending'?prior.draft.rows:[]};
+    // Read in the admitting transaction, dated in the conversation's timezone;
+    // a zone PostgreSQL rejects is the request's 400 and admits nothing.
+    const memories=await memoriesForTurn(userId,settings.timezone,client);
+    return {started:true,state:await state(client,userId,id),history:historyBound(prior.messages),pendingRows:prior.draft?.status==='pending'?prior.draft.rows:[],...(memories===undefined?{}:{memories})};
   });
 }
 export async function assertRunActive(userId:number,id:string,runId:string):Promise<void> {
@@ -176,8 +179,9 @@ export async function finishTurn(userId:number,id:string,runId:string,result:Tur
       await client.query('INSERT INTO agent_goal_proposals(id,conversation_id,user_id,run_id,action,goal_id,expected_updated_at,before,after) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [randomUUID(),id,userId,runId,goal.action,goal.goal_id,goal.expected_updated_at,goal.before===null?null:JSON.stringify(goal.before),JSON.stringify(goal.after)]);
     }
-    if(memory!==undefined && await memoriesAvailable(sql=>client.query(sql))) {
-      if(await isDemoUser(client,userId)) throw new AgentError('agent_memory_demo',403);
+    // The demo account has no memory: like a missing table or a stale fact, its
+    // proposal is dropped and the reply still completes.
+    if(memory!==undefined && await memoriesAvailable(sql=>client.query(sql)) && !(await isDemoUser(client,userId))) {
       // The fact may have been changed or forgotten while the model was running.
       // Never persist a stale snapshot after deletion; the unrelated reply can still finish.
       const current=memory.action==='remember'?null:await client.query<{version:string}>(`SELECT ${GOAL_VERSION_SQL} AS version FROM agent_memories WHERE id=$1 AND user_id=$2 FOR UPDATE`,[memory.memory_id,userId]);
@@ -383,13 +387,14 @@ async function memoryState(client:PoolClient,userId:number,id:string):Promise<Me
     before:p.expired?null:p.before,after:p.expired?null:p.after,status:p.expired?'expired':p.status as MemoryProposal['status'],
     expires_at:p.expires_at,result_memory_id:p.result_memory_id,redacted_at:p.redacted_at,error_code:p.error_code};
 }
-export async function getMemories(userId:number,timezone='UTC'):Promise<{available:boolean;memories:MemoryFact[]}> {
+export async function getMemories(userId:number,timezone:unknown='UTC'):Promise<{available:boolean;memories:MemoryFact[]}> {
   // Like other settings, unavailable storage is readable without a model key.
   if(!(await memoriesAvailable())) return {available:false,memories:[]};
-  return owned(userId,async client=>({available:true,memories:await isDemoUser(client,userId)?[]:await listMemories(userId,timezone,client)}));
+  // listMemories answers the demo account with an empty list itself.
+  return owned(userId,async client=>({available:true,memories:await listMemories(userId,timezone,client)}));
 }
 export async function forgetMemories(userId:number,ids:string[]|'all'):Promise<void> {
-  if(ids!=='all') {if(!ids.length||ids.length>30)throw new AgentError('agent_invalid_input');ids.forEach(validateUuid);}
+  if(ids!=='all') {if(!ids.length||ids.length>limits.maxMemories)throw new AgentError('agent_invalid_input');ids.forEach(validateUuid);}
   await owned(userId,async client=>{
     await memoriesReady(client);await deleteMemories(client,userId,ids);
     if(ids==='all') {
@@ -429,7 +434,7 @@ export async function confirmMemoryProposal(userId:number,id:string,input:{propo
     let memoryId=selected.memory_id;
     if(selected.action==='remember') {
       const count=await client.query<{count:string}>('SELECT count(*) FROM agent_memories WHERE user_id=$1',[userId]);
-      if(Number(count.rows[0]!.count)>=30)return conflict('agent_memory_full');
+      if(Number(count.rows[0]!.count)>=limits.maxMemories)return conflict('agent_memory_full');
       memoryId=randomUUID();const f=proposed.after!;
       await client.query('INSERT INTO agent_memories(id,user_id,kind,text,amount,currency,cadence,source_conversation_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[memoryId,userId,f.kind,f.text,f.amount,f.currency,f.cadence,id]);
     } else {

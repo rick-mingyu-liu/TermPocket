@@ -5,10 +5,11 @@ import db = require('../db/connection');
 import exchangeRateService = require('../services/exchangeRateService');
 import { packageRoot } from '../utils/packageRoot';
 import { errorSummary } from '../utils/errorSummary';
-import { runAgent, type AgentInput, type AgentResult } from '../services/agent/runtime';
+import { runAgent, type AgentInput, type AgentResult, type RecalledFact } from '../services/agent/runtime';
 import { recordsFor } from '../services/agent/investigation';
 import { GOAL_VERSION_SQL, validateGoalFields } from '../services/agent/planning';
-import { AgentError, type AgentRecords, type DraftRow, type GoalFields } from '../services/agent/types';
+import { prepareMemoryProposal, validateMemoryFields } from '../services/agent/memory';
+import { AgentError, type AgentRecords, type DraftRow, type GoalFields, type MemoryCadence, type MemoryKind, type MemoryProposal } from '../services/agent/types';
 import { categories, currencies, decimalCents, formatCents, validateDay, validateRows, validateSettings } from '../services/agent/validation';
 
 /**
@@ -33,7 +34,7 @@ import { categories, currencies, decimalCents, formatCents, validateDay, validat
  * missing AGENT_ENABLED=true / DEEPSEEK_API_KEY.
  */
 
-export const TOOL_NAMES = ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal'] as const;
+export const TOOL_NAMES = ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal', 'propose_memory'] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 const EXCERPT_CHARS = 200;
 const MAX_REPEAT = 20;
@@ -58,8 +59,17 @@ export interface Expectations {
   draft?: { count?: number; newRows?: number; unchanged?: boolean; rows?: ExpectedRow[] };
   /** null: no goal proposal may be produced. */
   goalProposal?: null | { action: 'create' | 'update'; goal_id?: number | null; after?: Partial<GoalFields> };
+  /**
+   * null: no memory proposal may be produced. ref names the case's own fact
+   * (m1 is the first of `memories`), which the proposal's memory_id must be.
+   */
+  memoryProposal?: null | { action: 'remember' | 'update' | 'forget'; kind?: MemoryKind; ref?: string; amount?: string | null };
   reply?: { mustContain?: string[]; mustContainAny?: string[][]; mustNotContain?: string[]; mustMatch?: string[]; mustNotMatch?: string[] };
 }
+/** A remembered fact as a case states it; the harness gives it a fictional id and version. */
+export interface EvalMemory { kind: MemoryKind; text: string; amount?: string; currency?: string; cadence?: MemoryCadence; saved_on: string }
+/** The conversation's latest memory offer as the prompt sees it. */
+export interface EvalMemoryProposal { action: MemoryProposal['action']; kind: MemoryKind; status: MemoryProposal['status']; text?: string }
 export interface EvalCase {
   id: string;
   language: 'en' | 'zh' | 'auto';
@@ -71,6 +81,9 @@ export interface EvalCase {
   currency?: string;
   /** 'voice' runs the case as a dictated message (context.input = "dictated"); absent means typed. */
   input?: 'voice';
+  /** Facts the user has saved, oldest first (m1 first). Absent means memory is available and empty. */
+  memories?: EvalMemory[];
+  memoryProposal?: EvalMemoryProposal;
   expect: Expectations;
 }
 export interface CaseFile { defaults: { today: string; timezone: string; currency: string }; cases: EvalCase[] }
@@ -102,6 +115,25 @@ function checkRow(row: unknown, where: string, problems: string[]): void {
   if (row.id !== undefined && typeof row.id !== 'string') problems.push(`${where}: id`);
 }
 
+const MEMORY_KINDS: MemoryKind[] = ['income', 'expense', 'reserve', 'preference', 'other'];
+function validMemory(m: unknown): boolean {
+  if (!isObject(m) || unknownKeys(m, ['kind', 'text', 'amount', 'currency', 'cadence', 'saved_on']).length) return false;
+  try {
+    const { saved_on: day, ...fields } = m;
+    validateDay(day);
+    const checked = validateMemoryFields(fields);
+    return checked.text === m.text;
+  } catch { return false; }
+}
+function validMemoryProposal(p: unknown): boolean {
+  if (!isObject(p) || unknownKeys(p, ['action', 'kind', 'status', 'text']).length) return false;
+  if (!['remember', 'update', 'forget'].includes(String(p.action)) || !MEMORY_KINDS.includes(p.kind as MemoryKind)) return false;
+  if (!['pending', 'confirmed', 'cancelled', 'expired', 'conflict'].includes(String(p.status))) return false;
+  // Only a pending or confirmed offer still holds its text (docs/MEMORY.md).
+  if (p.text !== undefined && (typeof p.text !== 'string' || !p.text.trim() || (p.status !== 'pending' && p.status !== 'confirmed'))) return false;
+  return true;
+}
+
 /** Every problem in the file at once, so a broken case file is fixed in one pass. Throws listing them. */
 export function validateCaseFile(raw: unknown): CaseFile {
   const problems: string[] = [];
@@ -112,7 +144,12 @@ export function validateCaseFile(raw: unknown): CaseFile {
   raw.cases.forEach((c: unknown, index: number) => {
     const at = isObject(c) && typeof c.id === 'string' ? c.id : `#${index}`;
     if (!isObject(c)) { problems.push(`${at}: not an object`); return; }
-    for (const k of unknownKeys(c, ['id', 'language', 'message', 'history', 'pendingRows', 'today', 'timezone', 'currency', 'input', 'expect', 'note'])) problems.push(`${at}: unknown key ${k}`);
+    for (const k of unknownKeys(c, ['id', 'language', 'message', 'history', 'pendingRows', 'today', 'timezone', 'currency', 'input', 'memories', 'memoryProposal', 'expect', 'note'])) problems.push(`${at}: unknown key ${k}`);
+    if (c.memories !== undefined) {
+      if (!Array.isArray(c.memories) || c.memories.length > config.agent.maxMemories) problems.push(`${at}: memories must be an array of at most ${config.agent.maxMemories}`);
+      else c.memories.forEach((m: unknown, i: number) => { if (!validMemory(m)) problems.push(`${at}: memories[${i}]`); });
+    }
+    if (c.memoryProposal !== undefined && !validMemoryProposal(c.memoryProposal)) problems.push(`${at}: memoryProposal`);
     if (c.input !== undefined && c.input !== 'voice') problems.push(`${at}: input must be "voice" when set`);
     if (typeof c.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(c.id)) problems.push(`${at}: id must be lowercase kebab-case`);
     else if (ids.has(c.id)) problems.push(`${at}: duplicate id`);
@@ -127,7 +164,20 @@ export function validateCaseFile(raw: unknown): CaseFile {
     } catch { problems.push(`${at}: today, timezone or currency override invalid`); }
     const e = c.expect;
     if (!isObject(e)) { problems.push(`${at}: expect`); return; }
-    for (const k of unknownKeys(e, ['tools', 'maxToolCalls', 'draft', 'goalProposal', 'reply'])) problems.push(`${at}: unknown expectation ${k}`);
+    for (const k of unknownKeys(e, ['tools', 'maxToolCalls', 'draft', 'goalProposal', 'memoryProposal', 'reply'])) problems.push(`${at}: unknown expectation ${k}`);
+    if (e.memoryProposal !== undefined && e.memoryProposal !== null) {
+      const m = e.memoryProposal;
+      const facts = Array.isArray(c.memories) ? c.memories.length : 0;
+      if (!isObject(m) || !['remember', 'update', 'forget'].includes(String(m.action))) problems.push(`${at}: memoryProposal.action`);
+      else {
+        for (const k of unknownKeys(m, ['action', 'kind', 'ref', 'amount'])) problems.push(`${at}: memoryProposal.${k}`);
+        if (m.kind !== undefined && !MEMORY_KINDS.includes(m.kind as MemoryKind)) problems.push(`${at}: memoryProposal.kind`);
+        const ref = typeof m.ref === 'string' ? /^m([1-9]\d?)$/.exec(m.ref) : null;
+        if (m.ref !== undefined && (!ref || Number(ref[1]) > facts)) problems.push(`${at}: memoryProposal.ref must name one of the case's memories`);
+        if ((m.action === 'remember') === (m.ref !== undefined)) problems.push(`${at}: memoryProposal.ref is required for update and forget, and not allowed for remember`);
+        if (m.amount !== undefined && m.amount !== null && (typeof m.amount !== 'string' || !/^\d{1,8}\.\d{2}$/.test(m.amount))) problems.push(`${at}: memoryProposal.amount`);
+      }
+    }
     if (e.tools !== undefined) {
       if (!isObject(e.tools)) problems.push(`${at}: tools`);
       else {
@@ -307,10 +357,44 @@ export function installFixture(f: Fixture): () => void {
   return () => { Object.assign(db, { query: saved.query, getPool: saved.getPool }); Object.assign(exchangeRateService, { getExchangeRate: saved.rate }); };
 }
 
+/** A case's facts as the runtime receives them: fictional ids and one fixed version, m1 first. */
+export const MEMORY_VERSION = '2026-10-01 12:00:00.000000';
+export function evalFacts(c: Pick<EvalCase, 'memories'>): RecalledFact[] {
+  return (c.memories ?? []).map((m, i) => ({
+    id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`, version: MEMORY_VERSION,
+    kind: m.kind, text: m.text, amount: m.amount ?? null, currency: m.currency ?? null, cadence: m.cadence ?? null, saved_on: m.saved_on,
+  }));
+}
+
+/**
+ * The statements prepareMemoryProposal issues, answered from a case's facts;
+ * anything else throws, like fixtureQuery. Nothing is ever written.
+ */
+export function memoryFixtureQuery(userId: number, facts: RecalledFact[]) {
+  return async (text: string, params: unknown[] = []): Promise<Rows> => {
+    const sql = text.replace(/\s+/g, ' ').trim();
+    if (sql === "SELECT to_regclass('agent_memories') IS NOT NULL AS present" && params.length === 0) return rowsOf([{ present: true }]);
+    if (sql === 'SELECT is_demo FROM users WHERE id=$1' && params.length === 1) return rowsOf(params[0] === userId ? [{ is_demo: false }] : []);
+    if (sql === 'SELECT count(*) AS count FROM agent_memories WHERE user_id=$1' && params.length === 1) return rowsOf([{ count: String(params[0] === userId ? facts.length : 0) }]);
+    if (sql === `SELECT kind,text,amount,currency,cadence,${GOAL_VERSION_SQL} AS version FROM agent_memories WHERE id=$1 AND user_id=$2` && params.length === 2) {
+      const fact = params[1] === userId ? facts.find(f => f.id === params[0]) : undefined;
+      return rowsOf(fact ? [{ kind: fact.kind, text: fact.text, amount: fact.amount, currency: fact.currency, cadence: fact.cadence, version: fact.version }] : []);
+    }
+    throw unexpectedQuery();
+  };
+}
+
+/** The real record tools for a case: the fixture's records, and propose_memory over the case's facts. */
+export function caseRecords(c: Pick<EvalCase, 'memories'>, fixture: Fixture): AgentRecords {
+  const memoryQuery = memoryFixtureQuery(fixture.userId, evalFacts(c)) as unknown as typeof db.query;
+  return { ...recordsFor(fixture.userId), prepareMemoryProposal: input => prepareMemoryProposal(fixture.userId, input, { query: memoryQuery }) };
+}
+
 export interface ToolCall { tool: ToolName; ok: boolean; fixtureError?: boolean; args?: Record<string, unknown> }
 const RECORD_TOOLS: Record<keyof AgentRecords, ToolName> = {
   spendingSummary: 'spending_summary', compareSpending: 'compare_spending', transactionDetails: 'transaction_details',
   spendingBaseline: 'spending_baseline', listGoals: 'list_goals', calculateScenario: 'calculate_scenario', prepareGoalProposal: 'propose_goal',
+  prepareMemoryProposal: 'propose_memory',
 };
 
 /** Records which tools reached their handler, and whether each answered or failed. */
@@ -485,6 +569,23 @@ export function scoreRun(c: EvalCase, outcome: RunOutcome): string[] {
     }
   }
 
+  if (e.memoryProposal === null && result.memoryProposal) failures.push(`unexpected memory proposal (${result.memoryProposal.action} ${result.memoryProposal.kind})`);
+  if (e.memoryProposal) {
+    const got = result.memoryProposal;
+    const want = e.memoryProposal;
+    if (!got) failures.push(`no memory proposal (expected ${want.action})`);
+    else {
+      if (got.action !== want.action) failures.push(`memory proposal action ${got.action}, expected ${want.action}`);
+      if (want.kind !== undefined && got.kind !== want.kind) failures.push(`memory proposal kind ${got.kind}, expected ${want.kind}`);
+      if (want.ref !== undefined) {
+        const facts = evalFacts(c);
+        const index = facts.findIndex(f => f.id === got.memory_id);
+        if (`m${index + 1}` !== want.ref) failures.push(`memory proposal names ${index === -1 ? 'no listed fact' : `m${index + 1}`}, expected ${want.ref}`);
+      }
+      if (want.amount !== undefined && (got.after?.amount ?? null) !== want.amount) failures.push(`memory proposal amount ${JSON.stringify(got.after?.amount ?? null)}, expected ${JSON.stringify(want.amount)}`);
+    }
+  }
+
   if (e.reply) {
     const reply = oneLine(normalizeText(result.text));
     for (const needle of e.reply.mustContain ?? []) {
@@ -517,6 +618,12 @@ export interface RunReport {
   toolCalls: number; tools: string[]; inputTokens: number; outputTokens: number; latencyMs: number;
 }
 
+/** The prompt reads only action, kind, status and the text of a pending or confirmed offer. */
+function evalProposal(p: EvalMemoryProposal): NonNullable<AgentInput['memoryProposal']> {
+  const fields = p.text === undefined ? null : { kind: p.kind, text: p.text, amount: null, currency: null, cadence: null };
+  return { action: p.action, kind: p.kind, status: p.status, before: p.action === 'remember' ? null : fields, after: p.action === 'forget' ? null : fields };
+}
+
 export async function runCase(c: EvalCase, file: CaseFile, fixture: Fixture, runtime: Runtime, run = 1): Promise<RunReport> {
   const calls: ToolCall[] = [];
   const started = Date.now();
@@ -526,7 +633,9 @@ export async function runCase(c: EvalCase, file: CaseFile, fixture: Fixture, run
       content: c.message, history: c.history ?? [], pendingRows: c.pendingRows ?? [],
       today: c.today ?? file.defaults.today, timezone: c.timezone ?? file.defaults.timezone,
       currency: c.currency ?? file.defaults.currency, language: c.language, dictated: c.input === 'voice',
-      signal: new AbortController().signal, records: trackRecords(recordsFor(fixture.userId), calls),
+      signal: new AbortController().signal, records: trackRecords(caseRecords(c, fixture), calls),
+      // Memory is available in every case (022 is applied in production); a case lists the facts saved so far.
+      memories: evalFacts(c), memoryProposal: c.memoryProposal ? evalProposal(c.memoryProposal) : null,
     });
     outcome = { result, calls };
   } catch (error) {

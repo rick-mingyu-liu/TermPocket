@@ -26,6 +26,24 @@ export interface GoalProposal {
   status: 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'conflict'
   expires_at: string; result_goal_id: number | null
 }
+export type MemoryKind = 'income' | 'expense' | 'reserve' | 'preference' | 'other'
+export type MemoryCadence = 'week' | 'two_weeks' | 'month' | 'once'
+export interface MemoryFields {
+  kind: MemoryKind; text: string; amount: string | null; currency: string | null; cadence: MemoryCadence | null
+}
+// One offer to remember, change or forget a fact, decided only by the card's
+// buttons. An ended or forgotten offer keeps no text: before/after are null.
+export interface MemoryProposal {
+  id: string; action: 'remember' | 'update' | 'forget'; kind: MemoryKind; memory_id: string | null
+  before: MemoryFields | null; after: MemoryFields | null
+  status: 'pending' | 'confirmed' | 'cancelled' | 'expired' | 'conflict'
+  expires_at: string; result_memory_id: string | null; redacted_at: string | null
+  error_code: 'agent_memory_full' | 'agent_memory_conflict' | null
+}
+// A saved fact as Settings lists it; saved_on is the day it last changed, in the zone asked for.
+export interface MemoryFact extends MemoryFields {
+  id: string; source_conversation_id: string | null; saved_on: string; created_at: string; updated_at: string
+}
 export interface ConversationState {
   conversation: Conversation
   messages: { id: string; role: 'user' | 'assistant'; content: string; status: 'complete' | 'failed' | 'cancelled'; created_at: string }[]
@@ -33,6 +51,7 @@ export interface ConversationState {
   receipts: Receipt[]
   run: { id: string; status: 'running' | 'complete' | 'failed' | 'cancelled'; error_code: string | null } | null
   goalProposal: GoalProposal | null
+  memoryProposal: MemoryProposal | null
 }
 // input: 'voice' when the text came from dictation (edited or not), so Pocky
 // asks about amounts speech-to-text may have run together. Omitted when typed.
@@ -42,12 +61,13 @@ export interface MessageRequest extends AgentContext { requestId: string; conten
 // Inline edits require the updated backend; deploy it before the frontend.
 export interface ConfirmRequest { version: number; rowIds: string[]; requestId: string; rows?: DraftRow[] }
 export interface GoalConfirmRequest { proposalId: string; requestId: string }
+export type MemoryConfirmRequest = GoalConfirmRequest
 // storage: history, drafts, confirmation, undo and deletion work.
 // available: storage plus a configured provider, so new messages work too.
 export interface AgentStatus { available: boolean; storage: boolean }
 const path = (id: string) => `/agent/conversations/${encodeURIComponent(id)}`
-// Servers predating goal proposals omit the field; treat that as none.
-const state = (data: ConversationState): ConversationState => ({ ...data, goalProposal: data.goalProposal ?? null })
+// Servers predating goal or memory proposals omit the field; treat that as none.
+const state = (data: ConversationState): ConversationState => ({ ...data, goalProposal: data.goalProposal ?? null, memoryProposal: data.memoryProposal ?? null })
 
 export const agentAPI = {
   // Servers predating the storage flag report only availability.
@@ -66,6 +86,13 @@ export const agentAPI = {
   confirmGoal: (id: string, body: GoalConfirmRequest) => api.post<ConversationState>(`${path(id)}/goal-proposal/confirm`, body).then(r => state(r.data)),
   discardGoal: (id: string, proposalId: string) => api.delete<ConversationState>(`${path(id)}/goal-proposal`, { data: { proposalId } }).then(r => state(r.data)),
   undo: (id: string) => api.post(`/agent/receipts/${encodeURIComponent(id)}/undo`),
+  confirmMemory: (id: string, body: MemoryConfirmRequest) => api.post<ConversationState>(`${path(id)}/memory-proposal/confirm`, body).then(r => state(r.data)),
+  discardMemory: (id: string, proposalId: string) => api.delete<ConversationState>(`${path(id)}/memory-proposal`, { data: { proposalId } }).then(r => state(r.data)),
+  // available: false until the server's memory storage exists; Settings then hides the section.
+  memories: (timezone: string) => api.get<{ available: boolean; memories: MemoryFact[] }>('/agent/memories', { params: { timezone } }).then(r => r.data),
+  deleteMemory: (id: string) => api.delete(`/agent/memories/${encodeURIComponent(id)}`),
+  // Also stops any Pocky reply still running, in every conversation.
+  forgetAllMemories: () => api.delete('/agent/memories'),
 }
 
 export function agentErrorCode(error: unknown): string {

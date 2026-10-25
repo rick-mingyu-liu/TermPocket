@@ -1,8 +1,10 @@
-/// <reference lib="es2024.string" />
 import { query } from '../../db/connection';
+import config = require('../../config');
 import { AgentError, type MemoryFact, type MemoryFields, type MemoryKind, type MemoryCadence, type MemoryProposalDraft } from './types';
-import { currencies, validateUuid } from './validation';
+import { cleanMemoryText, currencies, decimalCents, formatCents, validateUuid } from './validation';
 import { GOAL_VERSION_SQL } from './planning';
+
+export { cleanMemoryText };
 
 const kinds: MemoryKind[] = ['income', 'expense', 'reserve', 'preference', 'other'];
 const cadences: MemoryCadence[] = ['week', 'two_weeks', 'month', 'once'];
@@ -14,13 +16,6 @@ function object(value: unknown, keys: string[]): Record<string, unknown> {
   const result = value as Record<string, unknown>;
   if (Object.keys(result).some(key => !keys.includes(key))) invalid();
   return result;
-}
-
-/** Keep untrusted user text as data, with no invisible direction controls or malformed UTF-16. */
-export function cleanMemoryText(text: string): string {
-  // These are deliberately matched so untrusted text cannot hide instructions.
-  // eslint-disable-next-line no-control-regex
-  return text.toWellFormed().replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, ' ');
 }
 
 /** A partial update keeps omitted fields; explicitly clearing amount clears its currency and cadence. */
@@ -43,7 +38,7 @@ export function validateMemoryFields(value: unknown, previous?: MemoryFields): M
   return { kind: merged.kind as MemoryKind, text, amount: amount as string | null, currency: currency as string | null, cadence: cadence as MemoryCadence | null };
 }
 
-/** Only complete validated snapshots can enter storage, independently of the future model tool. */
+/** Only complete validated snapshots can enter storage, independently of the model tool. */
 export function validateMemoryDraft(value: unknown): MemoryProposalDraft {
   const input = object(value, ['action', 'kind', 'memory_id', 'expected_updated_at', 'before', 'after']);
   if (input.action === 'remember') {
@@ -53,7 +48,7 @@ export function validateMemoryDraft(value: unknown): MemoryProposalDraft {
   }
   if (input.action !== 'update' && input.action !== 'forget') invalid();
   const memoryId = validateUuid(input.memory_id);
-  if (typeof input.expected_updated_at !== 'string' || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/.test(input.expected_updated_at)) invalid();
+  if (typeof input.expected_updated_at !== 'string' || !versionPattern.test(input.expected_updated_at)) invalid();
   const before = validateMemoryFields(input.before);
   const after = input.action === 'forget' ? null : validateMemoryFields(input.after);
   if (input.action === 'forget' && input.after !== null) invalid();
@@ -76,16 +71,88 @@ export async function isDemoUser(client: MemoryClient, userId: number): Promise<
   return result.rows[0]?.is_demo === true;
 }
 
-/** Named columns only; stable ordering and local calendar dates, never the server's local date. */
-export async function listMemories(userId: number, timezone = 'UTC', client: MemoryClient = { query }): Promise<MemoryFact[]> {
+function timezoneOf(timezone: unknown): string {
   if (typeof timezone !== 'string' || timezone.length > 100) invalid();
-  try { new Intl.DateTimeFormat('en', { timeZone: timezone }); } catch { invalid(); }
-  if (!(await memoriesAvailable(sql => client.query(sql))) || await isDemoUser(client, userId)) return [];
-  const result = await client.query<MemoryFact>(
-    `SELECT id,kind,text,amount,currency,cadence,source_conversation_id,created_at,updated_at,
-      ${GOAL_VERSION_SQL} AS version,to_char(updated_at AT TIME ZONE $2,'YYYY-MM-DD') AS saved_on
-      FROM agent_memories WHERE user_id=$1 ORDER BY created_at,id`, [userId, timezone]);
+  try { new Intl.DateTimeFormat('en', { timeZone: timezone as string }); } catch { invalid(); }
+  return timezone as string;
+}
+
+/** The facts themselves; the caller has already checked availability and the demo account. */
+async function readMemories(client: MemoryClient, userId: number, timezone: string): Promise<MemoryFact[]> {
+  let result: { rows: MemoryFact[] };
+  try {
+    result = await client.query<MemoryFact>(
+      `SELECT id,kind,text,amount,currency,cadence,source_conversation_id,created_at,updated_at,
+        ${GOAL_VERSION_SQL} AS version,to_char(updated_at AT TIME ZONE $2,'YYYY-MM-DD') AS saved_on
+        FROM agent_memories WHERE user_id=$1 ORDER BY created_at,id`, [userId, timezone]);
+  } catch (error) {
+    // A zone Intl accepts but PostgreSQL does not is the caller's bad input, not a server failure.
+    if ((error as { code?: unknown } | null)?.code === '22023') invalid();
+    throw error;
+  }
   return result.rows.map(row => ({ ...row, text: cleanMemoryText(row.text) }));
+}
+
+/** Named columns only; stable ordering and local calendar dates, never the server's local date. */
+export async function listMemories(userId: number, timezone: unknown = 'UTC', client: MemoryClient = { query }): Promise<MemoryFact[]> {
+  const zone = timezoneOf(timezone);
+  if (!(await memoriesAvailable(sql => client.query(sql))) || await isDemoUser(client, userId)) return [];
+  return readMemories(client, userId, zone);
+}
+
+/**
+ * What a turn's prompt carries: undefined before migration 022 and for the
+ * demo account, so context.memory is omitted rather than shown as empty.
+ */
+export async function memoriesForTurn(userId: number, timezone: unknown, client: MemoryClient = { query }): Promise<MemoryFact[] | undefined> {
+  const zone = timezoneOf(timezone);
+  if (!(await memoriesAvailable(sql => client.query(sql))) || await isDemoUser(client, userId)) return undefined;
+  return readMemories(client, userId, zone);
+}
+
+const toolKeys = ['action', 'memory_id', 'expected_updated_at', ...fields];
+const versionPattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/;
+
+/**
+ * propose_memory's server side. The runtime has already turned the model's
+ * ref into memory_id and expected_updated_at, so no id the model typed reaches
+ * this function. Remember checks the cap (only remember counts toward it);
+ * update and forget read the owned fact for `before` and compare its version.
+ * An update keeps the fields it omits. Nothing here writes.
+ */
+export async function prepareMemoryProposal(userId: number, raw: unknown, client: MemoryClient = { query }): Promise<MemoryProposalDraft> {
+  const input = object(raw, toolKeys);
+  const given: Record<string, unknown> = Object.fromEntries(fields.filter(key => input[key] !== undefined).map(key => [key, input[key]]));
+  // '950' and '950.5' are amounts too; stored as two-decimal strings.
+  if (typeof given.amount === 'string') given.amount = formatCents(decimalCents(given.amount, { min: 1 }));
+  const ready = async () => {
+    if (!(await memoriesAvailable(sql => client.query(sql)))) throw new AgentError('agent_unavailable', 503);
+    if (await isDemoUser(client, userId)) throw new AgentError('agent_memory_demo', 403);
+  };
+  if (input.action === 'remember') {
+    if (input.memory_id !== undefined || input.expected_updated_at !== undefined) invalid();
+    const after = validateMemoryFields(given);
+    await ready();
+    const count = await client.query<{ count: string }>('SELECT count(*) AS count FROM agent_memories WHERE user_id=$1', [userId]);
+    if (Number(count.rows[0]?.count ?? 0) >= config.agent.maxMemories) throw new AgentError('agent_memory_full', 409);
+    return { action: 'remember', kind: after.kind, memory_id: null, expected_updated_at: null, before: null, after };
+  }
+  if (input.action !== 'update' && input.action !== 'forget') invalid();
+  const memoryId = validateUuid(input.memory_id);
+  if (typeof input.expected_updated_at !== 'string' || !versionPattern.test(input.expected_updated_at)) invalid();
+  if (input.action === 'forget' && Object.keys(given).length) invalid();
+  await ready();
+  const found = await client.query<MemoryFields & { version: string }>(
+    `SELECT kind,text,amount,currency,cadence,${GOAL_VERSION_SQL} AS version FROM agent_memories WHERE id=$1 AND user_id=$2`, [memoryId, userId]);
+  const row = found.rows[0];
+  // Another user's fact reads exactly like one that does not exist.
+  if (!row) throw new AgentError('agent_memory_not_found', 404);
+  if (row.version !== input.expected_updated_at) throw new AgentError('agent_memory_conflict', 409);
+  const before = validateMemoryFields({ kind: row.kind, text: row.text, amount: row.amount, currency: row.currency, cadence: row.cadence });
+  if (input.action === 'forget') return { action: 'forget', kind: before.kind, memory_id: memoryId, expected_updated_at: row.version, before, after: null };
+  const after = validateMemoryFields(given, before);
+  if (fields.every(key => after[key as keyof MemoryFields] === before[key as keyof MemoryFields])) invalid();
+  return { action: 'update', kind: after.kind, memory_id: memoryId, expected_updated_at: row.version, before, after };
 }
 
 /**

@@ -303,6 +303,7 @@ export const fakeRecords: AgentRecords = {
   listGoals: async () => ({ goals: [] }),
   calculateScenario: async () => ({ status: 'incomplete', missing: ['starting_cash'] }),
   prepareGoalProposal: async () => { throw new AgentError('agent_unavailable', 503); },
+  prepareMemoryProposal: async () => { throw new AgentError('agent_unavailable', 503); },
 };
 
 async function liveCheck(s: PreflightSettings): Promise<Check> {

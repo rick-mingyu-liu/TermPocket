@@ -1,6 +1,17 @@
+/// <reference lib="es2024.string" />
 import config = require('../../config');
 import { AgentError, type ConversationSettings, type DraftRow } from './types';
 export const currencies = ['CAD', 'USD', 'EUR', 'GBP', 'AUD', 'CNY'];
+/**
+ * A remembered fact's text kept as data, with no invisible direction controls
+ * or malformed UTF-16. Here rather than in memory.ts so the runtime, which
+ * cleans facts again at read time, never imports the database.
+ */
+export function cleanMemoryText(text: string): string {
+  // These are deliberately matched so untrusted text cannot hide instructions.
+  // eslint-disable-next-line no-control-regex
+  return text.toWellFormed().replace(/[\u0000-\u001f\u007f‪-‮⁦-⁩]/g, ' ');
+}
 export const categories = {
   income: ['Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund', 'Other Income'],
   expense: ['Groceries', 'Dining Out', 'Transportation', 'Housing', 'Utilities', 'Entertainment', 'Shopping', 'Healthcare', 'Education', 'Travel', 'Savings', 'Other Expenses'],

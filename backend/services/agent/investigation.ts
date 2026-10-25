@@ -8,6 +8,7 @@ import { AgentError, type AgentRecords, type BaselineInput, type CompareInput, t
 import { categories, currencies, decimalCents, formatCents, validateDay } from './validation';
 import { calculateScenario } from './scenario';
 import { prepareGoalProposal, GOAL_VERSION_SQL } from './planning';
+import { prepareMemoryProposal } from './memory';
 
 /**
  * Pocky's read-only view of one user's own records: totals for a window, two
@@ -314,5 +315,6 @@ export function recordsFor(userId: number): AgentRecords {
     listGoals: () => listGoals(userId),
     calculateScenario: (input, today) => calculateScenario(input, today, getExchangeRate),
     prepareGoalProposal: (input, today) => prepareGoalProposal(userId, input, today),
+    prepareMemoryProposal: input => prepareMemoryProposal(userId, input),
   };
 }

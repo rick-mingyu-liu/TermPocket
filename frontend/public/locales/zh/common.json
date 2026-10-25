@@ -631,6 +631,68 @@
         "agent_unavailable": "当前部署暂时无法使用目标建议。"
       }
     },
+    "memory": {
+      "title": {
+        "remember": "要记住这条吗？",
+        "update": "要更新一条记住的信息吗？",
+        "forget": "要忘记一条记住的信息吗？"
+      },
+      "now": "现在",
+      "becomes": "改为",
+      "hint": "Pocky 只记住你在这里保存的内容，并在你的对话中使用。每条保存的信息都会随你发给 Pocky 的每条消息发送给 AI 服务提供方。你可以随时在设置中删除。",
+      "forgetHint": "忘记会把这条信息从 Pocky 的记忆中删除。提到它的对话会保留其消息，直到你删除这些对话。",
+      "remember": "记住",
+      "notNow": "暂不",
+      "forget": "忘记",
+      "keep": "保留",
+      "recoverConfirm": "恢复记忆确认",
+      "saved": "已保存。Pocky 会在你的对话中使用它。",
+      "manage": "管理记忆",
+      "forgotten": "已忘记。Pocky 不再记得这条信息。",
+      "notSaved": "未保存。",
+      "kept": "已保留。Pocky 仍记得这条信息。",
+      "expired": "这个提议在你回应前已过期。如仍想让 Pocky 记住，请再问一次。",
+      "full": "你已经保存了 30 条信息。请先在设置中忘记一条，再问 Pocky。",
+      "conflict": "这条信息在 Pocky 提议后已被更改。请根据当前信息再问 Pocky 一次。",
+      "kinds": {
+        "income": "收入",
+        "expense": "支出",
+        "reserve": "现金储备",
+        "preference": "偏好",
+        "other": "其他"
+      },
+      "cadences": {
+        "week": "每周",
+        "two_weeks": "每两周",
+        "month": "每月",
+        "once": "一次"
+      },
+      "errors": {
+        "agent_version_conflict": "这个记忆提议已在另一个请求中更改。请刷新并查看最新的提议。",
+        "agent_expired": "这个记忆提议已过期。如仍想让 Pocky 记住，请再问一次。",
+        "agent_memory_full": "你已经保存了 30 条信息。请先在设置中忘记一条，再问 Pocky。",
+        "agent_memory_conflict": "这条信息在 Pocky 提议后已被更改。请根据当前信息再问 Pocky 一次。",
+        "agent_memory_demo": "演示账户无法在 Pocky 的记忆中保存信息。",
+        "agent_busy": "另一个请求正在进行。请等它完成后再试。",
+        "agent_unavailable": "此部署目前无法使用 Pocky 的记忆。"
+      },
+      "settings": {
+        "title": "Pocky 记忆",
+        "description": "你让 Pocky 记住的信息。每条保存的信息都会随你发给 Pocky 的每条消息发送给 AI 服务提供方。",
+        "empty": "Pocky 还没有保存任何信息。当你告诉 Pocky 一些长期不变的情况（比如房租）时，它可能会提议记住。",
+        "savedOn": "保存于 {{date}}",
+        "source": "对话",
+        "delete": "删除",
+        "deleteLabel": "删除“{{text}}”",
+        "forgetAll": "全部忘记",
+        "forgetAllTitle": "要忘记 Pocky 记住的所有信息吗？",
+        "forgetAllWarning": "这将永久删除所有保存的信息，同时会停止所有对话中仍在进行的 Pocky 回复：如仍需要，请重新发送那条消息。",
+        "caveat": "删除一条信息不会修改对话：提到它的对话会保留那段文字，直到你删除该对话。",
+        "deleted": "信息已删除。",
+        "forgotAll": "Pocky 的记忆已清空。",
+        "error": "无法更新 Pocky 的记忆，请重试。"
+      }
+    },
     "discard": "丢弃草稿",
     "saved": "已确认的账目现已保存到收支记录。",
     "receiptSaved": "已保存 {{count}} 笔账目",
@@ -639,10 +701,10 @@
     "undoUntil": "可撤销至 {{date}}",
     "undoExpired": "撤销期限已结束。请在收支记录中管理这些账目。",
     "undone": "已移除这些已保存账目。",
-    "clearSuccess": "你的收支记录、目标、助手对话和待确认草稿已删除。",
+    "clearSuccess": "你的收支记录、目标、助手对话、待确认草稿和 Pocky 保存的信息已删除。",
     "clearSuccessWithoutAgent": "你的收支记录和目标已删除。",
-    "clearDescription": "永久删除所有收支记录、目标、助手对话和待确认草稿。",
-    "clearWarning": "这将永久删除你的所有收支记录、目标、助手对话和待确认草稿，且无法撤销。",
+    "clearDescription": "永久删除所有收支记录、目标、助手对话、待确认草稿和 Pocky 保存的信息。",
+    "clearWarning": "这将永久删除你的所有收支记录、目标、助手对话、待确认草稿和 Pocky 保存的信息，且无法撤销。",
     "errors": {
       "generic": "无法完成此操作。请刷新查看最新状态后重试。",
       "agent_network_error": "连接中断。请恢复响应或刷新，确认操作是否已完成。",

@@ -63,6 +63,28 @@ describe('approved memory lifecycle', { skip: !url }, () => {
     const saved=await store.getConversation(alice,s.conversation.id);await confirm(await propose(await change(saved,'update')));assert.equal(await count(),30);
     await confirm(await propose(await change(saved,'forget')));assert.equal(await count(),29);
   });
+  test('a kind-changing update changes the stored kind, and the next turn recalls the new version',async()=>{
+    const saved=await confirm(await propose());const d=await change(saved,'update');
+    const reserve:MemoryProposalDraft={...d,kind:'reserve',after:{kind:'reserve',text:'Keep 950 in chequing',amount:'950.00',currency:'CAD',cadence:null}};
+    const s=await propose(reserve);assert.equal(s.memoryProposal!.kind,'reserve');
+    await confirm(s);
+    const facts=(await store.getMemories(alice)).memories;assert.equal(facts.length,1);
+    assert.equal(facts[0]!.kind,'reserve');assert.equal(facts[0]!.cadence,null);assert.notEqual(facts[0]!.version,d.expected_updated_at);
+    const begun=await store.beginTurn(alice,s.conversation.id,{...settings,requestId:randomUUID(),content:'What is my reserve?'});
+    assert.deepEqual(begun.memories!.map(f=>[f.id,f.kind,f.version]),[[facts[0]!.id,'reserve',facts[0]!.version]]);
+    assert.equal(begun.state.memoryProposal!.status,'confirmed');
+  });
+  test('the tool reads the owned fact through the real database and writes nothing',async()=>{
+    const {prepareMemoryProposal}=require('../services/agent/memory') as typeof import('../services/agent/memory');
+    const saved=await confirm(await propose());const fact=(await store.getMemories(alice)).memories[0]!;
+    const before=(await db.query('SELECT count(*) AS n FROM agent_memory_proposals')).rows[0];
+    const update=await prepareMemoryProposal(alice,{action:'update',memory_id:fact.id,expected_updated_at:fact.version,amount:'1000'});
+    assert.equal(update.after!.amount,'1000.00');assert.deepEqual(update.before,{...fields});
+    await assert.rejects(prepareMemoryProposal(bob,{action:'forget',memory_id:fact.id,expected_updated_at:fact.version}),{code:'agent_memory_not_found'});
+    await assert.rejects(prepareMemoryProposal(alice,{action:'forget',memory_id:fact.id,expected_updated_at:'2000-01-01 00:00:00.000000'}),{code:'agent_memory_conflict'});
+    await assert.rejects(prepareMemoryProposal(demo,{action:'remember',kind:'other',text:'x'}),{code:'agent_memory_demo'});
+    assert.deepEqual((await db.query('SELECT count(*) AS n FROM agent_memory_proposals')).rows[0],before);assert.equal(saved.memoryProposal!.status,'confirmed');
+  });
   test('stale, missing and foreign facts cannot be changed; conflict remains redacted and replayable',async()=>{
     const saved=await confirm(await propose());const d=await change(saved,'update');const s=await propose(d);
     await db.query("UPDATE agent_memories SET text='Changed elsewhere' WHERE id=$1",[d.memory_id]);
@@ -141,7 +163,10 @@ describe('approved memory lifecycle', { skip: !url }, () => {
   test('demo cannot publish or confirm memory and reads no facts',async()=>{
     await db.query("INSERT INTO agent_memories(id,user_id,kind,text) VALUES($1,$2,'other','Hidden demo fact')",[randomUUID(),demo]);
     assert.deepEqual((await store.getMemories(demo)).memories,[]);
-    await assert.rejects(propose(draft(),demo),{code:'agent_memory_demo'});
+    // A demo turn's offer is dropped and its reply kept, as before 022.
+    const dropped=await propose(draft(),demo);assert.equal(dropped.memoryProposal,null);assert.equal(dropped.messages.at(-1)!.content,'Review this fact.');
+    assert.equal((await db.query('SELECT id FROM agent_memory_proposals WHERE user_id=$1',[demo])).rowCount,0);
+    const begun=await store.beginTurn(demo,dropped.conversation.id,{...settings,requestId:randomUUID(),content:'Fictional demo turn'});assert.equal(begun.memories,undefined);
     const s=await propose();await db.query('UPDATE users SET is_demo=false WHERE id=$1',[demo]);await db.query('UPDATE users SET is_demo=true WHERE id=$1',[alice]);
     await assert.rejects(confirm(s),{code:'agent_memory_demo',status:403});
   });

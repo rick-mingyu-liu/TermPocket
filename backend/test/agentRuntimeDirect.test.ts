@@ -12,12 +12,12 @@ import logger = require('../utils/logger');
 
 config.agent.enabled = true; config.agent.apiKey = 'fictional-test-key';
 const unused = async () => assert.fail('records read without a tool call');
-const noRecords = { spendingSummary: unused, compareSpending: unused, transactionDetails: unused, spendingBaseline: unused, listGoals: unused, calculateScenario: unused, prepareGoalProposal: unused };
+const noRecords = { spendingSummary: unused, compareSpending: unused, transactionDetails: unused, spendingBaseline: unused, listGoals: unused, calculateScenario: unused, prepareGoalProposal: unused, prepareMemoryProposal: unused };
 const okRecords = (answer: unknown = { ok: true }) => {
   const calls: string[] = [];
   const record = (fn: string) => async () => { calls.push(fn); return answer; };
   return { calls, records: { spendingSummary: record('spendingSummary'), compareSpending: record('compareSpending'), transactionDetails: record('transactionDetails'),
-    spendingBaseline: record('spendingBaseline'), listGoals: record('listGoals'), calculateScenario: record('calculateScenario'), prepareGoalProposal: unused } };
+    spendingBaseline: record('spendingBaseline'), listGoals: record('listGoals'), calculateScenario: record('calculateScenario'), prepareGoalProposal: unused, prepareMemoryProposal: unused } };
 };
 const input = { content: 'Coffee 5 CAD today', history: [], pendingRows: [], currency: 'CAD', timezone: 'America/Toronto', language: 'en' as const, today: '2026-10-14', signal: new AbortController().signal, records: noRecords };
 const row = { amount: '5.00', description: 'Coffee', category: 'Dining Out', type: 'expense', date: '2026-10-14', currency: 'CAD' };
@@ -79,7 +79,7 @@ test('direct: one tool call sends the same prompt, envelope and tools, then retu
   assert.deepEqual(first!.messages.length, 1);
   const envelope = JSON.parse(String(first!.messages[0]!.content)) as Record<string, unknown>;
   assert.deepEqual(Object.keys(envelope), ['currentMessage', 'history', 'pendingRows', 'context']);
-  assert.deepEqual(first!.tools!.map(t => (t as { name: string }).name), ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal']);
+  assert.deepEqual(first!.tools!.map(t => (t as { name: string }).name), ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal', 'propose_memory']);
   for (const t of first!.tools!) {
     const schema = (t as { input_schema: Record<string, unknown> }).input_schema;
     assert.equal(schema.type, 'object');

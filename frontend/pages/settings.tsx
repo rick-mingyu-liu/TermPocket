@@ -24,6 +24,7 @@ import { formatDay } from '@/lib/date'
 import { agentAPI, agentUnavailable } from '@/utils/agentApi'
 import { useTheme } from '@/contexts/ThemeContext'
 import AiConnections from '@/components/AiConnections'
+import PockyMemory from '@/components/PockyMemory'
 import OpenSourceAcknowledgements from '@/components/OpenSourceAcknowledgements'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -186,6 +187,10 @@ export default function Settings() {
       // and may not have its migration. If the check itself fails, attempt the
       // deletion anyway so a real partial failure is still reported.
       const agentEnabled = await agentAPI.status().then(status => status.storage, () => true)
+      // Forget all first: it also stops any running Pocky reply, so none can
+      // offer a fact from the history about to be deleted. Before the memory
+      // migration there is nothing to forget, which is not a failure.
+      if (agentEnabled) await agentAPI.forgetAllMemories().catch(error => { if (!agentUnavailable(error)) throw error })
       const agentCleared = !agentEnabled ? null : await agentAPI.clear().then(() => true).catch(error => {
         // Clear existing app data, but never claim its agent history cleared.
         if (agentUnavailable(error)) return false
@@ -442,6 +447,8 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">{t('retention.scope')}</p>
               </CardContent>
             </Card>
+
+            <PockyMemory />
 
             <AiConnections />
 

@@ -12,9 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import DraftEditor, { currencies, selectClass } from '@/components/agent/DraftEditor'
 import GoalProposalCard from '@/components/agent/GoalProposalCard'
+import MemoryProposalCard from '@/components/agent/MemoryProposalCard'
 import { readPreferences } from '@/lib/preferences'
 import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
-import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
+import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MemoryConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
 
 // Visiting or updating a conversation must not change its place in history.
 const creationOrder = (items: Conversation[]) => [...items].sort((a, b) =>
@@ -56,6 +57,9 @@ export default function AgentPage() {
   // A goal confirmation whose outcome is unknown, replayed with its requestId.
   const [goalRetry, setGoalRetry] = useState<GoalConfirmRequest | null>(null)
   const [goalChecked, setGoalChecked] = useState(false)
+  // The same for a memory offer's Remember (or Forget) button.
+  const [memoryRetry, setMemoryRetry] = useState<MemoryConfirmRequest | null>(null)
+  const [memoryChecked, setMemoryChecked] = useState(false)
   // The server rejected a save or confirmation because the draft moved on.
   const [staleDraft, setStaleDraft] = useState(false)
   const composer = useRef<HTMLTextAreaElement | null>(null)
@@ -126,6 +130,9 @@ export default function AgentPage() {
       // Existing history remains accessible when the provider is disabled.
       const items = await agentAPI.list()
       if (live) setConversations(creationOrder(items))
+      // Settings links a remembered fact to the conversation it came from.
+      const linked = new URLSearchParams(window.location.search).get('conversation')
+      if (live && linked && items.some(item => item.id === linked)) void load(linked)
     }).catch(cause => { if (live) showError(cause) })
     return () => { live = false; generation.current += 1; controller.current?.abort() }
     // Initialize once; changing the display language must not restart a turn.
@@ -134,7 +141,7 @@ export default function AgentPage() {
 
   // Local expiry updates are timers, never network polling.
   useEffect(() => {
-    const deadlines = [state?.draft?.expires_at, state?.goalProposal?.expires_at, ...(state?.receipts.map(receipt => receipt.undo_until) || [])]
+    const deadlines = [state?.draft?.expires_at, state?.goalProposal?.expires_at, state?.memoryProposal?.expires_at, ...(state?.receipts.map(receipt => receipt.undo_until) || [])]
       .filter((value): value is string => Boolean(value)).map(value => new Date(value).getTime()).filter(value => value > Date.now())
     if (!deadlines.length) return
     const timer = setTimeout(() => setNow(Date.now()), Math.min(...deadlines) - Date.now() + 20)
@@ -144,7 +151,7 @@ export default function AgentPage() {
   const dirty = Boolean(state?.draft?.status === 'pending' && JSON.stringify(rows) !== JSON.stringify(state.draft.rows))
   const running = sending || state?.run?.status === 'running'
   const locked = busy || Boolean(running) || cancelling
-  const unresolved = Boolean(retry || confirmRetry || goalRetry)
+  const unresolved = Boolean(retry || confirmRetry || goalRetry || memoryRetry)
   const sendDisabled = locked || unresolved || dirty || available !== true || !content.trim() || dictating
   // Coarse pointer = phone/tablet: Enter stays a newline there and Send is the button.
   const [enterSends, setEnterSends] = useState(false)
@@ -174,7 +181,7 @@ export default function AgentPage() {
       const next = await agentAPI.get(id)
       apply(next)
       if (next.run?.status !== 'running') setRetry(null)
-      setConfirmRetry(null); setGoalRetry(null); setStaleDraft(false)
+      setConfirmRetry(null); setGoalRetry(null); setMemoryRetry(null); setStaleDraft(false)
     } catch (cause) { showError(cause) } finally { setBusy(false) }
   }
 
@@ -193,6 +200,7 @@ export default function AgentPage() {
         // Keep an uncertain confirmation's exact request for safe replay,
         // unless the goal proposal it targets has visibly settled.
         if (goalRetry && (next.goalProposal?.id !== goalRetry.proposalId || next.goalProposal.status !== 'pending')) setGoalRetry(null)
+        if (memoryRetry && (next.memoryProposal?.id !== memoryRetry.proposalId || next.memoryProposal.status !== 'pending')) setMemoryRetry(null)
       }
       setStaleDraft(false)
     } catch (cause) { showError(cause) } finally { setBusy(false) }
@@ -334,13 +342,50 @@ export default function AgentPage() {
     } finally { setBusy(false) }
   }
 
+  const mutateMemory = async (action: 'confirm' | 'discard') => {
+    const proposal = state?.memoryProposal
+    if (!state || !proposal || locked || retry || confirmRetry || goalRetry || (action === 'discard' && memoryRetry)) return
+    setBusy(true); setError(''); setNotice('')
+    const recovering = action === 'confirm' && memoryRetry
+    const body = action === 'confirm' ? memoryRetry || { proposalId: proposal.id, requestId: crypto.randomUUID() } : null
+    try {
+      let next: ConversationState
+      if (action === 'discard') next = await agentAPI.discardMemory(state.conversation.id, proposal.id)
+      else {
+        setMemoryRetry(body); setMemoryChecked(false)
+        next = await agentAPI.confirmMemory(state.conversation.id, body!)
+        setMemoryRetry(null)
+      }
+      apply(next)
+    } catch (cause) {
+      const code = agentErrorCode(cause)
+      // The offer is gone (Forget all in Settings): the card it came from is
+      // stale, so show the current state and no error.
+      const gone = code === 'agent_memory_proposal_gone'
+      if (!gone) setError(`memory:${code}`)
+      // The router's catch-all 500 may follow a commit, so it stays recoverable.
+      const definite = !agentOutcomeUnknown(cause) && code !== 'agent_request_failed'
+      if (action === 'confirm' && definite) setMemoryRetry(null)
+      if (action === 'discard' || definite || (recovering && body)) {
+        try {
+          const next = await agentAPI.get(state.conversation.id)
+          apply(next)
+          if (recovering && body) {
+            if (next.memoryProposal?.id !== body.proposalId || next.memoryProposal.status !== 'pending') setMemoryRetry(null)
+            else setMemoryChecked(true)
+          }
+        } catch { /* Keep any exact request for another recovery attempt. */ }
+      }
+    } finally { setBusy(false) }
+  }
+
   const removeConversation = async () => {
     if (!state) return
     setBusy(true); setError('')
     try {
       await agentAPI.remove(state.conversation.id)
       setConversations(previous => previous.filter(item => item.id !== state.conversation.id))
-      setState(null); setRows([]); setContent(''); setRetry(null); setConfirmRetry(null); setGoalRetry(null); setStaleDraft(false); setDeleteOpen(false); setNotice('agent.deleted')
+      setState(null); setRows([]); setContent(''); setRetry(null); setConfirmRetry(null); setGoalRetry(null); setMemoryRetry(null); setStaleDraft(false); setDeleteOpen(false); setNotice('agent.deleted')
       focusComposer.current = true
     } catch (cause) { showError(cause) } finally { setBusy(false) }
   }
@@ -367,7 +412,9 @@ export default function AgentPage() {
         <p className="rounded-lg border bg-card p-3 text-xs leading-relaxed text-muted-foreground">{t('agent.privacy')}{' '}<Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t('agent.privacyLink')}</Link></p>
         {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">{error.startsWith('goal:')
           ? t(`agent.goal.errors.${error.slice(5)}`, { defaultValue: t(`agent.errors.${error.slice(5)}`, { defaultValue: t('agent.errors.generic') }) })
-          : t(`agent.errors.${error}`, { defaultValue: t('agent.errors.generic') })}</div>}
+          : error.startsWith('memory:')
+            ? t(`agent.memory.errors.${error.slice(7)}`, { defaultValue: t(`agent.errors.${error.slice(7)}`, { defaultValue: t('agent.errors.generic') }) })
+            : t(`agent.errors.${error}`, { defaultValue: t('agent.errors.generic') })}</div>}
         {/* The single live region; the visible notices below are not announced twice. */}
         <p role="status" aria-live="polite" className="sr-only">{statusText ? t(statusText) : ''}</p>
         {notice && <p className="rounded-lg border border-green-600/30 bg-green-500/10 p-3 text-sm">{t(notice)}</p>}
@@ -453,6 +500,17 @@ export default function AgentPage() {
               onConfirm={() => void mutateGoal('confirm')}
               onDiscard={() => void mutateGoal('discard')}
               onDismissRecovery={() => { setGoalRetry(null); setGoalChecked(false) }} />}
+            {state?.memoryProposal && <MemoryProposalCard
+              proposal={state.memoryProposal}
+              expired={new Date(state.memoryProposal.expires_at).getTime() <= now}
+              expiresLabel={t('agent.expires', { date: dateTime(state.memoryProposal.expires_at, true) })}
+              confirmDisabled={locked || Boolean(retry || confirmRetry || goalRetry)}
+              discardDisabled={locked || Boolean(retry || confirmRetry || goalRetry)}
+              recovering={Boolean(memoryRetry)}
+              recoveryChecked={memoryChecked}
+              onConfirm={() => void mutateMemory('confirm')}
+              onDiscard={() => void mutateMemory('discard')}
+              onDismissRecovery={() => { setMemoryRetry(null); setMemoryChecked(false) }} />}
             {state?.receipts.map(receipt => <Card key={receipt.id}><CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5"><div><p className="font-medium">{t(receipt.undone_at ? 'agent.receiptUndone' : 'agent.receiptSaved', { count: receipt.transaction_ids.length })}</p><p className="mt-1 text-xs text-muted-foreground">{receipt.undone_at ? dateTime(receipt.undone_at) : new Date(receipt.undo_until).getTime() <= now ? t('agent.undoExpired') : t('agent.undoUntil', { date: dateTime(receipt.undo_until, true) })}</p></div>{!receipt.undone_at && <Button variant="outline" disabled={locked || dirty || unresolved || new Date(receipt.undo_until).getTime() <= now} onClick={() => undo(receipt.id)}>{t('agent.undo')}</Button>}</CardContent></Card>)}
           </div>
         </div>}

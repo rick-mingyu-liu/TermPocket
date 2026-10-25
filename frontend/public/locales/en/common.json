@@ -632,6 +632,68 @@
         "agent_unavailable": "Goal proposals are not available on this deployment right now."
       }
     },
+    "memory": {
+      "title": {
+        "remember": "Remember this?",
+        "update": "Update a remembered fact?",
+        "forget": "Forget a remembered fact?"
+      },
+      "now": "Now",
+      "becomes": "Becomes",
+      "hint": "Pocky remembers only what you save here, and uses it in your conversations. Every saved fact is sent to the AI provider with each message to Pocky. You can delete it any time in Settings.",
+      "forgetHint": "Forgetting deletes this fact from Pocky's memory. Conversations that mention it keep their messages until you delete them.",
+      "remember": "Remember",
+      "notNow": "Not now",
+      "forget": "Forget",
+      "keep": "Keep",
+      "recoverConfirm": "Recover memory confirmation",
+      "saved": "Saved. Pocky will use this in your conversations.",
+      "manage": "Manage memory",
+      "forgotten": "Forgotten. Pocky no longer remembers this fact.",
+      "notSaved": "Not saved.",
+      "kept": "Kept. Pocky still remembers this fact.",
+      "expired": "This offer expired before you answered. Ask Pocky again if you still want it remembered.",
+      "full": "You already have 30 saved facts. Forget one in Settings first, then ask Pocky again.",
+      "conflict": "This fact changed since Pocky offered this. Ask Pocky again with the current fact.",
+      "kinds": {
+        "income": "Income",
+        "expense": "Expense",
+        "reserve": "Cash reserve",
+        "preference": "Preference",
+        "other": "Other"
+      },
+      "cadences": {
+        "week": "every week",
+        "two_weeks": "every two weeks",
+        "month": "every month",
+        "once": "once"
+      },
+      "errors": {
+        "agent_version_conflict": "This memory offer changed in another request. Refresh and review the latest one.",
+        "agent_expired": "This memory offer has expired. Ask Pocky again if you still want it remembered.",
+        "agent_memory_full": "You already have 30 saved facts. Forget one in Settings first, then ask Pocky again.",
+        "agent_memory_conflict": "This fact changed since Pocky offered this. Ask Pocky again with the current fact.",
+        "agent_memory_demo": "The demo account cannot save facts to Pocky's memory.",
+        "agent_busy": "Another request is running. Wait for it to finish, then try again.",
+        "agent_unavailable": "Pocky's memory is not available on this deployment right now."
+      },
+      "settings": {
+        "title": "Pocky memory",
+        "description": "Facts you asked Pocky to remember. Every saved fact is sent to the AI provider with each message to Pocky.",
+        "empty": "Pocky has no saved facts. When you tell Pocky something lasting, such as your rent, it may offer to remember it.",
+        "savedOn": "Saved {{date}}",
+        "source": "Conversation",
+        "delete": "Delete",
+        "deleteLabel": "Delete \"{{text}}\"",
+        "forgetAll": "Forget all",
+        "forgetAllTitle": "Forget everything Pocky remembers?",
+        "forgetAllWarning": "This permanently deletes every saved fact. It also stops any Pocky reply still running, in every conversation: resend that message if you still need it.",
+        "caveat": "Deleting a fact does not edit conversations: one that mentions it keeps that text until you delete the conversation.",
+        "deleted": "Fact deleted.",
+        "forgotAll": "Pocky's memory is cleared.",
+        "error": "Could not update Pocky's memory. Please try again."
+      }
+    },
     "discard": "Discard draft",
     "saved": "Confirmed entries are now saved in your transactions.",
     "receiptSaved_one": "{{count}} entry saved",
@@ -642,10 +704,10 @@
     "undoUntil": "Undo available until {{date}}",
     "undoExpired": "The undo window has ended. Manage these entries in Transactions.",
     "undone": "The saved entries were removed.",
-    "clearSuccess": "Your transactions, goals, agent conversations and pending drafts have been deleted.",
+    "clearSuccess": "Your transactions, goals, agent conversations, pending drafts and Pocky's saved facts have been deleted.",
     "clearSuccessWithoutAgent": "Your transactions and goals have been deleted.",
-    "clearDescription": "Permanently delete all transactions, goals, agent conversations and pending drafts.",
-    "clearWarning": "This permanently deletes all your transactions, goals, agent conversations and pending drafts. It cannot be undone.",
+    "clearDescription": "Permanently delete all transactions, goals, agent conversations, pending drafts and Pocky's saved facts.",
+    "clearWarning": "This permanently deletes all your transactions, goals, agent conversations, pending drafts and Pocky's saved facts. It cannot be undone.",
     "errors": {
       "generic": "This action could not be completed. Refresh to check the latest state, then try again.",
       "agent_network_error": "The connection was interrupted. Recover the response or refresh to check whether the action completed.",
