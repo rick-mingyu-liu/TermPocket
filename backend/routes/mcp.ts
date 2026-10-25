@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { userForToken } from '../services/accessTokens';
 import { termSummary, monthlyBaseline, goalProgress } from '../services/moneyFacts';
 import { errorSummary } from '../utils/errorSummary';
+import { mcpLimiter } from '../middleware/rateLimiter';
 
 /**
  * POST /mcp — TermPocket as an MCP server, so a personal agent can read your
@@ -73,7 +74,7 @@ async function tokenAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-router.use(tokenAuth);
+router.use(tokenAuth, mcpLimiter);
 
 const reply = (id: unknown, result: unknown) => ({ jsonrpc: '2.0', id, result });
 const failure = (id: unknown, code: number, message: string) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });

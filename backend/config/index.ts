@@ -142,6 +142,11 @@ const config = {
     // this bounds guessing it with a stolen login token; a person deleting
     // their account needs one, or a few after typos.
     accountDeleteMax: intFromEnv('RATE_LIMIT_ACCOUNT_DELETE_MAX', 5),
+    // Per user: POST /mcp calls with a valid access token, all of the user's
+    // tokens together. The per-IP limit alone lets a stolen token spread
+    // requests across addresses; an agent answering questions needs a few
+    // calls per question.
+    mcpMax: intFromEnv('RATE_LIMIT_MCP_MAX', 60),
   },
 
   // Screenshot import. The OCR itself runs in the browser; these bound what

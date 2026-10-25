@@ -60,4 +60,17 @@ const accountDeleteLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accountDeleteLimiter };
+// POST /mcp, keyed on the token's owner, so a user's five tokens share one
+// budget. Mount after the token check. The refusal is a JSON-RPC error.
+const mcpLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.mcpMax,
+  keyGenerator: (req) => `user:${req.user.userId}`,
+  handler: (_req, res) => {
+    res.status(429).json({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Too many requests, please wait a few minutes.' } });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export { apiLimiter, authLimiter, importLimiter, accessTokenLimiter, accountDeleteLimiter, mcpLimiter };
