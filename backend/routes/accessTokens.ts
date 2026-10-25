@@ -16,9 +16,15 @@ router.use((_req, res, next) => {
 // Apply auth middleware to all routes
 router.use(auth);
 
-const nameValidation = [
+// The password is re-checked in the service. It is not trimmed: a password is
+// exactly what was typed. The cap keeps a huge body from being hashed at all
+// (bcrypt reads only the first 72 bytes).
+const createValidation = [
   body('name').isString().withMessage('name is required').bail()
     .trim().isLength({ min: 1, max: 60 }).withMessage('name must be 1-60 characters'),
+  body('password').isString().withMessage('password is required').bail()
+    .notEmpty().withMessage('password is required')
+    .isLength({ max: 1024 }).withMessage('password is too long'),
 ];
 
 const idValidation = [
@@ -27,7 +33,7 @@ const idValidation = [
 
 router.get('/', accessTokenController.list);
 // Limiter after auth: it is keyed on the user.
-router.post('/', accessTokenLimiter, nameValidation, accessTokenController.create);
+router.post('/', accessTokenLimiter, createValidation, accessTokenController.create);
 router.delete('/:id', accessTokenLimiter, idValidation, accessTokenController.revoke);
 
 export = router;

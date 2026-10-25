@@ -57,8 +57,9 @@ api.interceptors.response.use(
     const handledByCaller = isAuthEndpoint || error.config?.url?.includes('/import')
 
     // The AI connections section reports its own 4xx next to the form or row
-    // they concern — the token limit, a bad name, or a token already revoked
-    // in another tab — so none of them should also raise a generic dialog.
+    // they concern — the token limit, a bad name, a wrong password (403), or a
+    // token already revoked in another tab — so none of them should also
+    // raise a generic dialog.
     const ownsClientErrors = error.config?.url?.startsWith('/access-tokens')
       && response?.status >= 400 && response?.status < 500 && response?.status !== 401
     if (ownsClientErrors) return Promise.reject(error)
@@ -140,12 +141,17 @@ export interface AccessToken {
   created_at: string
   last_used_at: string | null
   revoked_at: string | null
+  // An instant; null when the token never expires (only tokens from before
+  // the backend's migration 023). `expired` is decided by the server's clock.
+  expires_at: string | null
+  expired: boolean
 }
 
 export const accessTokenAPI = {
   list: () => api.get<{ tokens: AccessToken[], limit: number }>('/access-tokens'),
   // The secret comes back once, in this response, and is never retrievable again.
-  create: (name: string) => api.post<{ token: AccessToken, secret: string }>('/access-tokens', { name }),
+  // The account password is re-checked by the server; it is sent once and never kept.
+  create: (name: string, password: string) => api.post<{ token: AccessToken, secret: string }>('/access-tokens', { name, password }),
   revoke: (id: number) => api.delete<{ revoked: true }>(`/access-tokens/${id}`),
 }
 

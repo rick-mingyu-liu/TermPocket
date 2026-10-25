@@ -50,7 +50,7 @@ describe('account deletion against the database', { skip: !enabled }, () => {
     await db.query("INSERT INTO transactions(user_id,amount,description,category,type,date,currency) VALUES($1,12.50,'Fictional lunch','Dining Out','expense','2026-10-01','CAD')", [owner]);
     await db.query("INSERT INTO savings_goals(user_id,name,target_amount,target_date) VALUES($1,'Fictional laptop',1500,'2027-04-30')", [owner]);
     await db.query('INSERT INTO import_batches(user_id,row_count,edited_count,llm_count) VALUES($1,3,1,0)', [owner]);
-    await tokens.createToken(owner, 'Fictional agent');
+    await tokens.createToken(owner, 'Fictional agent', { operator: true });
 
     // A confirmed draft with its receipt.
     const drafted = await store.createConversation(owner, settings);

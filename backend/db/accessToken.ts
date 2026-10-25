@@ -24,15 +24,20 @@ async function main(): Promise<void> {
   if (userId === undefined) throw new Error('no account with that email');
 
   if (command === 'create') {
-    const { id, token } = await createToken(userId, extra?.trim() || 'personal agent');
+    // An operator tool: whoever runs it already holds the database
+    // credentials, so it does not ask for the account's password.
+    const { id, token } = await createToken(userId, extra?.trim() || 'personal agent', { operator: true });
     console.log(`Created token ${id}. Copy it now; it is not shown again:\n\n  ${token}\n`);
     console.log('It can only read term totals, the monthly baseline and goals through POST /mcp.');
   } else if (command === 'list') {
     const tokens = await listTokens(userId);
     if (tokens.length === 0) console.log('No tokens.');
     for (const t of tokens) {
-      const state = t.revoked_at ? `revoked ${formatDay(t.revoked_at)}` : `last used ${formatDay(t.last_used_at, 'never')}`;
-      console.log(`${t.id}  ${t.name}  created ${formatDay(t.created_at)}  ${state}`);
+      const state = t.revoked_at
+        ? `revoked ${formatDay(t.revoked_at)}`
+        : t.expired ? `expired ${formatDay(t.expires_at)}` : `last used ${formatDay(t.last_used_at, 'never')}`;
+      const expiry = t.revoked_at || t.expired ? '' : `  expires ${formatDay(t.expires_at, 'never')}`;
+      console.log(`${t.id}  ${t.name}  created ${formatDay(t.created_at)}  ${state}${expiry}`);
     }
   } else if (command === 'revoke') {
     const id = Number(extra);

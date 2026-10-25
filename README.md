@@ -503,12 +503,14 @@ The figures are what you recorded in TermPocket, not verified bank balances. Ter
 
 In the web app, **Settings → AI connections**:
 
-- Name the connection and press **Create token**.
+- Name the connection, enter your TermPocket password, and press **Create token**. The password is checked again on the server (a wrong one is `403 access_token_password_incorrect`), so a stolen login session alone cannot mint a token. The demo account cannot create tokens.
 - The token (`mgo_…`) is shown **once**. Copy it into your client straight away; only its SHA-256 hash is stored.
+- A token **expires 90 days** after it is created; from then on its requests get `401`. Settings shows each token's expiry date and marks an expired one; create a new token and give it to the app. (Tokens that existed when expiry was introduced were given 90 days from that day.)
 - **Revoke** takes effect at once: the next request from that client gets `401`.
-- At most 5 tokens per account can be active at a time.
+- At most 5 tokens per account can be active at a time. Revoked and expired tokens do not count.
+- Creating and revoking a token each write an audit line with the user id and token id only.
 
-The CLI still works, and enforces the same limit through the same transaction:
+The CLI still works, and enforces the same limit through the same transaction. It is an operator tool, run with the database's credentials, so it does not ask for the account's password; its tokens expire after 90 days too:
 
 ```bash
 cd backend
@@ -588,7 +590,7 @@ Verified locally on 2026-10-18 with **Codex CLI 0.162.1**: authenticated discove
 #### Troubleshooting
 
 - **`401 A TermPocket access token is required.`**:
-  - the token is wrong, revoked, or from another deployment's database;
+  - the token is wrong, revoked, expired (90 days after creation), or from another deployment's database;
   - the header lacks `Bearer `; or
   - you used the login JWT, which `/mcp` refuses on purpose.
 

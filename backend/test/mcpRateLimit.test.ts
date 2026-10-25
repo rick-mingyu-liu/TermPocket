@@ -33,6 +33,8 @@ let queries: string[] = [];
 
 before(async () => {
   mock.method(db, 'query', async (text: string, params: unknown[]) => {
+    // Migration 023's column probe, answered once and then cached.
+    if (text.includes('information_schema.columns')) return { rowCount: 1, rows: [{ present: true }] };
     queries.push(text);
     if (text.includes('FROM access_tokens WHERE token_hash')) {
       const userId = owners.get(String(params[0]));

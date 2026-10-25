@@ -227,6 +227,14 @@ const config = {
     transactionRetentionBatch: 5000,
   },
 
+  // Personal access tokens for POST /mcp (services/accessTokens.ts). A new
+  // token stops opening /mcp this many days after it is created (migration
+  // 023; before it is applied, tokens do not expire). Interpolated into SQL
+  // as a parameter, so it must stay a whole number.
+  accessTokens: {
+    ttlDays: 90,
+  },
+
   // The Terms of Service and Privacy Policy as one version: a user who has
   // not accepted this exact string sees the accept card once after signing in
   // (services/termsService.ts). Change it only when the legal text changes in

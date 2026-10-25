@@ -75,7 +75,11 @@ CREATE TABLE IF NOT EXISTS access_tokens (
     token_hash CHAR(64) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMPTZ,
-    revoked_at TIMESTAMPTZ
+    revoked_at TIMESTAMPTZ,
+    -- When the token stops opening /mcp (migration 023): creation plus
+    -- config.accessTokens.ttlDays. NULL never expires; only a token created
+    -- before 023 by code that had not seen the column can be NULL.
+    expires_at TIMESTAMPTZ
 );
 
 -- Savings goals table
