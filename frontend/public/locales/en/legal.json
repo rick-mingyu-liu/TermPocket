@@ -14,7 +14,7 @@
           "Screenshot imports: a count of how many rows each import saved and how many you edited. The screenshot itself is not stored (see below).",
           "Pocky conversations: your messages and Pocky’s replies, the entries it drafts for you to review, goal changes it proposes, the facts it offers to remember, and each conversation’s currency, timezone and language settings. We also keep technical records of each request (status, token counts, error codes, time) and short receipts that let you undo a save; receipts hold record IDs and version stamps, not amounts or descriptions.",
           "Pocky memory: the facts you ask Pocky to remember, such as your rent, your pay or a cash reserve you want to keep, up to 30. Each holds a short text in your words, an optional amount, currency and how often it repeats, the conversation it came from, and when it was saved or last changed. Pocky can only offer to remember something; a fact is saved only when you press Remember.",
-          "AI connections: for each personal access token you create, its name, when it was created, last used and revoked, and a SHA-256 hash of the token. The token itself is shown to you once and is not stored.",
+          "AI connections: for each personal access token you create, its name, when it was created, last used, revoked and when it expires (90 days after it was created), and a SHA-256 hash of the token. The token itself is shown to you once and is not stored.",
           "Request logs: like most web services, our server logs each request, including your IP address, the time, the address requested and your browser’s user agent. These logs are kept by our hosting provider, Render."
         ]
       },
