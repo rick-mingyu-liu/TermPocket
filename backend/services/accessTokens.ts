@@ -108,7 +108,8 @@ export async function userForToken(token: string): Promise<number | null> {
     [hash]
   );
   const row = found.rows[0];
-  if (row === undefined) return null;
+  // A revoked token is throttled again from its first refusal.
+  if (row === undefined) { recentlyValid.delete(hash); return null; }
   rememberValid(hash);
   // Bookkeeping: a failed write must not refuse a request the token allows.
   if (row.stale) {

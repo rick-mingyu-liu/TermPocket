@@ -91,6 +91,10 @@ test('unknown tokens: three 401s, then refused before any lookup; a recently val
   assert.equal(queries.length, 0);
   // Bob authenticated in the test above, from the same address.
   assert.equal((await call(BOB)).status, 200);
+  // Once Bob's token is refused (revoked), it no longer skips the budget.
+  owners.delete(hashToken(BOB));
+  assert.equal((await call(BOB)).status, 401);
+  assert.equal((await call(BOB)).status, 429);
 });
 
 test('a 429 echoes only an id the handler itself would accept', async () => {
