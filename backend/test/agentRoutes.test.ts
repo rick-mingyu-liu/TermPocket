@@ -85,6 +85,15 @@ test('confirmation accepts only reviewed version, selection and nonce',async()=>
   assert.equal((await request(app).post(url).auth(token,{type:'bearer'}).send({...good,amount:'900.00'})).status,400);assert.equal(financialWrites,0);
   assert.equal((await request(app).post(url).auth(token,{type:'bearer'}).send(good)).status,200);assert.equal(financialWrites,1);
 });
+test('confirmation forwards the reviewed edits with server-derived identity',async()=>{
+  const rows=[{id:requestId,amount:'18.50',description:'Fictional lunch',category:'Dining Out',type:'expense',date:'2026-10-25',currency:'CAD'}];
+  let received:unknown;
+  mock.method(store,'confirmDraft',async(userId:number,id:string,input:unknown)=>{received={userId,id,input};return state;});
+  const body={version:1,rowIds:[requestId],requestId,rows};
+  const res=await request(app).post(`/agent/conversations/${conversationId}/confirm`).auth(token,{type:'bearer'}).send(body);
+  assert.equal(res.status,200);
+  assert.deepEqual(received,{userId:77,id:conversationId,input:body});
+});
 test('saved history remains readable when only the provider key is missing',async()=>{
   config.agent.apiKey=undefined;
   mock.method(store,'getConversation',async()=>state);

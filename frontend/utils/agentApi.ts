@@ -39,7 +39,8 @@ export interface ConversationState {
 // Deploy order: backend before frontend. A server predating the field rejects
 // unknown keys, so dictated sends would get a 400 (typed sends are unaffected).
 export interface MessageRequest extends AgentContext { requestId: string; content: string; input?: 'typed' | 'voice' }
-export interface ConfirmRequest { version: number; rowIds: string[]; requestId: string }
+// Inline edits require the updated backend; deploy it before the frontend.
+export interface ConfirmRequest { version: number; rowIds: string[]; requestId: string; rows?: DraftRow[] }
 export interface GoalConfirmRequest { proposalId: string; requestId: string }
 // storage: history, drafts, confirmation, undo and deletion work.
 // available: storage plus a configured provider, so new messages work too.

@@ -49,6 +49,28 @@ describe('agent storage safety', { skip: !enabled }, () => {
     await assert.rejects(store.confirmDraft(alice,s.conversation.id,{...input,rowIds:[s.draft!.rows[1]!.id]}),{code:'agent_request_conflict'});
     await store.undoReceipt(alice,results[0]!.receipts[0]!.id);
   });
+  test('one confirmation saves edited selected rows, retains other edits and replays exactly once', async () => {
+    const s=await proposal();
+    const rows=s.draft!.rows.map((r,i)=>({...r,amount:i?'24.90':'18.50',description:i?'Fictional remaining edit':'Fictional saved edit'}));
+    const input={version:s.draft!.version,rowIds:[rows[0]!.id],requestId:randomUUID(),rows};
+    const [saved,replayed]=await Promise.all([store.confirmDraft(alice,s.conversation.id,input),store.confirmDraft(alice,s.conversation.id,input)]);
+    assert.equal(saved.receipts[0]!.id,replayed.receipts[0]!.id);
+    const transaction=(await db.query<{amount:string;description:string}>('SELECT amount,description FROM transactions WHERE id=$1',[saved.receipts[0]!.transaction_ids[0]])).rows[0]!;
+    assert.deepEqual(transaction,{amount:'18.50',description:'Fictional saved edit'});
+    assert.deepEqual(saved.draft!.rows,[rows[1]]);
+    await assert.rejects(store.confirmDraft(alice,s.conversation.id,Object.assign({},input,{rows:rows.map(r=>({...r,amount:'99.00'}))})),{code:'agent_request_conflict'});
+    await store.undoReceipt(alice,saved.receipts[0]!.id);
+  });
+  test('inline edits reject foreign, missing, duplicate or invalid rows without changing the draft', async () => {
+    const s=await proposal();const rows=s.draft!.rows;
+    const base={version:s.draft!.version,rowIds:[rows[0]!.id],requestId:randomUUID()};
+    for(const invalid of [[rows[0]], [rows[0],row()], [rows[0],rows[0]], rows.map(r=>({...r,amount:'0.00'}))]) {
+      await assert.rejects(store.confirmDraft(alice,s.conversation.id,Object.assign({},base,{rows:invalid})),{code:'agent_invalid_input'});
+    }
+    await assert.rejects(store.confirmDraft(bob,s.conversation.id,Object.assign({},base,{rows})),{code:'agent_not_found'});
+    const current=await store.getConversation(alice,s.conversation.id);
+    assert.equal(current.draft!.version,s.draft!.version);assert.equal(current.receipts.length,0);
+  });
   test('ownership, obsolete versions and arbitrary edited IDs cannot write', async () => {
     const s = await proposal();
     await assert.rejects(store.getConversation(bob,s.conversation.id),{code:'agent_not_found'});
@@ -99,13 +121,13 @@ describe('agent storage safety', { skip: !enabled }, () => {
   });
   test('a failing second financial insert rolls back the entire batch and receipt',async()=>{
     const s=await proposal();const rows=s.draft!.rows.map((r,i)=>({...r,description:i?'Reject fictional row':'Accept fictional row'}));
-    const edited=await store.editDraft(alice,s.conversation.id,1,rows);
     await db.query("ALTER TABLE transactions ADD CONSTRAINT agent_test_reject CHECK (description <> 'Reject fictional row') NOT VALID");
     try {
       const before=await db.query<{count:string}>('SELECT count(*) FROM transactions WHERE user_id=$1',[alice]);
-      await assert.rejects(store.confirmDraft(alice,s.conversation.id,{version:edited.draft!.version,rowIds:rows.map(r=>r.id),requestId:randomUUID()}),{code:'23514'});
+      await assert.rejects(store.confirmDraft(alice,s.conversation.id,Object.assign({version:s.draft!.version,rowIds:rows.map(r=>r.id),requestId:randomUUID()},{rows})),{code:'23514'});
       assert.equal((await db.query<{count:string}>('SELECT count(*) FROM transactions WHERE user_id=$1',[alice])).rows[0]!.count,before.rows[0]!.count);
-      assert.equal((await store.getConversation(alice,s.conversation.id)).receipts.length,0);
+      const unchanged=await store.getConversation(alice,s.conversation.id);
+      assert.equal(unchanged.receipts.length,0);assert.deepEqual(unchanged.draft,s.draft);
     } finally {await db.query('ALTER TABLE transactions DROP CONSTRAINT agent_test_reject');}
   });
   test('history and conversation limits are bounded and run cleanup preserves messages',async()=>{

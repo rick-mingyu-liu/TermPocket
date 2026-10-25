@@ -143,10 +143,10 @@ router.delete('/conversations/:id/draft',route(async(req,res)=>{
   const body=object(req.body,['version']);res.json(await store.cancelDraft(req.user.userId,validateUuid(req.params.id),version(body.version)));
 }));
 router.post('/conversations/:id/confirm',route(async(req,res)=>{
-  const body=object(req.body,['version','rowIds','requestId']);
+  const body=object(req.body,['version','rowIds','requestId','rows']);
   if(!Array.isArray(body.rowIds)||body.rowIds.length===0||body.rowIds.length>config.agent.maxRows)throw new AgentError('agent_invalid_input');
   const rowIds=body.rowIds.map(validateUuid);if(new Set(rowIds).size!==rowIds.length)throw new AgentError('agent_invalid_input');
-  res.json(await store.confirmDraft(req.user.userId,validateUuid(req.params.id),{version:version(body.version),rowIds,requestId:validateUuid(body.requestId)}));
+  res.json(await store.confirmDraft(req.user.userId,validateUuid(req.params.id),{version:version(body.version),rowIds,requestId:validateUuid(body.requestId),...(body.rows!==undefined?{rows:body.rows}:{})}));
 }));
 // Goal proposals: only these buttons create or change a savings goal. They need
 // storage (AGENT_ENABLED) but not the provider key, like draft confirmation.
