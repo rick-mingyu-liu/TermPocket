@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { query, getPool } from '../db/connection';
 import type { AccessTokenRow } from '../types/db';
+import { errorSummary } from '../utils/errorSummary';
 
 /**
  * Personal access tokens: how another app reads your numbers without your
@@ -23,12 +24,34 @@ export const looksLikeToken = (value: unknown): value is string => typeof value 
 /** A token as its owner may see it: everything but the hash and the user id. */
 export type TokenSummary = Omit<AccessTokenRow, 'token_hash' | 'user_id'>;
 
+/** The shared demo account cannot create access tokens. */
+export class DemoTokenError extends Error {}
+
+/**
+ * Hashes of tokens that authenticated in the last five minutes, so /mcp's
+ * per-IP failure budget throttles only unknown tokens: a valid client behind
+ * a shared address is not locked out by someone else's stale one. It decides
+ * nothing about access — every request is still looked up.
+ */
+const recentlyValid = new Map<string, number>();
+const RECENT_MS = 5 * 60 * 1000;
+const RECENT_MAX = 1000;
+export function authenticatedRecently(token: string): boolean {
+  if (!looksLikeToken(token)) return false;
+  const at = recentlyValid.get(hashToken(token));
+  return at !== undefined && Date.now() - at < RECENT_MS;
+}
+function rememberValid(hash: string): void {
+  recentlyValid.delete(hash);
+  const oldest = recentlyValid.keys().next();
+  if (recentlyValid.size >= RECENT_MAX && !oldest.done) recentlyValid.delete(oldest.value);
+  recentlyValid.set(hash, Date.now());
+}
+
 /**
  * Creates a token for a user. Returns the token itself, which is never stored
  * and cannot be shown again, and the row as listTokens would show it.
  */
-/** The shared demo account cannot create access tokens. */
-export class DemoTokenError extends Error {}
 
 export async function createToken(userId: number, name: string): Promise<{ id: number; token: string; summary: TokenSummary }> {
   const token = PREFIX + randomBytes(32).toString('base64url');
@@ -78,14 +101,20 @@ export async function userForToken(token: string): Promise<number | null> {
   if (!looksLikeToken(token)) return null;
   // A read, and a write of last_used_at at most every five minutes per token,
   // so a busy client does not turn every request into a row update.
+  const hash = hashToken(token);
   const found = await query<Pick<AccessTokenRow, 'id' | 'user_id'> & { stale: boolean }>(
     `SELECT id, user_id, (last_used_at IS NULL OR last_used_at < now() - interval '5 minutes') AS stale
      FROM access_tokens WHERE token_hash = $1 AND revoked_at IS NULL`,
-    [hashToken(token)]
+    [hash]
   );
   const row = found.rows[0];
   if (row === undefined) return null;
-  if (row.stale) await query('UPDATE access_tokens SET last_used_at = now() WHERE id = $1', [row.id]);
+  rememberValid(hash);
+  // Bookkeeping: a failed write must not refuse a request the token allows.
+  if (row.stale) {
+    await query('UPDATE access_tokens SET last_used_at = now() WHERE id = $1', [row.id])
+      .catch((error: unknown) => console.error('Access token last_used_at write failed:', { tokenId: row.id, ...errorSummary(error) }));
+  }
   return row.user_id;
 }
 

@@ -11,7 +11,8 @@ import express from 'express';
  *     spread its requests across addresses; past it, a 429 JSON-RPC error
  *     that runs no tool query, and another user is unaffected;
  *   - per IP, for 401s only: unknown tokens, each a database lookup, are
- *     refused before the lookup once the address has failed three times.
+ *     refused before the lookup once the address has failed three times,
+ *     while a token that authenticated recently still gets through.
  */
 
 // Read when config loads; this file runs in its own process.
@@ -80,12 +81,20 @@ test("another user's budget is separate", async () => {
   assert.equal((await call(BOB)).status, 200);
 });
 
-// Last: once the address is over its failure budget, it is refused outright.
-test('unknown tokens: three 401s, then refused before any lookup', async () => {
+// Last: once the address is over its failure budget, unknown tokens are refused outright.
+test('unknown tokens: three 401s, then refused before any lookup; a recently valid token still gets in', async () => {
   for (let i = 0; i < 3; i++) assert.equal((await call(UNKNOWN)).status, 401);
   queries = [];
   const refused = await call(UNKNOWN, 9);
   assert.equal(refused.status, 429);
   assert.deepEqual(await refused.json(), tooMany(9));
   assert.equal(queries.length, 0);
+  // Bob authenticated in the test above, from the same address.
+  assert.equal((await call(BOB)).status, 200);
+});
+
+test('a 429 echoes only an id the handler itself would accept', async () => {
+  const refused = await call(ALICE_A, 'x'.repeat(201));
+  assert.equal(refused.status, 429);
+  assert.deepEqual(await refused.json(), tooMany(null));
 });

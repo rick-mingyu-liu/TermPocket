@@ -1,11 +1,15 @@
 import type { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import config = require('../config');
+import { authenticatedRecently } from '../services/accessTokens';
 
-// General API rate limiter
+// General API rate limiter. /mcp is left to its own two limits below, which
+// answer in JSON-RPC; counted here too, its per-user budget could never be
+// reached and the dashboard's requests would share it.
 const apiLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.apiMax,
+  skip: (req) => req.originalUrl === '/mcp' || req.originalUrl.startsWith('/mcp/') || req.originalUrl.startsWith('/mcp?'),
   message: {
     error: 'Too many requests from this IP, please try again later.'
   },
@@ -66,7 +70,7 @@ function rpcTooMany(req: Request, res: Response) {
   const id = (req.body as { id?: unknown } | undefined)?.id;
   res.status(429).json({
     jsonrpc: '2.0',
-    id: typeof id === 'string' || typeof id === 'number' ? id : null,
+    id: (typeof id === 'string' && id.length <= 200) || (typeof id === 'number' && Number.isFinite(id)) ? id : null,
     error: { code: -32000, message: 'Too many requests, please wait a few minutes.', data: { code: 'mcp_rate_limited' } },
   });
 }
@@ -84,10 +88,18 @@ const mcpLimiter = rateLimit({
 
 // POST /mcp requests refused as 401, per IP. A well-formed but unknown token
 // costs a database lookup (and keeps Neon awake), so failures get a budget of
-// their own, far below the general one. Mount before the token check.
+// their own. Mount before the token check. A token that authenticated in the
+// last five minutes skips it, so a valid client is not locked out by a stale
+// one behind the same address. Requests count on arrival and are taken back
+// when they finish other than 401, so a valid request cut off mid-response
+// stays counted.
 const mcpAuthFailureLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.mcpAuthFailureMax,
+  skip: (req) => {
+    const header = req.header('Authorization') ?? '';
+    return header.startsWith('Bearer ') && authenticatedRecently(header.slice(7).trim());
+  },
   requestWasSuccessful: (_req, res) => res.statusCode !== 401,
   skipSuccessfulRequests: true,
   handler: rpcTooMany,
