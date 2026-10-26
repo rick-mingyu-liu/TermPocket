@@ -92,7 +92,12 @@ export default function AgentPage() {
   const micLabel = dictation.state.status === 'recording' ? 'agent.voice.stop' : dictation.state.status === 'loading' ? 'agent.voice.cancelLoad' : 'agent.voice.start'
 
   const apply = (next: ConversationState) => {
-    const pendingRows = next.draft?.status === 'pending' ? next.draft.rows : []
+    // Until an uncertain save settles, show exactly the edits its retry will save.
+    const pendingConfirmation = confirmRetry && next.conversation.id === state?.conversation.id
+      && next.draft?.status === 'pending' && next.draft.version === confirmRetry.version
+      && !next.receipts.some(receipt => receipt.request_id === confirmRetry.requestId)
+    const pendingRows = next.draft?.status === 'pending'
+      ? (pendingConfirmation && confirmRetry.rows ? confirmRetry.rows : next.draft.rows) : []
     const sameConversation = state?.conversation.id === next.conversation.id
     const newProposal = next.draft?.version !== state?.draft?.version
       && (next.run?.id !== state?.run?.id || (state?.run?.status === 'running' && next.run?.status === 'complete'))
@@ -101,7 +106,7 @@ export default function AgentPage() {
     setRows(pendingRows)
     // Editing, refreshing, and confirming a subset must not silently select
     // rows the user excluded. A new proposal starts its own reviewed selection.
-    setSelected(previous => !sameConversation || newProposal
+    setSelected(previous => pendingConfirmation ? confirmRetry.rowIds : !sameConversation || newProposal
       ? pendingRows.map(row => row.id)
       : previous.filter(id => pendingRows.some(row => row.id === id)))
     setConversations(previous => creationOrder([next.conversation, ...previous.filter(item => item.id !== next.conversation.id)]))
@@ -256,7 +261,7 @@ export default function AgentPage() {
     if (!state || (!state.draft && !confirmRetry) || locked || retry) return
     setBusy(true); setError(''); setNotice(''); setStaleDraft(false)
     const recovering = action === 'confirm' && confirmRetry
-    const body = action !== 'confirm' ? null : confirmRetry || { version: state.draft!.version, rowIds: all ? rows.map(row => row.id) : selected, requestId: crypto.randomUUID() }
+    const body = action !== 'confirm' ? null : confirmRetry || { version: state.draft!.version, rowIds: all ? rows.map(row => row.id) : selected, requestId: crypto.randomUUID(), ...(dirty ? { rows } : {}) }
     try {
       let next: ConversationState
       if (action === 'edit') next = await agentAPI.edit(state.conversation.id, state.draft!.version, rows)
@@ -431,8 +436,8 @@ export default function AgentPage() {
               {staleDraft && <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm"><p>{t(dirty ? 'agent.staleDraftDirty' : 'agent.staleDraft')}</p><Button variant="outline" size="sm" disabled={busy || sending} onClick={refresh}><RefreshCw />{t('agent.refreshDraft')}</Button></div>}
               {!validRows && <p className="text-sm text-destructive">{t('agent.invalidRows')}</p>}
               <div className="flex flex-wrap gap-2">
-                {dirty && <><Button disabled={locked || !validRows || expired} variant="outline" onClick={() => mutateDraft('edit')}>{t('agent.saveEdits')}</Button><Button disabled={locked} variant="ghost" onClick={() => setRows(state.draft!.rows)}>{t('agent.resetEdits')}</Button><Button disabled={locked || unresolved} variant="outline" onClick={() => load(state.conversation.id)}>{t('agent.discardLocalReload')}</Button></>}
-                {confirmRetry ? <><Button disabled={locked} onClick={() => mutateDraft('confirm')}>{t('agent.recoverConfirm')}</Button>{confirmChecked && <Button variant="ghost" disabled={locked} onClick={dismissRecovery}>{t('agent.dismissRecovery')}</Button>}</> : <><Button disabled={locked || unresolved || dirty || !validRows || expired || !selected.length} onClick={() => mutateDraft('confirm')}>{t('agent.confirmSelected', { count: selected.length })}</Button><Button variant="outline" disabled={locked || unresolved || dirty || !validRows || expired} onClick={() => mutateDraft('confirm', true)}>{t('agent.confirmAll')}</Button></>}
+                {confirmRetry ? <><Button disabled={locked} onClick={() => mutateDraft('confirm')}>{t('agent.recoverConfirm')}</Button>{confirmChecked && <Button variant="ghost" disabled={locked} onClick={dismissRecovery}>{t('agent.dismissRecovery')}</Button>}</> : <><Button disabled={locked || unresolved || !validRows || expired || !selected.length} onClick={() => mutateDraft('confirm')}>{t('agent.confirmSelected', { count: selected.length })}</Button><Button variant="outline" disabled={locked || unresolved || !validRows || expired} onClick={() => mutateDraft('confirm', true)}>{t('agent.confirmAll')}</Button></>}
+                {dirty && !confirmRetry && <><Button disabled={locked || unresolved || !validRows || expired} variant="ghost" onClick={() => mutateDraft('edit')}>{t('agent.saveEdits')}</Button><Button disabled={locked || unresolved} variant="ghost" onClick={() => setRows(state.draft!.rows)}>{t('agent.resetEdits')}</Button></>}
                 <Button variant="ghost" disabled={locked || unresolved} onClick={() => mutateDraft('discard')}>{t('agent.discard')}</Button>
               </div>
             </CardContent></Card>}

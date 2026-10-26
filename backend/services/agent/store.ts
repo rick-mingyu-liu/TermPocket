@@ -223,23 +223,31 @@ export async function editDraft(userId:number,id:string,version:number,input:unk
 export async function cancelDraft(userId:number,id:string,version:number):Promise<ConversationState> {
   return owned(userId,async client=>{await conversation(client,userId,id);await noActiveRun(client,userId,id);const draft=await currentDraft(client,userId,id,version);await revision(client,userId,id,[],'cancelled',draft.expires_at);return state(client,userId,id);});
 }
-export async function confirmDraft(userId:number,id:string,input:{version:number;rowIds:string[];requestId:string}):Promise<ConversationState> {
+export async function confirmDraft(userId:number,id:string,input:{version:number;rowIds:string[];requestId:string;rows?:unknown}):Promise<ConversationState> {
   const requestId=validateUuid(input.requestId);
   if(!Array.isArray(input.rowIds)||!input.rowIds.length||input.rowIds.length>limits.maxRows) throw new AgentError('agent_invalid_input');
   const rowIds=input.rowIds.map(validateUuid).sort();if(new Set(rowIds).size!==rowIds.length) throw new AgentError('agent_invalid_input');
-  const requestHash=hash({id,version:input.version,rowIds});
+  // Include the exact reviewed edits in replay identity; keep older requests compatible.
+  const editedRows=input.rows===undefined?undefined:validateRows(input.rows);
+  const requestHash=hash({id,version:input.version,rowIds,...(editedRows?{rows:editedRows}:{})});
   return owned(userId,async client=>{
     await conversation(client,userId,id);
     const prior=await client.query<AgentReceiptRow>('SELECT * FROM agent_receipts WHERE user_id=$1 AND request_id=$2',[userId,requestId]);
     if(prior.rows[0]) {if(prior.rows[0].request_hash!==requestHash) throw new AgentError('agent_request_conflict',409);return state(client,userId,id);}
     await noActiveRun(client,userId,id);const draft=await currentDraft(client,userId,id,input.version);
-    const selected=new Set(rowIds);const rows=validateRows(draft.rows).filter(row=>selected.has(row.id));if(rows.length!==rowIds.length) throw new AgentError('agent_invalid_input');
+    const reviewedRows=editedRows??validateRows(draft.rows);
+    const draftIds=new Set(draft.rows.map(row=>row.id));
+    // Inline edits may change fields, never add or silently drop pending entries.
+    if(reviewedRows.length!==draft.rows.length || reviewedRows.some(row=>!draftIds.has(row.id))) throw new AgentError('agent_invalid_input');
+    const selected=new Set(rowIds);const rows=reviewedRows.filter(row=>selected.has(row.id));if(rows.length!==rowIds.length) throw new AgentError('agent_invalid_input');
+    // Preserve the reviewed payload alongside the receipt, in the same transaction.
+    if(editedRows) await revision(client,userId,id,reviewedRows,'pending',draft.expires_at);
     const versions:AgentTransactionVersion[]=[];
     for(const row of rows) {
       const saved=await client.query<AgentTransactionVersion>(`INSERT INTO transactions(user_id,amount,description,category,type,date,currency,source) VALUES($1,$2,$3,$4,$5,$6,$7,'agent') RETURNING id,updated_at::text,xmin::text`,[userId,row.amount,row.description,row.category,row.type,row.date,row.currency]);versions.push(saved.rows[0]!);
     }
     await client.query(`INSERT INTO agent_receipts(id,conversation_id,user_id,request_id,request_hash,transaction_ids,transaction_versions) VALUES($1,$2,$3,$4,$5,$6,$7)`,[randomUUID(),id,userId,requestId,requestHash,versions.map(v=>v.id),JSON.stringify(versions)]);
-    const remaining=draft.rows.filter(row=>!selected.has(row.id));await revision(client,userId,id,remaining,remaining.length?'pending':'confirmed',draft.expires_at);
+    const remaining=reviewedRows.filter(row=>!selected.has(row.id));await revision(client,userId,id,remaining,remaining.length?'pending':'confirmed',draft.expires_at);
     return state(client,userId,id);
   });
 }
