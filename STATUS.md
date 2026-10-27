@@ -47,7 +47,7 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 | Migration 014 (drop `watchlist`, `ai_plans`) | Applied 2026-10-15: 23 watchlist rows and 0 AI plans dropped, by the owner's decision |
 | Migration 015 (goal proposals) | Applied 2026-10-15: `agent_goal_proposals` present |
 | `AGENT_ENABLED` and the AI provider key | Set 2026-10-15. The `--live` preflight turn (1 tool call, 1 drafted row, 8,109 in / 201 out tokens, 3.8 s) confirms the key works |
-| Host checks | Preflight with `--live` on the host, 2026-10-27: 16 PASS, 0 WARN, 0 FAIL. linux-x64, Node 22.23.4, PostgreSQL 17.11, HTTP client installed, DeepSeek reachable; the live turn drafted 1 row with 1 tool call, 9,708 in / 123 out tokens, 3.3 s |
+| Host checks | Preflight with `--live` on the host, 2026-10-27, before the `db.migrations` check existed (later runs have 17 checks): 16 PASS, 0 WARN, 0 FAIL. linux-x64, Node 22.23.4, PostgreSQL 17.11, HTTP client installed, DeepSeek reachable; the live turn drafted 1 row with 1 tool call, 9,708 in / 123 out tokens, 3.3 s |
 
 The owner's work machine's Zscaler proxy blocks termpocket.com as a "Newly Registered Domain". That is the proxy, not the site.
 
@@ -82,8 +82,8 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 | Pocky memory | Design (#164); storage, migration 022, the confirm/cancel/delete routes (#168, built by Codex and reviewed); privacy policy and terms describing memory, `termsVersion` 2026-10-27, so every account accepts once (#169); Pocky offers to remember facts by short refs, the Remember card and Settings → Pocky memory, within a 14,000-character budget (#172). Paid eval: 77–79 of 82, every memory case passing; 30 near-full Chinese facts on a planning turn use about 28,600 of the 32,000-token cap |
 | Pocky runtime | Agent SDK removed; the in-process runtime is the only one and `AGENT_MAX_CONCURRENT_RUNS` defaults to 4 (#102); the SDK's OpenTelemetry off and `ANTHROPIC_CUSTOM_HEADERS` refused at startup (#167); edited transaction previews save in one step (#173) |
 | MCP and access tokens | Independent security review of `/mcp`: per-user and per-IP-401 rate limits, body-parser DoS fix, no Basic credentials in the access log, the token lookup a read, the demo account cannot create tokens (#170); 90-day expiry (migration 023), the account password to create a token with 5 wrong tries per 15 minutes, audit lines on create and revoke (#171) |
-| Database | Owners required, value checks, the list's index, TIMESTAMPTZ, one address per case (#163); migrations recorded by `npm run db:migrate` (#160) |
-| Email, hosting, dependencies | Spam-folder guidance (#165); Vercel deploys `main` only (#162); MCP setup guide tidied (#159); Dependabot minor/patch (#150, #151, #166, #174, #175, #176) |
+| Database and accounts | Owners required, value checks, the list's index, TIMESTAMPTZ, one address per case (#163); migrations recorded by `npm run db:migrate` (#160); verification tokens stored only as SHA-256 hashes (#161); sign-in with the address however it was typed (#158) |
+| Email, hosting, dependencies | Spam-folder guidance (#165); Vercel deploys `main` only (#162); MCP setup guide tidied (#159); the savings notification moved into View All (#157); Dependabot minor/patch and security (#150, #151, #166, #174, #175, #176, #178) |
 
 ## Open PRs
 

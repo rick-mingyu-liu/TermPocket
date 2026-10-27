@@ -266,10 +266,16 @@ async function databaseChecks(s: PreflightSettings): Promise<Check[]> {
   } finally {
     clearTimeout(timer);
   }
+  // Read before the transaction, so an unreadable migrations folder is not reported as a catalog failure.
+  let files: MigrationFile[] | null = null;
+  try { files = listMigrations(); } catch { files = null; }
   try {
     await client.query('BEGIN READ ONLY');
     const facts = await gatherFacts(client, s.database.schema);
-    return [check('PASS', 'db.reachable', 'connected (read-only transaction)'), ...classifyDatabase(facts, s), classifyMigrations(listMigrations(), facts.appliedMigrations)];
+    const migrations = files === null
+      ? check('FAIL', 'db.migrations', 'migration files unreadable on this host')
+      : classifyMigrations(files, facts.appliedMigrations);
+    return [check('PASS', 'db.reachable', 'connected (read-only transaction)'), ...classifyDatabase(facts, s), migrations];
   } catch (error) {
     return [check('PASS', 'db.reachable', 'connected'), check('FAIL', 'db.catalog', `catalog query failed (${describeError(error)})`), ...skippedDatabase('catalog unreadable')];
   } finally {
