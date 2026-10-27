@@ -19,7 +19,7 @@ npm run db:seed        # (re)seed the demo account (john.doe@example.com / passw
 npm run db:migrate     # apply pending db/migrations/ and record them (--status, --baseline NNN); direct endpoint only, never -pooler
 backend/scripts/rehearse-linux.sh [--live]  # from the repo root, with docker-compose.test.yml up: Render's npm ci + build + preflight in a fresh node:<.node-version> Linux container
 npm run agent:eval     # opt-in paid Pocky evaluation: 70 fictional cases, real runtime/DeepSeek, in-memory records (no DB); README "Evaluating Pocky"
-npm run agent:preflight  # read-only Pocky deploy check (config, DB/migrations 013-015, the HTTP client, DeepSeek reachability); `-- --live` adds one fictional model turn through the runtime. Runbook: README "Deploying Pocky to production"
+npm run agent:preflight  # read-only Pocky deploy check (config, DB/migrations 013-015, every shipped migration against schema_migrations, the HTTP client, DeepSeek reachability); `-- --live` adds one fictional model turn through the runtime. Runbook: README "Deploying Pocky to production"
 npm run lint           # eslint . (eslint 9, flat config in eslint.config.mjs; TypeScript only, via typescript-eslint)
 npm test               # builds, then node --test 'dist/test/**/*.test.js' — unit tests always run; see below for the integration suite
 ```

@@ -2,6 +2,7 @@ import config = require('../config');
 import type { PoolClient } from 'pg';
 import { getPool } from '../db/connection';
 import { errorSummary } from '../utils/errorSummary';
+import { listMigrations, planMigrations, type AppliedMigration, type MigrationFile } from '../db/migrate';
 import { runAgent } from '../services/agent/runtime';
 import { AgentError, type AgentRecords } from '../services/agent/types';
 
@@ -33,6 +34,7 @@ const DEFAULT_MODEL = 'deepseek-flash';
 const AGENT_TABLES = ['agent_conversations', 'agent_runs', 'agent_messages', 'agent_drafts', 'agent_receipts', 'agent_admissions'] as const;
 const LEGACY_TABLES = ['watchlist', 'ai_plans'] as const;
 const PROPOSALS_TABLE = 'agent_goal_proposals';
+const MIGRATIONS_TABLE = 'schema_migrations';
 const SOURCE_CHECK = 'transactions_source_check';
 const PROPOSAL_STATUS_CHECK = 'agent_goal_proposals_status_check';
 const STATEMENT_TIMEOUT = '5s';
@@ -130,6 +132,8 @@ export interface DbFacts {
   sourceColumn: boolean;
   incompatibleSources: number | null;
   legacyCounts: Partial<Record<(typeof LEGACY_TABLES)[number], number>>;
+  /** schema_migrations' records, or null when the table does not exist (an untracked database). */
+  appliedMigrations: AppliedMigration[] | null;
 }
 
 const quoteIdent = (name: string) => `"${name.replace(/"/g, '""')}"`;
@@ -145,7 +149,7 @@ export async function gatherFacts(db: Db, schema: string): Promise<DbFacts> {
   const tableRows = await db.query(
     `SELECT c.relname AS name FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = $1 AND c.relkind IN ('r', 'p') AND c.relname = ANY($2::text[])`,
-    [schema, ['transactions', ...AGENT_TABLES, PROPOSALS_TABLE, ...LEGACY_TABLES]]
+    [schema, ['transactions', ...AGENT_TABLES, PROPOSALS_TABLE, ...LEGACY_TABLES, MIGRATIONS_TABLE]]
   );
   const tables = new Set(tableRows.rows.map(r => String(r.name)));
   const constraintRows = await db.query(
@@ -173,7 +177,11 @@ export async function gatherFacts(db: Db, schema: string): Promise<DbFacts> {
     const result = await db.query(`SELECT count(*)::int AS n FROM ${quoteIdent(schema)}.${quoteIdent(table)}`);
     legacyCounts[table] = Number(result.rows[0]?.n);
   }
-  return { versionNum, schemas, tables, constraints, sourceColumn, incompatibleSources, legacyCounts };
+  const appliedMigrations = tables.has(MIGRATIONS_TABLE)
+    ? (await db.query(`SELECT name, checksum FROM ${quoteIdent(schema)}.${MIGRATIONS_TABLE} ORDER BY name`)).rows
+      .map(r => ({ name: String(r.name), checksum: String(r.checksum) }))
+    : null;
+  return { versionNum, schemas, tables, constraints, sourceColumn, incompatibleSources, legacyCounts, appliedMigrations };
 }
 
 export function classifyDatabase(f: DbFacts, s: PreflightSettings): Check[] {
@@ -221,7 +229,25 @@ export function classifyDatabase(f: DbFacts, s: PreflightSettings): Check[] {
   return checks;
 }
 
-const DATABASE_CHECKS = ['db.server_version', 'db.search_path', 'migration.013', 'db.transaction_sources', 'migration.014', 'migration.015'];
+/**
+ * Every migration this build ships against what `npm run db:migrate` recorded,
+ * so one run covers 016 onwards (memory, token expiry, ...) without a check per
+ * file. A gap is a WARN: the code tolerates each missing migration, but a
+ * feature stays off until it is applied.
+ */
+export function classifyMigrations(files: MigrationFile[], applied: AppliedMigration[] | null): Check {
+  if (applied === null) return check('WARN', 'db.migrations', 'schema_migrations missing: untracked database; run npm run db:migrate -- --baseline NNN');
+  const plan = planMigrations(files, applied);
+  const problems = [
+    plan.pending.length ? `${plan.pending.length} pending: ${plan.pending.map(f => f.number).join(', ')}` : '',
+    plan.changed.length ? `${plan.changed.length} changed since applied: ${plan.changed.map(f => f.number).join(', ')}` : '',
+    plan.missing.length ? `${plan.missing.length} recorded with no file: ${plan.missing.map(n => n.slice(0, 3)).join(', ')}` : '',
+  ].filter(Boolean);
+  if (problems.length) return check('WARN', 'db.migrations', `${problems.join('; ')}; see npm run db:migrate -- --status`);
+  return check('PASS', 'db.migrations', `all ${files.length} applied (latest ${files.at(-1)?.number ?? 'none'})`);
+}
+
+const DATABASE_CHECKS = ['db.server_version', 'db.search_path', 'migration.013', 'db.transaction_sources', 'migration.014', 'migration.015', 'db.migrations'];
 export const skippedDatabase = (reason: string): Check[] => DATABASE_CHECKS.map(name => check('SKIP', name, reason));
 
 /** Connects with the app's own pool settings, reads facts in a rolled-back READ ONLY transaction. */
@@ -243,7 +269,7 @@ async function databaseChecks(s: PreflightSettings): Promise<Check[]> {
   try {
     await client.query('BEGIN READ ONLY');
     const facts = await gatherFacts(client, s.database.schema);
-    return [check('PASS', 'db.reachable', 'connected (read-only transaction)'), ...classifyDatabase(facts, s)];
+    return [check('PASS', 'db.reachable', 'connected (read-only transaction)'), ...classifyDatabase(facts, s), classifyMigrations(listMigrations(), facts.appliedMigrations)];
   } catch (error) {
     return [check('PASS', 'db.reachable', 'connected'), check('FAIL', 'db.catalog', `catalog query failed (${describeError(error)})`), ...skippedDatabase('catalog unreadable')];
   } finally {

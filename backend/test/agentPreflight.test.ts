@@ -1,7 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { listMigrations } from '../db/migrate';
 import {
-  classifyDatabase, directClientCheck, configChecks, exitCode, formatLine, formatReport, gatherFacts, secretsOf, skippedDatabase,
+  classifyDatabase, classifyMigrations, directClientCheck, configChecks, exitCode, formatLine, formatReport, gatherFacts, secretsOf, skippedDatabase,
   type Check, type Db, type DbFacts, type PreflightSettings,
 } from '../scripts/agentPreflight';
 
@@ -41,7 +42,7 @@ function migrated(): DbFacts {
     versionNum: 170004, schemas: ['public'],
     tables: new Set(['transactions', ...AGENT_TABLES, 'agent_goal_proposals']),
     constraints: new Map([['transactions_source_check', SOURCE_WITH_AGENT], ['agent_goal_proposals_status_check', STATUS_WITH_EXPIRED]]),
-    sourceColumn: true, incompatibleSources: 0, legacyCounts: {},
+    sourceColumn: true, incompatibleSources: 0, legacyCounts: {}, appliedMigrations: [],
   };
 }
 /** Production before this release: no agent tables, legacy tables still present. */
@@ -50,7 +51,7 @@ function preAgent(): DbFacts {
     versionNum: 170004, schemas: ['public'],
     tables: new Set(['transactions', 'watchlist', 'ai_plans']),
     constraints: new Map([['transactions_source_check', SOURCE_WITHOUT_AGENT]]),
-    sourceColumn: true, incompatibleSources: 0, legacyCounts: { watchlist: 3, ai_plans: 5 },
+    sourceColumn: true, incompatibleSources: 0, legacyCounts: { watchlist: 3, ai_plans: 5 }, appliedMigrations: null,
   };
 }
 const find = (checks: Check[], name: string) => {
@@ -195,7 +196,7 @@ describe('database classification', () => {
 });
 
 describe('gathering facts from a stubbed client', () => {
-  function stub(state: { tables: string[]; constraints: Record<string, string>; sourceColumn: boolean; counts: Record<string, number>; incompatible: number }) {
+  function stub(state: { tables: string[]; constraints: Record<string, string>; sourceColumn: boolean; counts: Record<string, number>; incompatible: number; migrations?: Array<{ name: string; checksum: string }> }) {
     const statements: string[] = [];
     const db: Db = {
       query: async (text: string, params?: unknown[]) => {
@@ -206,6 +207,7 @@ describe('gathering facts from a stubbed client', () => {
         if (text.includes('pg_constraint')) return { rows: Object.entries(state.constraints).map(([name, definition]) => ({ name, definition })) };
         if (text.includes('information_schema.columns')) return { rows: state.sourceColumn ? [{ present: 1 }] : [] };
         if (text.includes('NOT IN')) return { rows: [{ n: state.incompatible }] };
+        if (text.includes('schema_migrations')) return { rows: state.migrations ?? [] };
         const table = /\."(\w+)"$/.exec(text)?.[1];
         if (table && table in state.counts) return { rows: [{ n: state.counts[table] }] };
         throw new Error(`unexpected statement: ${text}`);
@@ -236,6 +238,52 @@ describe('gathering facts from a stubbed client', () => {
     const facts = await gatherFacts(db, 'public');
     assert.equal(facts.incompatibleSources, null);
     assert.ok(!statements.some(sql => sql.includes('NOT IN') || /count\(\*\)/.test(sql)));
+    assert.equal(facts.appliedMigrations, null, 'no schema_migrations table: untracked');
+    assert.ok(!statements.some(sql => sql.includes('FROM "public".schema_migrations')));
+  });
+
+  test('reads the migration records, names and checksums only, when the table exists', async () => {
+    const records = [{ name: '022_agent_memories.sql', checksum: 'a'.repeat(64) }];
+    const { db, statements } = stub({ tables: ['transactions', 'schema_migrations'], constraints: {}, sourceColumn: true, counts: {}, incompatible: 0, migrations: records });
+    const facts = await gatherFacts(db, 'public');
+    assert.deepEqual(facts.appliedMigrations, records);
+    const read = statements.find(sql => sql.includes('schema_migrations') && !sql.includes('pg_class'));
+    assert.match(read ?? '', /^SELECT name, checksum FROM "public"\.schema_migrations/);
+  });
+});
+
+describe('migrations recorded by db:migrate', () => {
+  const file = (name: string, checksum = 'c'.repeat(64)) => ({ name, number: name.slice(0, 3), sql: '', checksum });
+  const files = [file('021_unique_email_lowercase.sql'), file('022_agent_memories.sql'), file('023_access_token_expiry.sql')];
+  const record = (f: { name: string; checksum: string }) => ({ name: f.name, checksum: f.checksum });
+
+  test('all applied: PASS with the count and the latest number', () => {
+    const c = classifyMigrations(files, files.map(record));
+    assert.equal(c.status, 'PASS');
+    assert.equal(c.detail, 'all 3 applied (latest 023)');
+  });
+
+  test('pending, changed and orphaned records are WARNs that name the numbers, never a FAIL', () => {
+    const pending = classifyMigrations(files, files.slice(0, 1).map(record));
+    assert.equal(pending.status, 'WARN');
+    assert.match(pending.detail, /^2 pending: 022, 023; see npm run db:migrate -- --status$/);
+    const changed = classifyMigrations(files, [...files.slice(0, 2).map(record), { name: files[2]!.name, checksum: 'd'.repeat(64) }]);
+    assert.match(changed.detail, /1 changed since applied: 023/);
+    const orphan = classifyMigrations(files, [...files.map(record), { name: '024_gone.sql', checksum: 'e'.repeat(64) }]);
+    assert.match(orphan.detail, /1 recorded with no file: 024/);
+    assert.equal(exitCode([pending, changed, orphan]), 0);
+  });
+
+  test('an untracked database is a WARN pointing at --baseline', () => {
+    const c = classifyMigrations(files, null);
+    assert.equal(c.status, 'WARN');
+    assert.match(c.detail, /--baseline/);
+  });
+
+  test('the real migration files in this build are all listed, 023 included', () => {
+    const real = classifyMigrations(listMigrations(), null);
+    assert.equal(real.status, 'WARN');
+    assert.ok(listMigrations().some(f => f.number === '023'));
   });
 });
 

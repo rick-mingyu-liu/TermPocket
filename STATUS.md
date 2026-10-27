@@ -1,6 +1,6 @@
 # TermPocket — status and plan
 
-As of 2026-10-20. Update this file when a step below completes; git history keeps the earlier versions.
+As of 2026-10-27. Update this file when a step below completes; git history keeps the earlier versions.
 
 ## Summary
 
@@ -9,7 +9,8 @@ Pocky, TermPocket's bilingual assistant, can now record, investigate and plan. I
 - **Built:** recording transactions by chat with button-only saving, read-only questions about your own spending, and planning (cash projections, savings-goal proposals). The stock watchlist and the old one-shot AI plans are removed.
 - **Production:** the agent is enabled (`AGENT_ENABLED=true`) with its AI provider key; the production database has all three agent migrations: 013 (conversations), 014 (legacy `watchlist` and `ai_plans` dropped) and 015 (goal proposals). The runbook is the README section "Deploying Pocky to production", and `npm run agent:preflight` checks each step.
 - **Since 2026-10-15:** TermPocket has its own domain (https://www.termpocket.com) and sends mail from it through Resend. Privacy policy and terms are drafted and linked, account deletion and a stored, enforced retention setting exist, Pocky runs on the in-process runtime, and the composer takes on-device English voice dictation. See "Merged 2026-10-15 to 2026-10-20".
-- **Next:** the remaining owner checks before a public post (see "Next"), a week of real use of Pocky, then Pocky memory, shaped by what real use shows.
+- **Since 2026-10-20:** Pocky remembers facts the user confirms with a Remember button (#168, #169, #172; design in [`docs/MEMORY.md`](docs/MEMORY.md)); the Agent SDK is gone and Pocky runs only in-process (#102); the MCP endpoint was security-reviewed and rate-limited (#170), and access tokens expire after 90 days and need the account password to create (#171). Production's database is at migration 023 (applied 2026-10-27), and the host preflight with `--live` passed 16/16 the same day. See "Merged 2026-10-20 to 2026-10-27".
+- **Next:** the remaining owner checks before a public post (see "Next"), then a week of real use of Pocky, memory included.
 
 ## What is merged
 
@@ -40,13 +41,13 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 | Domain | termpocket.com (Namecheap). The site is https://www.termpocket.com; the apex redirects to www, and the old frontend URL redirects (307) to www, keeping the path and query. `CORS_ORIGIN` is a comma-separated list (#120) with www, the apex and the old frontend URL; `FRONTEND_URL` is the www address |
 | Email | Sent through Resend SMTP (#122 made `EMAIL_HOST`, `EMAIL_PORT` and `EMAIL_FROM` configurable), from `TermPocket <noreply@termpocket.com>`. The domain is verified in Resend; the owner tested that mail delivers. QA (2026-10-20) found the verification email lands in the junk folder: SPF and DKIM (on `send.`) and DMARC (`p=none`, no reporting address) are published, so the likely cause is the new domain's missing reputation. The register and resend screens now point to the junk folder (#155); click and open tracking in Resend, a DMARC `rua` address and a mail-tester score are owner checks. Namecheap forwards `privacy@`, `support@` and `noreply@` to the owner's Gmail |
 | Backend host | Starter instance (0.5 CPU, 512 MB), in a region next to the database since 2026-10-15; one instance, build `npm ci --include=dev`. The previous service in another region is suspended, kept for rollback. Pocky runs in-process (#89); the whole process measured about 105 MB, so `AGENT_MAX_CONCURRENT_RUNS` defaults to 4. It was 1 (#88) while each Agent SDK turn spawned a ~240 MB child process; production ran in-process from 2026-10-15 and #102 removed the SDK on 2026-10-22. Delete the leftover `AGENT_RUNTIME` variable on Render (owner check) |
-| Migration 016 (retention) | Merged in #103 and additive. This repo does not record that it was applied to the production database: owner check (until it is, Settings shows automatic deletion as unavailable and nothing is deleted) |
+| Migrations 016–023 | Production is tracked by `npm run db:migrate` (`schema_migrations`) since 2026-10-20, baselined at 015. 016–021 were applied on 2026-10-20 (retention, terms acceptance, the integrity checks, TIMESTAMPTZ, one address per case); 022 (Pocky memory) and 023 (access-token expiry) on 2026-10-27, after which every active token expires on 2027-01-25. `--status` then listed 001–023 applied. The preflight's `db.migrations` check compares the shipped files with these records |
 | Production PostgreSQL and source audit | PostgreSQL 17.11; 0 incompatible transaction source values; read-only preflight |
 | Migration 013 (conversations) | Applied 2026-10-15: 6/6 agent tables, source check allows `agent` |
 | Migration 014 (drop `watchlist`, `ai_plans`) | Applied 2026-10-15: 23 watchlist rows and 0 AI plans dropped, by the owner's decision |
 | Migration 015 (goal proposals) | Applied 2026-10-15: `agent_goal_proposals` present |
 | `AGENT_ENABLED` and the AI provider key | Set 2026-10-15. The `--live` preflight turn (1 tool call, 1 drafted row, 8,109 in / 201 out tokens, 3.8 s) confirms the key works |
-| Host checks | linux-x64, Node 22.23.3, HTTP client installed, DeepSeek reachable (preflight on the host) |
+| Host checks | Preflight with `--live` on the host, 2026-10-27: 16 PASS, 0 WARN, 0 FAIL. linux-x64, Node 22.23.4, PostgreSQL 17.11, HTTP client installed, DeepSeek reachable; the live turn drafted 1 row with 1 tool call, 9,708 in / 123 out tokens, 3.3 s |
 
 The owner's work machine's Zscaler proxy blocks termpocket.com as a "Newly Registered Domain". That is the proxy, not the site.
 
@@ -74,11 +75,21 @@ Not done on the legal side: a French version (Quebec's Charter of the French lan
 
 Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and dropped automatic linking of savings transactions to goals as too much.
 
+## Merged 2026-10-20 to 2026-10-27
+
+| Theme | PRs |
+| --- | --- |
+| Pocky memory | Design (#164); storage, migration 022, the confirm/cancel/delete routes (#168, built by Codex and reviewed); privacy policy and terms describing memory, `termsVersion` 2026-10-27, so every account accepts once (#169); Pocky offers to remember facts by short refs, the Remember card and Settings → Pocky memory, within a 14,000-character budget (#172). Paid eval: 77–79 of 82, every memory case passing; 30 near-full Chinese facts on a planning turn use about 28,600 of the 32,000-token cap |
+| Pocky runtime | Agent SDK removed; the in-process runtime is the only one and `AGENT_MAX_CONCURRENT_RUNS` defaults to 4 (#102); the SDK's OpenTelemetry off and `ANTHROPIC_CUSTOM_HEADERS` refused at startup (#167); edited transaction previews save in one step (#173) |
+| MCP and access tokens | Independent security review of `/mcp`: per-user and per-IP-401 rate limits, body-parser DoS fix, no Basic credentials in the access log, the token lookup a read, the demo account cannot create tokens (#170); 90-day expiry (migration 023), the account password to create a token with 5 wrong tries per 15 minutes, audit lines on create and revoke (#171) |
+| Database | Owners required, value checks, the list's index, TIMESTAMPTZ, one address per case (#163); migrations recorded by `npm run db:migrate` (#160) |
+| Email, hosting, dependencies | Spam-folder guidance (#165); Vercel deploys `main` only (#162); MCP setup guide tidied (#159); Dependabot minor/patch (#150, #151, #166, #174, #175, #176) |
+
 ## Open PRs
 
 | PR | State |
 | --- | --- |
-| #148–#153 | Dependabot (2026-10-19): backend and frontend minor/patch groups, `bcryptjs`, and majors `next` 16, `recharts` 3, `@types/node` 26. Not reviewed yet |
+| #149, #152, #153, #177 | Dependabot majors: `@types/node` 26, `recharts` 3, `next` 16, `typescript` 7. Each needs its own migration work; `next` 16 is planned with the Tailwind 4 move after launch |
 
 ## Next
 
@@ -86,12 +97,11 @@ Owner checks before a public post (none can be verified from the repo):
 
 - A DeepSeek provider-side spending limit or prepaid balance. The app-side caps are done (#90).
 - `DEMO_REFRESH_ENABLED=true` in production.
-- Whether migration 016 is applied to the production database.
-- Apply migration 017 (terms acceptance) after #156 deploys; every existing account then sees the accept card once.
-- Start tracking production's migrations: on an up-to-date `main` with `backend/` built, with the direct connection string, `npm run db:migrate -- --baseline 015`, then `npm run db:migrate` (applies 016–021; 016 and 017 are idempotent, 018 and 021 stop with counts if legacy rows break their rules), then `--status`. Undoing a Pocky entry confirmed in the ten minutes before 020 answers a conflict.
+- Delete the leftover `AGENT_RUNTIME` variable on Render (ignored since #102; it only logs a startup warning).
 - Screenshot import timed on a mid-range phone.
 - Verification email deliverability: turn off click and open tracking in Resend, add a DMARC `rua` reporting address, score one message on mail-tester.com, and have a few test inboxes mark it "Not junk".
-- Optional review of the privacy policy and terms by a lawyer or a clinic; when to do the French version and the Quebec impact assessment.
+- Review of the privacy policy and terms by a lawyer or a clinic; when to do the French version and the Quebec impact assessment.
+- After launch: a week of real use with memory, then check Render's logs for `Agent run hit a limit` (reason `total_tokens` or `memory_chars`) before deciding whether to raise the 32,000-token cap.
 - The name "Pocky".
 
 ## Evidence and limitations
@@ -111,6 +121,7 @@ Limitations:
 - Monthly goal targets count whole calendar months, so they err high.
 - The prior x64 Linux rehearsal failed under emulation on this Apple-silicon Mac. A check on the production host is still needed to verify the deployed x64 runtime.
 - There are no saved plans yet, so planning inputs other than remembered facts must be repeated in each conversation.
+- A full memory leaves little token headroom: 30 near-full Chinese facts on a planning turn used about 28,600 of the 32,000-token cap in the paid eval.
 - The on-screen privacy notice does not name DeepSeek, by the owner's decision. DeepSeek is named in Open Source Acknowledgements.
 
 ## Hardening
