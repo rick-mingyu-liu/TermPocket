@@ -737,7 +737,7 @@
     "checking": "正在检查服务状态……",
     "retryNew": "重新尝试",
     "clearPartialTitle": "应用数据已清除，助手历史暂不可用",
-    "clearDemoRefused": "演示账户为共享账户，无法清除其交易和目标。",
+    "clearDemoRefused": "演示账户为共享账户，无法清除其数据。",
     "clearPartialUnavailable": "你的收支记录和目标已删除。当前部署未启用助手功能，无法清除助手历史。如需删除已有对话，请联系管理员启用后再清除。",
     "discardLocalReload": "放弃本地修改并重新加载",
     "acknowledgementsIntro": "TermPocket 使用以下开源项目、其他软件和外部服务。感谢维护者与贡献者。",

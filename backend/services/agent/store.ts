@@ -121,8 +121,14 @@ export async function getConversation(userId:number,id:string):Promise<Conversat
 export async function deleteConversation(userId:number,id:string):Promise<void> {
   await owned(userId,async client=>{await conversation(client,userId,id);await client.query('DELETE FROM agent_conversations WHERE id=$1 AND user_id=$2',[id,userId]);});
 }
+// The demo login is shared by every visitor, so Clear All Data refuses it here
+// (like /transactions/clear-all) rather than wiping everyone's conversations
+// and, through the route's abortOwned, every visitor's running reply.
 export async function deleteConversations(userId:number):Promise<void> {
-  await owned(userId,async client=>{await client.query('DELETE FROM agent_conversations WHERE user_id=$1',[userId]);});
+  await owned(userId,async client=>{
+    if(await isDemoUser(client,userId))throw new AgentError('clear_demo',403);
+    await client.query('DELETE FROM agent_conversations WHERE user_id=$1',[userId]);
+  });
 }
 /** `canStart` false still answers an exact replay from saved state, but refuses to admit a new run. */
 export async function beginTurn(userId:number,id:string,input:TurnInput,canStart=true):Promise<BeginTurnResult> {
@@ -396,6 +402,8 @@ export async function getMemories(userId:number,timezone:unknown='UTC'):Promise<
 export async function forgetMemories(userId:number,ids:string[]|'all'):Promise<void> {
   if(ids!=='all') {if(!ids.length||ids.length>limits.maxMemories)throw new AgentError('agent_invalid_input');ids.forEach(validateUuid);}
   await owned(userId,async client=>{
+    // Forget all on the demo would also cancel other visitors' running turns.
+    if(ids==='all' && await isDemoUser(client,userId))throw new AgentError('clear_demo',403);
     await memoriesReady(client);await deleteMemories(client,userId,ids);
     if(ids==='all') {
       // A pre-delete run may carry a remember proposal with no fact id to recheck.

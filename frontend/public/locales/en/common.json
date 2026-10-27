@@ -740,7 +740,7 @@
     "checking": "Checking availability…",
     "retryNew": "Retry as a new turn",
     "clearPartialTitle": "App data cleared; agent history unavailable",
-    "clearDemoRefused": "The demo account is shared, so its transactions and goals cannot be cleared.",
+    "clearDemoRefused": "The demo account is shared, so its data cannot be cleared.",
     "clearPartialUnavailable": "Your transactions and goals were deleted. Agent history could not be cleared because the feature is disabled on this deployment. Ask the administrator to enable it if you have saved conversations to remove.",
     "discardLocalReload": "Discard local edits and reload",
     "acknowledgementsIntro": "TermPocket uses the open source projects, additional software and external services below. Thank you to their maintainers and contributors.",
