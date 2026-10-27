@@ -1,7 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { MessageCreateParamsNonStreaming, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
-import { createDirectRuntime, languageOf, replyLanguage, type AgentInput, type AgentResult, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
+import { createDirectRuntime, dollarsDraftedAsContextCurrency, languageOf, replyLanguage, type AgentInput, type AgentResult, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
 import config = require('../config');
 import { AgentError } from '../services/agent/types';
 import { recordsFor } from '../services/agent/investigation';
@@ -103,6 +103,65 @@ test(`invalid dates cannot become a proposal and model can repair after safe too
     await call('propose_transactions', { rows: [row] });
   });
   assert.equal((await h.runtime(input)).proposedRows?.length, 1);
+});
+
+test(`a "$" or dollars in a EUR, GBP or CNY conversation is never drafted in that currency`, () => {
+  const gbp = { id: 'r1', amount: '5.00', currency: 'GBP' };
+  assert.equal(dollarsDraftedAsContextCurrency('coffee $5 today', 'GBP', [gbp], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('spent 20 dollars on lunch', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'CNY' }], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('5 bucks for a snack', 'EUR', [{ id: 'r1', amount: '5.00', currency: 'EUR' }], []), true);
+  // A dollar currency the user can mean, or a row in another currency, is fine.
+  assert.equal(dollarsDraftedAsContextCurrency('coffee $5 today', 'CAD', [{ id: 'r1', amount: '5.00', currency: 'CAD' }], []), false);
+  // Guessing a dollar is refused too; a dollar the message names is fine.
+  assert.equal(dollarsDraftedAsContextCurrency('coffee $5 today', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('coffee US$5 today', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('5 canadian dollars on coffee', 'EUR', [{ id: 'r1', amount: '5.00', currency: 'CAD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('咖啡 5 美元', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('US dollars', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  // No dollar word, or the message names the conversation's own currency too.
+  assert.equal(dollarsDraftedAsContextCurrency('coffee 5 today', 'GBP', [gbp], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('coffee £5 and a $3 tip', 'GBP', [gbp], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('午饭 $5，晚饭 30 块', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'CNY' }], []), false);
+  // An untouched pending row from an earlier message is not judged; a changed one is.
+  // A new row from that message waits for the answer whatever currency it was given.
+  assert.equal(dollarsDraftedAsContextCurrency('add a $5 coffee', 'GBP', [gbp, { id: 'r2', amount: '5.00', currency: 'EUR' }], [gbp]), true);
+  assert.equal(dollarsDraftedAsContextCurrency('add a $5 coffee', 'GBP', [gbp], [gbp]), false);
+  assert.equal(dollarsDraftedAsContextCurrency('add a $5 coffee', 'GBP', [gbp, { id: 'r2', amount: '5.00', currency: 'USD' }], [gbp]), true);
+  assert.equal(dollarsDraftedAsContextCurrency('make that $5', 'GBP', [gbp], [{ id: 'r1', amount: '5.00', currency: 'EUR' }]), true);
+  // A correction that changes only the amount is judged too.
+  assert.equal(dollarsDraftedAsContextCurrency('make that $5', 'GBP', [gbp], [{ id: 'r1', amount: '4.00', currency: 'GBP' }]), true);
+  // The pronoun "us" names no dollar; 美金, 加币 and an attached code do.
+  assert.equal(dollarsDraftedAsContextCurrency('dinner for us $40', 'GBP', [gbp], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('us dollars', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('5 us dollars coffee', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('咖啡 $5 美金', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('咖啡 $5 加币', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'CAD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('coffee $5USD', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  // Attached to a number, and guessed into another non-dollar currency.
+  assert.equal(dollarsDraftedAsContextCurrency('花了20dollars', 'CNY', [{ id: 'r1', amount: '20.00', currency: 'CNY' }], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('coffee $5', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'EUR' }], []), true);
+  // "Dollarama" and "Starbucks" are not dollar markers.
+  assert.equal(dollarsDraftedAsContextCurrency('Dollarama 12', 'GBP', [gbp], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('Starbucks 6', 'GBP', [gbp], []), false);
+});
+
+test(`the dollar guard refuses the proposal as a repairable tool error and the turn goes on`, async () => {
+  const h = await harness(async call => {
+    const refused = await call('propose_transactions', { rows: [{ ...row, currency: 'GBP' }] });
+    assert.equal(refused.isError, true);
+    assert.match(text(refused), /^agent_ambiguous_dollars: .*CAD, USD or AUD/);
+  });
+  const result = await h.runtime({ ...input, currency: 'GBP', content: 'coffee $5 today' });
+  assert.equal(result.proposedRows, undefined);
+});
+
+test(`a dollar refusal after an invalid proposal does not fail the turn`, async () => {
+  const h = await harness(async call => {
+    assert.equal((await call('propose_transactions', { rows: [{ ...row, currency: 'GBP', date: '2026-02-30' }] })).isError, true);
+    assert.match(text(await call('propose_transactions', { rows: [{ ...row, currency: 'GBP' }] })), /^agent_ambiguous_dollars/);
+  });
+  const result = await h.runtime({ ...input, currency: 'GBP', content: 'coffee $5 today' });
+  assert.equal(result.proposedRows, undefined);
 });
 
 test(`an invalid proposal left unrepaired fails the turn`, async () => {
