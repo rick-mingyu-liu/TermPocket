@@ -132,6 +132,8 @@ test(`a "$" or dollars in a EUR, GBP or CNY conversation is never drafted in tha
   assert.equal(dollarsDraftedAsContextCurrency('make that $5', 'GBP', [gbp], [{ id: 'r1', amount: '4.00', currency: 'GBP' }]), true);
   // The pronoun "us" names no dollar; 美金, 加币 and an attached code do.
   assert.equal(dollarsDraftedAsContextCurrency('dinner for us $40', 'GBP', [gbp], []), true);
+  assert.equal(dollarsDraftedAsContextCurrency('us dollars', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
+  assert.equal(dollarsDraftedAsContextCurrency('5 us dollars coffee', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
   assert.equal(dollarsDraftedAsContextCurrency('咖啡 $5 美金', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);
   assert.equal(dollarsDraftedAsContextCurrency('咖啡 $5 加币', 'CNY', [{ id: 'r1', amount: '5.00', currency: 'CAD' }], []), false);
   assert.equal(dollarsDraftedAsContextCurrency('coffee $5USD', 'GBP', [{ id: 'r1', amount: '5.00', currency: 'USD' }], []), false);

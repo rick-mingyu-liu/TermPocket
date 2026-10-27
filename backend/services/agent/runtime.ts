@@ -128,7 +128,7 @@ const OWN_CURRENCY: Record<string, RegExp> = {
 };
 const DOLLAR = /\$|(?<![A-Za-z])(?:dollars?|bucks?)(?![A-Za-z])/i;
 /** A message that says which dollar it means. */
-const NAMED_DOLLAR = /(?<![A-Za-z])(?:USD|CAD|AUD)(?![A-Za-z])|(?<![A-Za-z])(?:US|C|A|AU|CA)\$|\bU\.S\.|\b(?:american|canadian|australian|aussie)\b|美元|美金|加元|加币|澳元|澳币/i;
+const NAMED_DOLLAR = /(?<![A-Za-z])(?:USD|CAD|AUD)(?![A-Za-z])|(?<![A-Za-z])(?:US|C|A|AU|CA)\$|\bU\.S\.|\b(?:us|ca|au)\s*dollars?\b|\b(?:american|canadian|australian|aussie)\b|美元|美金|加元|加币|澳元|澳币/i;
 /** "US dollars", "CA$"-style: the bare country tokens only in capitals, so the pronoun "us" does not count. */
 const NAMED_DOLLAR_CAPS = /\b(?:US|CA|AU)\b/;
 
