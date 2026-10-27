@@ -34,14 +34,20 @@ test('migration 022: fresh and upgrade are repeatable, preserve rows and enforce
     WHERE n.nspname=$1 AND t.relname=ANY($2::text[]) ORDER BY 1,2`, [schema, TABLES])).rows;
   const indexes = async () => (await client.query(`SELECT tablename,indexname,indexdef FROM pg_indexes
     WHERE schemaname=$1 AND tablename=ANY($2::text[]) ORDER BY 1,2`, [schema, TABLES])).rows;
+  // The updated_at trigger is what moves a fact's version; compare it like the columns.
+  const triggers = async () => (await client.query(`SELECT c.relname,t.tgname,pg_get_triggerdef(t.oid) AS def
+    FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname=$1 AND c.relname=ANY($2::text[]) AND NOT t.tgisinternal ORDER BY 1,2`, [schema, TABLES])).rows;
+  const all = async () => ({ shape: await shape(), constraints: await constraints(), indexes: await indexes(), triggers: await triggers() });
   try {
     await reset();
     await client.query(desired);
-    const expected = { shape: await shape(), constraints: await constraints(), indexes: await indexes() };
+    const expected = await all();
     assert.ok(expected.shape.length > 0);
+    assert.deepEqual(expected.triggers.map(t => t.tgname), ['update_agent_memories_updated_at']);
     await client.query(migration);
     await client.query(migration);
-    assert.deepEqual({ shape: await shape(), constraints: await constraints(), indexes: await indexes() }, expected);
+    assert.deepEqual(await all(), expected);
 
     await reset();
     // Remove only the newly added memory section: every pre-022 table remains.
@@ -59,7 +65,7 @@ test('migration 022: fresh and upgrade are repeatable, preserve rows and enforce
     const before = (await client.query('SELECT * FROM transactions')).rows;
     await client.query(migration);
     await client.query(migration);
-    assert.deepEqual({ shape: await shape(), constraints: await constraints(), indexes: await indexes() }, expected);
+    assert.deepEqual(await all(), expected);
     assert.deepEqual((await client.query('SELECT * FROM transactions')).rows, before);
 
     const memory = randomUUID();

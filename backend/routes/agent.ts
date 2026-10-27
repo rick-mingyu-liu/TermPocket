@@ -49,7 +49,12 @@ function route(handler:(req:Request,res:Response)=>Promise<void>) {
   return (req:Request,res:Response,next:NextFunction) => { void handler(req,res).catch(next); };
 }
 // Memory changes are button-only server operations. No model execution is needed.
-router.get('/memories',route(async(req,res)=>{res.json(await store.getMemories(req.user.userId));}));
+// ?timezone= dates each fact's saved_on in the viewer's zone (UTC when absent);
+// the store answers a zone neither Intl nor PostgreSQL accepts with a 400.
+router.get('/memories',route(async(req,res)=>{
+  if(Object.keys(req.query).some(k=>k!=='timezone')) throw new AgentError('agent_invalid_input');
+  res.json(await store.getMemories(req.user.userId,req.query.timezone??'UTC'));
+}));
 router.delete('/memories/:id',route(async(req,res)=>{
   await store.forgetMemories(req.user.userId,[validateUuid(req.params.id)]);res.json({deleted:true});
 }));
@@ -106,6 +111,9 @@ router.post('/conversations/:id/messages',route(async(req,res)=>{
       assertActive:()=>store.assertRunActive(userId,conversationId,input.requestId),
       // Bound to the authenticated user here; no tool argument can name another.
       records:recordsFor(userId),
+      // Every remembered fact and the latest offer, read when the run was
+      // admitted (none for the demo account or before migration 022).
+      memories:begin.memories,memoryProposal:begin.state.memoryProposal,
     });
     if(controller.signal.aborted) throw new AgentError(timedOut?'agent_timeout':'agent_cancelled',409);
     // finishTurn locks and rechecks the run; late output after a remote

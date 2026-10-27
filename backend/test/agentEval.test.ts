@@ -5,7 +5,7 @@ import exchangeRateService = require('../services/exchangeRateService');
 import { recordsFor } from '../services/agent/investigation';
 import type { AgentResult } from '../services/agent/runtime';
 import { AgentError, type DraftRow } from '../services/agent/types';
-import { fixtureQuery, installFixture, loadJson, main, monthlyExpenses, normalizeText, findNeedle, parseArgs, runCase, scoreRun, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
+import { caseRecords, evalFacts, fixtureQuery, installFixture, loadJson, main, MEMORY_VERSION, memoryFixtureQuery, monthlyExpenses, normalizeText, findNeedle, parseArgs, runCase, scoreRun, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
 
 const file = validateCaseFile(loadJson('agent-cases.json'));
 const fixture = loadJson('agent-fixture.json') as Fixture;
@@ -295,5 +295,77 @@ describe('CLI orchestration without provider or database', () => {
     const h = harness(); h.deps.runtime = async () => result(`sk-fictional-eval-secret ${'x'.repeat(5000)}`);
     assert.equal(await main([], h.deps), 1); assert.ok(!h.output.join('').includes(h.deps.agent.apiKey!)); assert.ok(h.output.join('').length < 1500);
     h.deps.runtime = async () => { throw new Error('provider payload private row secret'); }; assert.equal(await main(['--json'], h.deps), 1); assert.ok(!h.output.join('').includes('provider payload'));
+  });
+});
+
+describe('memory in the evaluation harness', () => {
+  const rent = { kind: 'expense' as const, text: 'Rent', amount: '950.00', currency: 'CAD', cadence: 'month' as const, saved_on: '2026-10-03' };
+  const pref = { kind: 'preference' as const, text: 'Count Uber Eats as Dining Out', saved_on: '2026-09-20' };
+  const withMemory = (expect: EvalCase['expect'], memories = [pref, rent]): EvalCase => ({ ...evalCase(expect), memories });
+  test('cases carry facts and a last offer; invalid ones are rejected before any run', () => {
+    assert.ok(file.cases.some(c => c.memories?.length === 30), 'the token headroom case has 30 facts');
+    assert.ok(file.cases.some(c => c.expect.memoryProposal?.action === 'forget' && c.expect.memoryProposal.ref));
+    const ok = { ...withMemory({ memoryProposal: { action: 'update', ref: 'm2', amount: '1050.00' } }), memoryProposal: { action: 'remember', kind: 'expense', status: 'cancelled' } };
+    assert.equal(validateCaseFile({ defaults: file.defaults, cases: [ok] }).cases[0]!.memories!.length, 2);
+    const bad: unknown[] = [
+      { ...evalCase({}), memories: [{ ...rent, text: 'x'.repeat(121) }] },
+      { ...evalCase({}), memories: [{ ...rent, currency: undefined }] },
+      { ...evalCase({}), memories: [{ ...rent, saved_on: '2026-02-30' }] },
+      { ...evalCase({}), memories: [{ ...rent, id: 'x' }] },
+      { ...evalCase({}), memories: [{ ...rent, text: 'Rent\u202e' }] },
+      { ...evalCase({}), memories: Array.from({ length: 31 }, () => pref) },
+      { ...evalCase({}), memoryProposal: { action: 'remember', kind: 'expense', status: 'cancelled', text: 'Rent' } },
+      { ...evalCase({}), memoryProposal: { action: 'remember', kind: 'rent', status: 'pending' } },
+      withMemory({ memoryProposal: { action: 'forget', ref: 'm3' } }),
+      withMemory({ memoryProposal: { action: 'forget' } }),
+      withMemory({ memoryProposal: { action: 'remember', ref: 'm1' } }),
+      withMemory({ memoryProposal: { action: 'remember', kind: 'rent' as never } }),
+      withMemory({ memoryProposal: { action: 'update', ref: 'm1', amount: '1050' } }),
+    ];
+    for (const c of bad) assert.throws(() => validateCaseFile({ defaults: file.defaults, cases: [c] }), /case file invalid/, JSON.stringify(c));
+  });
+  test('the fixture prepares proposals through the real tool code, naming facts only as the case lists them', async () => {
+    const c = withMemory({});
+    const records = caseRecords(c, fixture);
+    const facts = evalFacts(c);
+    assert.deepEqual(facts.map(f => [f.id, f.version]), [['00000000-0000-4000-8000-000000000001', MEMORY_VERSION], ['00000000-0000-4000-8000-000000000002', MEMORY_VERSION]]);
+    const remember = await records.prepareMemoryProposal({ action: 'remember', kind: 'income', text: 'Co-op pay', amount: '1980', currency: 'CAD', cadence: 'two_weeks' });
+    assert.equal(remember.after!.amount, '1980.00');
+    const update = await records.prepareMemoryProposal({ action: 'update', memory_id: facts[1]!.id, expected_updated_at: MEMORY_VERSION, amount: '1050' });
+    assert.deepEqual([update.action, update.memory_id, update.before!.amount, update.after!.amount], ['update', facts[1]!.id, '950.00', '1050.00']);
+    await assert.rejects(records.prepareMemoryProposal({ action: 'forget', memory_id: '00000000-0000-4000-8000-000000000009', expected_updated_at: MEMORY_VERSION }), { code: 'agent_memory_not_found' });
+    const full = caseRecords(withMemory({}, Array.from({ length: 30 }, () => pref)), fixture);
+    await assert.rejects(full.prepareMemoryProposal({ action: 'remember', kind: 'other', text: 'One more' }), { code: 'agent_memory_full' });
+    await assert.rejects(memoryFixtureQuery(fixture.userId, facts)('DELETE FROM agent_memories'), { code: 'EVAL_UNEXPECTED_QUERY' });
+  });
+  test('scores the memory proposal: none expected, action, kind, ref and amount', () => {
+    const facts = evalFacts(withMemory({}));
+    const update = { action: 'update' as const, kind: 'expense' as const, memory_id: facts[1]!.id, expected_updated_at: MEMORY_VERSION,
+      before: { kind: 'expense' as const, text: 'Rent', amount: '950.00', currency: 'CAD', cadence: 'month' as const }, after: { kind: 'expense' as const, text: 'Rent', amount: '1050.00', currency: 'CAD', cadence: 'month' as const } };
+    const run = (expect: EvalCase['expect'], memoryProposal?: typeof update) => scoreRun(withMemory(expect), { result: { ...result(), ...(memoryProposal ? { memoryProposal } : {}) }, calls: [] });
+    assert.deepEqual(run({ memoryProposal: { action: 'update', kind: 'expense', ref: 'm2', amount: '1050.00' } }, update), []);
+    assert.deepEqual(run({ memoryProposal: null }), []);
+    assert.match(run({ memoryProposal: null }, update).join(' '), /unexpected memory proposal/);
+    assert.match(run({ memoryProposal: { action: 'update' } }).join(' '), /no memory proposal/);
+    const wrong = run({ memoryProposal: { action: 'forget', kind: 'income', ref: 'm1', amount: '950.00' } }, update).join(' ');
+    for (const reason of [/action update, expected forget/, /kind expense, expected income/, /names m2, expected m1/, /amount "1050.00", expected "950.00"/]) assert.match(wrong, reason);
+    // optional: none passes, but a duplicate remember where an update was allowed fails.
+    assert.deepEqual(run({ memoryProposal: { action: 'update', ref: 'm2', optional: true } }), []);
+    assert.match(run({ memoryProposal: { action: 'update', ref: 'm2', optional: true } }, { ...update, action: 'remember' as never, memory_id: null as never }).join(' '), /action remember, expected update/);
+    assert.throws(() => validateCaseFile({ defaults: file.defaults, cases: [withMemory({ memoryProposal: { action: 'update', ref: 'm2', optional: false as never } })] }), /optional can only be true/);
+  });
+  test('runCase hands the case\'s facts and last offer to the runtime, and tracks propose_memory', async () => {
+    const seen: Array<{ memories?: unknown; memoryProposal?: unknown }> = [];
+    const c: EvalCase = { ...withMemory({ tools: { include: ['propose_memory'] } }), memoryProposal: { action: 'remember', kind: 'expense', status: 'pending', text: 'Rent' } };
+    const report = await runCase(c, file, fixture, async input => {
+      seen.push({ memories: input.memories, memoryProposal: input.memoryProposal });
+      await input.records.prepareMemoryProposal({ action: 'forget', memory_id: input.memories![1]!.id, expected_updated_at: input.memories![1]!.version });
+      return result();
+    });
+    assert.equal(report.status, 'PASS'); assert.deepEqual(report.tools, ['propose_memory']);
+    assert.deepEqual(seen[0]!.memories, evalFacts(c));
+    assert.deepEqual(seen[0]!.memoryProposal, { action: 'remember', kind: 'expense', status: 'pending', before: null, after: { kind: 'expense', text: 'Rent', amount: null, currency: null, cadence: null } });
+    await runCase(evalCase({}), file, fixture, async input => { seen.push({ memories: input.memories, memoryProposal: input.memoryProposal }); return result(); });
+    assert.deepEqual(seen[1], { memories: [], memoryProposal: null });
   });
 });

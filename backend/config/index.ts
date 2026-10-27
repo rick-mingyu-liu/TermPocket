@@ -119,6 +119,11 @@ const config = {
     maxMessagesPerConversation: 200,
     maxTotalTokens: 32_000,
     maxToolOutputChars: 16_000,
+    // Remembered facts (docs/MEMORY.md): at most this many per user, and
+    // context.memory measured as serialised JSON, apart from the history
+    // budget. 30 facts at their worst (120 quote characters each) fit.
+    maxMemories: 30,
+    maxMemoryChars: 14_000,
   },
 
   // Rate limiting. Defaults are unchanged from when these were hardcoded in

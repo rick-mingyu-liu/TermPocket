@@ -8,7 +8,7 @@ import { recordsFor } from '../services/agent/investigation';
 import db = require('../db/connection');
 
 const unused = async () => assert.fail('records read without a tool call');
-const records = { spendingSummary: unused, compareSpending: unused, transactionDetails: unused, spendingBaseline: unused, listGoals: unused, calculateScenario: unused, prepareGoalProposal: unused };
+const records = { spendingSummary: unused, compareSpending: unused, transactionDetails: unused, spendingBaseline: unused, listGoals: unused, calculateScenario: unused, prepareGoalProposal: unused, prepareMemoryProposal: unused };
 const input = { content: 'Coffee 5 CAD today', history: [], pendingRows: [], currency: 'CAD', timezone: 'America/Toronto', language: 'en' as const, today: '2026-10-14', signal: new AbortController().signal, records };
 const row = { amount: '5.00', description: 'Coffee', category: 'Dining Out', type: 'expense', date: '2026-10-14', currency: 'CAD' };
 config.agent.enabled = true; config.agent.apiKey = 'fictional-test-key';
@@ -69,7 +69,7 @@ function fakeRecords(answer: unknown = { ok: true }) {
   const calls: Array<{ fn: string; args: unknown }> = [];
   const record = (fn: string) => async (args?: unknown) => { calls.push({ fn, args }); return answer; };
   return { calls, records: { spendingSummary: record('spendingSummary'), compareSpending: record('compareSpending'), transactionDetails: record('transactionDetails'),
-    spendingBaseline: record('spendingBaseline'), listGoals: record('listGoals'), calculateScenario: record('calculateScenario'), prepareGoalProposal: unused } };
+    spendingBaseline: record('spendingBaseline'), listGoals: record('listGoals'), calculateScenario: record('calculateScenario'), prepareGoalProposal: unused, prepareMemoryProposal: unused } };
 }
 
 const goalDraft = { action: 'create' as const, goal_id: null, expected_updated_at: null, before: null,
