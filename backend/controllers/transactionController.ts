@@ -7,6 +7,7 @@ import { decodeCursor, encodeCursor } from '../utils/transactionCursor';
 import { toDay } from '../utils/dates';
 import { errorSummary } from '../utils/errorSummary';
 import * as retentionService from '../services/retentionService';
+import { isDemoAccount, CLEAR_DEMO_REFUSAL } from '../services/demoGuard';
 
 /** A transactions row, plus its amount converted to the caller's requested currency. */
 interface TransactionWithConversion extends TransactionRow {
@@ -388,9 +389,11 @@ const transactionController = {
     }
   },
 
-  // Clear all transactions for user (testing purposes)
+  // Settings -> Clear All Data. Refused for the shared demo account.
   async clearAllTransactions(req: Request, res: Response) {
     try {
+      if (await isDemoAccount(req.user.userId)) return res.status(403).json(CLEAR_DEMO_REFUSAL);
+
       const result = await query(
         'DELETE FROM transactions WHERE user_id = $1',
         [req.user.userId]

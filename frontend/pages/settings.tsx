@@ -208,8 +208,14 @@ export default function Settings() {
         confirmButtonText: t('OK'),
       })
       router.push('/')
-    } catch {
-      toast.error(t('Could not clear all data. Some of it may already be deleted; please try again.'))
+    } catch (error) {
+      const code = (error as { response?: { data?: { code?: string } } }).response?.data?.code
+      if (code === 'clear_demo') {
+        setClearDialogOpen(false)
+        toast.error(t('agent.clearDemoRefused'))
+      } else {
+        toast.error(t('Could not clear all data. Some of it may already be deleted; please try again.'))
+      }
     } finally {
       setClearing(false)
     }

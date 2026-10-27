@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import { query } from '../db/connection';
 import { getExchangeRate } from '../services/exchangeRateService';
 import type { SavingsGoalRow } from '../types/db';
+import { isDemoAccount, CLEAR_DEMO_REFUSAL } from '../services/demoGuard';
 
 /** SELECT id FROM savings_goals — the ownership check before an update/delete. */
 interface GoalIdRow {
@@ -223,9 +224,11 @@ const goalController = {
     }
   },
 
-  // Clear all goals for user (for testing)
+  // Settings -> Clear All Data. Refused for the shared demo account.
   async clearAllGoals(req: Request, res: Response) {
     try {
+      if (await isDemoAccount(req.user.userId)) return res.status(403).json(CLEAR_DEMO_REFUSAL);
+
       await query(
         'DELETE FROM savings_goals WHERE user_id = $1',
         [req.user.userId]

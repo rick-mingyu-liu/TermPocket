@@ -70,6 +70,12 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // Settings -> Clear All Data says itself that the shared demo account
+    // cannot be cleared (403 clear_demo), so no generic dialog is raised.
+    if (/^\/(transactions|goals)\/clear-all$/.test(error.config?.url ?? '') && response?.data?.code === 'clear_demo') {
+      return Promise.reject(error)
+    }
+
     // Settings -> Delete account shows a wrong password, the demo refusal and
     // the rate limit inside its own dialog. A 401 still logs out.
     if (error.config?.url === '/auth/account' && response?.status !== 401) {
