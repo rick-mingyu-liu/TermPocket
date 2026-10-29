@@ -1,5 +1,5 @@
 {
-  "updated": "2026 年 10 月 27 日",
+  "updated": "2026 年 10 月 29 日",
   "privacy": {
     "intro": [
       "TermPocket 是一款面向大学生的免费个人理财应用，由其开发者 [rick-mingyu-liu](https://github.com/rick-mingyu-liu)（下称“我们”）在加拿大运营。本页说明 TermPocket 存储哪些信息、信息会发送到哪里、保留多久，以及如何索取副本或要求删除。",
@@ -48,17 +48,17 @@
         "id": "ai-providers",
         "h": "当前 AI 服务商",
         "p": [
-          "Pocky 目前使用 DeepSeek 的 API，数据在加拿大境外的中国处理。此集成适用其 API 条款。其通用隐私政策不涵盖 TermPocket 等应用的终端用户数据处理。",
+          "Pocky 目前使用 Anthropic 的 API（Claude 模型），数据在加拿大境外的美国处理，也可能在其他国家处理。此集成适用其商业条款。",
           "我们不承诺服务商具有固定的数据保留期限，也不保证 API 输入内容不会用于模型训练。更换服务商时，我们会更新本节；若已有信息的使用方式发生变化，我们会按下文说明通知你。"
         ],
         "links": [
           {
             "label": "API 条款",
-            "href": "https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html"
+            "href": "https://www.anthropic.com/legal/commercial-terms"
           },
           {
             "label": "服务商隐私政策",
-            "href": "https://cdn.deepseek.com/policies/zh-CN/deepseek-privacy-policy.html"
+            "href": "https://www.anthropic.com/legal/privacy"
           }
         ]
       },

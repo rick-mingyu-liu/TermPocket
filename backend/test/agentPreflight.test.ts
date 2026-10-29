@@ -24,8 +24,8 @@ function settings(overrides: { enabled?: boolean; apiKey?: string; model?: strin
     agent: {
       enabled: overrides.enabled ?? false,
       apiKey: 'apiKey' in overrides ? overrides.apiKey : FAKE_KEY,
-      model: overrides.model ?? 'deepseek-flash',
-      timeoutMs: 90_000, maxToolCalls: 8, maxRows: 12, maxOutputTokens: 4000, maxTotalTokens: 32_000,
+      model: overrides.model ?? 'claude-sonnet-5-5',
+      timeoutMs: 90_000, maxToolCalls: 8, maxRows: 12, maxOutputTokens: 4000, maxTotalTokens: 64_000,
     },
   };
 }
@@ -81,16 +81,25 @@ describe('output never leaks a secret', () => {
       const checks = [...configChecks(s), ...classifyDatabase(preAgent(), s), ...classifyDatabase(migrated(), s), ...skippedDatabase('database unreachable')];
       const report = formatReport(checks, secretsOf(s));
       for (const value of [FAKE_KEY, FAKE_PASSWORD, FAKE_HOST, 'owner:']) assert.ok(!report.includes(value), 'report leaked a secret');
-      assert.match(report, /config\.deepseek_key\s+present: yes/);
+      assert.match(report, /config\.claude_key\s+present: yes/);
     }
   });
 
   test('a model override that is not a plain id is never echoed', () => {
-    const odd = 'deepseek flash; key=sk-whatever';
-    const checks = configChecks(settings({ model: odd }));
-    const model = find(checks, 'config.deepseek_model');
-    assert.equal(model.status, 'FAIL');
-    assert.ok(!formatReport(checks).includes(odd));
+    for (const odd of ['claude haiku; key=sk-whatever', 'claude-opus-5-5 key=sk-x']) {
+      const checks = configChecks(settings({ model: odd }));
+      const model = find(checks, 'config.claude_model');
+      assert.equal(model.status, 'FAIL', odd);
+      assert.ok(!formatReport(checks).includes(odd), odd);
+      assert.ok(!formatReport(checks).includes('sk-'), odd);
+    }
+  });
+
+  test('a model that cannot turn thinking off fails; Haiku is only a warning', () => {
+    for (const model of ['claude-opus-5-5', 'claude-fable-5-1']) {
+      assert.equal(find(configChecks(settings({ model })), 'config.claude_model').status, 'FAIL', model);
+    }
+    assert.equal(find(configChecks(settings({ model: 'claude-haiku-5-5' })), 'config.claude_model').status, 'WARN');
   });
 
   test('details stay on one line', () => {
@@ -116,10 +125,10 @@ describe('configuration', () => {
   test('flag and key are reported as booleans', () => {
     const on = configChecks(settings({ enabled: true }));
     assert.equal(find(on, 'config.agent_enabled').detail, 'true');
-    assert.equal(find(on, 'config.deepseek_key').status, 'PASS');
+    assert.equal(find(on, 'config.claude_key').status, 'PASS');
     const noKey = configChecks(settings({ enabled: true, apiKey: undefined }));
-    assert.equal(find(noKey, 'config.deepseek_key').status, 'WARN');
-    assert.equal(find(configChecks(settings({ apiKey: undefined })), 'config.deepseek_key').status, 'PASS');
+    assert.equal(find(noKey, 'config.claude_key').status, 'WARN');
+    assert.equal(find(configChecks(settings({ apiKey: undefined })), 'config.claude_key').status, 'PASS');
   });
 
   test('NODE_ENV other than production warns', () => {

@@ -92,8 +92,10 @@ const config = {
   // Deliberate opt-in; only the confirmation endpoint may write transactions.
   agent: {
     enabled: process.env.AGENT_ENABLED === 'true',
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    model: process.env.DEEPSEEK_MODEL || 'deepseek-flash',
+    apiKey: process.env.CLAUDE_API_KEY,
+    // claude-haiku-5-5 or claude-sonnet-5-5: runtime.thinkingFor() turns
+    // thinking off the way each accepts. Opus 5.5 cannot turn it off at all.
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-5-5',
     timeoutMs: 90_000,
     maxTurns: 10,
     maxToolCalls: 8,
@@ -117,7 +119,9 @@ const config = {
     maxRows: 12,
     maxConversations: 100,
     maxMessagesPerConversation: 200,
-    maxTotalTokens: 32_000,
+    // Input and output across a turn's round trips. Claude's tokenizer counts
+    // about 1.8x what DeepSeek's did for the same prompt (32k was set then).
+    maxTotalTokens: 64_000,
     maxToolOutputChars: 16_000,
     // Remembered facts (docs/MEMORY.md): at most this many per user, and
     // context.memory measured as serialised JSON, apart from the history
@@ -250,7 +254,7 @@ const config = {
   // a way users should agree to again — every account is then asked once more.
   // A date, by convention the `updated` date in public/locales/*/legal.json.
   legal: {
-    termsVersion: '2026-10-27',
+    termsVersion: '2026-10-29',
   },
 
   validation: {

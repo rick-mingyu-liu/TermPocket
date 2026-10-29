@@ -30,7 +30,7 @@ export interface PreflightSettings {
   agent: Pick<typeof config.agent, 'enabled' | 'apiKey' | 'model' | 'timeoutMs' | 'maxToolCalls' | 'maxRows' | 'maxOutputTokens' | 'maxTotalTokens'>;
 }
 
-const DEFAULT_MODEL = 'deepseek-flash';
+const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const AGENT_TABLES = ['agent_conversations', 'agent_runs', 'agent_messages', 'agent_drafts', 'agent_receipts', 'agent_admissions'] as const;
 const LEGACY_TABLES = ['watchlist', 'ai_plans'] as const;
 const PROPOSALS_TABLE = 'agent_goal_proposals';
@@ -41,7 +41,7 @@ const STATEMENT_TIMEOUT = '5s';
 const CONNECT_TIMEOUT_MS = 10_000;
 const NETWORK_TIMEOUT_MS = 5_000;
 const LIVE_BUDGET_MS = 90_000;
-const PROVIDER_URL = 'https://api.deepseek.com/anthropic';
+const PROVIDER_URL = 'https://api.anthropic.com';
 
 const check = (status: Status, name: string, detail: string): Check => ({ status, name, detail });
 /** Model turns need both the flag and the key; host problems only block them then. */
@@ -96,14 +96,16 @@ export function configChecks(s: PreflightSettings): Check[] {
     : check('WARN', 'config.node_env', 'not production (database SSL is off; expected only off Render)'));
   checks.push(check('PASS', 'config.agent_enabled', s.agent.enabled ? 'true' : 'false (agent routes and maintenance off)'));
   const hasKey = Boolean(s.agent.apiKey);
-  if (hasKey) checks.push(check('PASS', 'config.deepseek_key', 'present: yes'));
-  else if (s.agent.enabled) checks.push(check('WARN', 'config.deepseek_key', 'present: no (history, edits, confirm and undo work; new turns unavailable)'));
-  else checks.push(check('PASS', 'config.deepseek_key', 'present: no (not needed while disabled)'));
+  if (hasKey) checks.push(check('PASS', 'config.claude_key', 'present: yes'));
+  else if (s.agent.enabled) checks.push(check('WARN', 'config.claude_key', 'present: no (history, edits, confirm and undo work; new turns unavailable)'));
+  else checks.push(check('PASS', 'config.claude_key', 'present: no (not needed while disabled)'));
   // The model id is printed only when it is a plain identifier, never raw env text.
   const model = s.agent.model;
-  if (model === DEFAULT_MODEL) checks.push(check('PASS', 'config.deepseek_model', `default (${DEFAULT_MODEL})`));
-  else if (/^[A-Za-z0-9._:-]{1,64}$/.test(model)) checks.push(check('WARN', 'config.deepseek_model', `override: ${model} (only ${DEFAULT_MODEL} has acceptance coverage)`));
-  else checks.push(check('FAIL', 'config.deepseek_model', 'override set but not a plain model id'));
+  if (model === DEFAULT_MODEL) checks.push(check('PASS', 'config.claude_model', `default (${DEFAULT_MODEL})`));
+  // These cannot turn thinking off: every turn would be a 400 (runtime.thinkingFor).
+  else if (/^claude-(opus-5-5|fable-)/.test(model)) checks.push(check('FAIL', 'config.claude_model', 'override is Opus 5.5 or Fable, which cannot turn thinking off; use claude-sonnet-5-5 or claude-haiku-5-5'));
+  else if (/^[A-Za-z0-9._:-]{1,64}$/.test(model)) checks.push(check('WARN', 'config.claude_model', `override: ${model} (only ${DEFAULT_MODEL} has acceptance coverage)`));
+  else checks.push(check('FAIL', 'config.claude_model', 'override set but not a plain model id'));
   const a = s.agent;
   // tool_calls and draft rows are bounded by CHECK constraints in migration 013.
   const problems = [
@@ -316,10 +318,10 @@ async function networkCheck(s: PreflightSettings): Promise<Check> {
     // No key, no body: any HTTP status proves DNS, TLS and egress.
     const response = await fetch(PROVIDER_URL, { method: 'GET', signal: AbortSignal.timeout(NETWORK_TIMEOUT_MS), redirect: 'manual' });
     await response.body?.cancel();
-    return check('PASS', 'network.deepseek', `reachable (HTTP ${response.status} in ${Date.now() - started} ms)`);
+    return check('PASS', 'network.anthropic', `reachable (HTTP ${response.status} in ${Date.now() - started} ms)`);
   } catch (error) {
     const cause = error instanceof Error && error.cause !== undefined ? error.cause : error;
-    return check(hostProblem(s), 'network.deepseek', `unreachable within ${NETWORK_TIMEOUT_MS / 1000} s (${describeError(cause)})`);
+    return check(hostProblem(s), 'network.anthropic', `unreachable within ${NETWORK_TIMEOUT_MS / 1000} s (${describeError(cause)})`);
   }
 }
 
@@ -339,7 +341,7 @@ export const fakeRecords: AgentRecords = {
 };
 
 async function liveCheck(s: PreflightSettings): Promise<Check> {
-  if (!s.agent.apiKey) return check('SKIP', 'live.turn', 'no DEEPSEEK_API_KEY');
+  if (!s.agent.apiKey) return check('SKIP', 'live.turn', 'no CLAUDE_API_KEY');
   if (!s.agent.enabled) return check('SKIP', 'live.turn', 'AGENT_ENABLED is not true; the runtime refuses turns');
   const started = Date.now();
   const controller = new AbortController();

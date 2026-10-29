@@ -516,7 +516,7 @@
       "language": "en",
       "today": "2026-10-15",
       "message": "If co-op pays $2,400 a biweekly from September, can I save $5,000 by December based on my overall spending habit?",
-      "note": "Mirrors a production failure (agent_limit_exceeded): a biweekly pay schedule plus a spending baseline. Before the fix DeepSeek reasoned by default (thinking blocks counted against the output budgets) and biweekly pay could only be modelled as weekly. The turn must finish inside the limits; it may project with a two_weeks repeat or ask for cash on hand, but must not promise the goal is reachable.",
+      "note": "Mirrors a production failure (agent_limit_exceeded): a biweekly pay schedule plus a spending baseline. Before the fix the model reasoned by default (thinking blocks counted against the output budgets) and biweekly pay could only be modelled as weekly. The turn must finish inside the limits; it may project with a two_weeks repeat or ask for cash on hand, but must not promise the goal is reachable.",
       "expect": {
         "tools": { "include": ["spending_baseline"], "exclude": ["propose_transactions", "propose_goal"] },
         "maxToolCalls": 5,
@@ -972,7 +972,10 @@
         "tools": {"include": ["propose_memory"], "exclude": ["propose_transactions", "propose_goal"]},
         "maxToolCalls": 2,
         "memoryProposal": {"action": "forget", "kind": "expense", "ref": "m2"},
-        "reply": {"mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "been forgotten", "i've forgotten"]}
+        "reply": {
+          "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n['’]t )\\bbeen\\s+forgotten\\b"]
+        }
       }
     },
     {
@@ -988,7 +991,10 @@
         "tools": {"include": ["propose_memory"], "exclude": ["propose_transactions", "propose_goal"]},
         "maxToolCalls": 2,
         "memoryProposal": {"action": "update", "ref": "m2", "amount": "1050.00"},
-        "reply": {"mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "been forgotten", "i've forgotten"]}
+        "reply": {
+          "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n['’]t )\\bbeen\\s+forgotten\\b"]
+        }
       }
     },
     {

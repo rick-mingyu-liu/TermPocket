@@ -26,7 +26,7 @@ The twelve original feature and deployment pull requests below landed between 20
 | #60 | 2026-10-15 | Term label locale key renamed to its English text |
 | #59 | 2026-10-15 | Recording: chat drafts, button-only confirm, undo, conversation history; migration 013 (built by Codex, then reviewed and fixed) |
 | #58 | 2026-10-14 | Legacy one-shot planning and stock features retired |
-| #56 | 2026-10-14 | AI provider switched to DeepSeek |
+| #56 | 2026-10-14 | AI provider switched (to the provider used until #184) |
 | #55 | 2026-10-14 | Self-service MCP connections and term-pace comparisons |
 | #54 | 2026-10-14 | Hourly maintenance, so the database can scale to zero |
 | #53 | 2026-10-14 | Rebrand from MindGo to TermPocket |
@@ -47,7 +47,7 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 | Migration 014 (drop `watchlist`, `ai_plans`) | Applied 2026-10-15: 23 watchlist rows and 0 AI plans dropped, by the owner's decision |
 | Migration 015 (goal proposals) | Applied 2026-10-15: `agent_goal_proposals` present |
 | `AGENT_ENABLED` and the AI provider key | Set 2026-10-15. The `--live` preflight turn (1 tool call, 1 drafted row, 8,109 in / 201 out tokens, 3.8 s) confirms the key works |
-| Host checks | Preflight with `--live` on the host, 2026-10-27, before the `db.migrations` check existed (later runs have 17 checks): 16 PASS, 0 WARN, 0 FAIL. linux-x64, Node 22.23.4, PostgreSQL 17.11, HTTP client installed, DeepSeek reachable; the live turn drafted 1 row with 1 tool call, 9,708 in / 123 out tokens, 3.3 s |
+| Host checks | Preflight with `--live` on the host, 2026-10-27, before the `db.migrations` check existed (later runs have 17 checks): 16 PASS, 0 WARN, 0 FAIL. linux-x64, Node 22.23.4, PostgreSQL 17.11, HTTP client installed, AI provider reachable; the live turn drafted 1 row with 1 tool call, 9,708 in / 123 out tokens, 3.3 s |
 
 The owner's work machine's Zscaler proxy blocks termpocket.com as a "Newly Registered Domain". That is the proxy, not the site.
 
@@ -66,7 +66,7 @@ Pull requests merged after the table above, grouped by theme. Each passed CI bef
 | Data and accounts | Terms acceptance: a required tick box at sign-up and a one-time accept card for anyone on an older or no version, stored per user, migration 017 (#156); retention setting stored and enforced, migration 016 (#103); account deletion from Settings (#114); demo refresh driven by staleness (#95) |
 | Email | Configurable SMTP (#122); redesigned emails with a shared layout, HTML escaping of user-typed values (this fixed an injection in the verification email's first name), CAD conversion, term-so-far and goals with progress bars (#124); leftover-to-goal section in the first weekly report of each month (#134); weekly report gate (#105); a junk-folder hint on the register and resend screens (#155). A failed MailboxLayer SMTP probe no longer rejects a registration (#126): university mail refused probes |
 | Domain and hosting | `CORS_ORIGIN` as a list (#120); backend moved next to the database (#92); frontend skips unchanged builds (#98); FSL license (#96) |
-| Legal and contact | Privacy policy and terms drafts (#101, #104); contact addresses in the legal pages and the login "Contact Us" (#121); GitHub-linked operator name (#123); wording: run from Canada, DeepSeek and China mentioned once, Resend rather than Gmail, "snowfluke" in acknowledgements (#127); governing law Ontario with users' own consumer protections (#133); 13+ with parent or guardian permission under the age of majority, and Quebec: the person in charge of personal information named (Mingyu Liu, `privacy@`), complaint rights to the OPC and the CAI, withdrawing consent (#136) |
+| Legal and contact | Privacy policy and terms drafts (#101, #104); contact addresses in the legal pages and the login "Contact Us" (#121); GitHub-linked operator name (#123); wording: run from Canada, the AI provider and its processing location mentioned once, Resend rather than Gmail, "snowfluke" in acknowledgements (#127); governing law Ontario with users' own consumer protections (#133); 13+ with parent or guardian permission under the age of majority, and Quebec: the person in charge of personal information named (Mingyu Liu, `privacy@`), complaint rights to the OPC and the CAI, withdrawing consent (#136) |
 | i18n | Eight pages used `getServerSideProps` and got an empty translation store on the hosted frontend (a raw `legalConsent` key on /register, Chinese pages in English); they now use `getStaticProps` and `localePath` (#125), verified on production; `check:locales` covers all namespaces (#107) |
 | QA and security fixes | Token URLs redacted from logs (#108); analytics strips the query string (#106); QA findings (#97, #109, #110, #111, #115, #116, #118, #119) |
 | Docs | Phase 2 plan (#82, #85); Pocky live (#81); hosting region (#80, #92); README refresh (#138, #139); internal infrastructure names removed from public docs (#145); provider-neutral AI wording with the current provider named once in the privacy policy (#154) |
@@ -95,7 +95,7 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 
 Owner checks before a public post (none can be verified from the repo):
 
-- A DeepSeek provider-side spending limit or prepaid balance. The app-side caps are done (#90).
+- A spend limit in the Anthropic Console (Pocky moved to Claude in #184). The app-side caps are done (#90).
 - `DEMO_REFRESH_ENABLED=true` in production.
 - Delete the leftover `AGENT_RUNTIME` variable on Render (ignored since #102; it only logs a startup warning).
 - Screenshot import timed on a mid-range phone.
@@ -106,14 +106,14 @@ Owner checks before a public post (none can be verified from the repo):
 
 ## Evidence and limitations
 
-The [CI run for merge commit `7609cf3`](https://github.com/rick-mingyu-liu/TermPocket/actions/runs/38760784901) confirms 783 backend tests passed with none skipped. The earlier handoff reports live DeepSeek checks on fictional data matching SQL or a hand calculation; those historical checks are distinguished below from fresh verification.
+The [CI run for merge commit `7609cf3`](https://github.com/rick-mingyu-liu/TermPocket/actions/runs/38760784901) confirms 783 backend tests passed with none skipped. The earlier handoff reports live checks against the previous AI provider on fictional data matching SQL or a hand calculation; those historical checks are distinguished below from fresh verification.
 
 - **Tests:** 783/783 backend tests against PostgreSQL 17. They cover isolation between users, concurrent confirms, stale goal versions, migrations applied twice, and process/database timezone combinations. Frontend build, lint and locale checks pass; two existing hook-dependency warnings remain. The frontend has no test runner.
 - **Historical live model checks (from the handoff):** term totals, comparisons with last term, top expenses, a February total including its last day, Chinese questions, a 3-month baseline, a projection low point of −10,020.00 on 2027-01-05, and 6,200 over 18 months = 344.45 a month. Stock advice was declined. "Record this and answer that" drafted the entry without saving it.
 - **Historical Linux rehearsal (from the handoff):** 18/18 preflight checks passed in a fresh Node 22 container, including one live turn (1 tool call, 1 drafted row, about 3.5 s). This does not verify the production host.
 - **Historical browser checks (from the handoff):** the goal card, Confirm, the conflict warning and the phone layout were checked at desktop width and 375 px, in light and dark.
 - **Fresh local read-only preflight:** 14 PASS, 3 WARN (migrations 013–015), 0 FAIL, 1 SKIP (live turn). The host was macOS arm64, not the production host. No migrations or application writes were performed.
-- **Fresh evaluation acceptance:** 36 fictional cases through real DeepSeek and in-memory record tools. The original run scored 35/36 because an assertion incorrectly rejected "nothing has been saved." After a narrow assertion correction, captured results score 36/36, and three new confirmation repetitions pass 3/3. These are distinct measurements, not a second full live run. The [acceptance report](https://github.com/rick-mingyu-liu/TermPocket/blob/feat/agent-eval/backend/eval/reports/2026-10-15.md) preserves the original results, correction, token counts and remaining wording limitations. The evaluation branch passes 801/801 backend tests with no skips on Node 22 and disposable PostgreSQL 17; independent review is complete.
+- **Fresh evaluation acceptance:** 36 fictional cases through the previous AI provider and in-memory record tools. The original run scored 35/36 because an assertion incorrectly rejected "nothing has been saved." After a narrow assertion correction, captured results score 36/36, and three new confirmation repetitions pass 3/3. These are distinct measurements, not a second full live run. The [acceptance report](https://github.com/rick-mingyu-liu/TermPocket/blob/feat/agent-eval/backend/eval/reports/2026-10-15.md) preserves the original results, correction, token counts and remaining wording limitations. The evaluation branch passes 801/801 backend tests with no skips on Node 22 and disposable PostgreSQL 17; independent review is complete.
 
 Limitations:
 
@@ -121,8 +121,8 @@ Limitations:
 - Monthly goal targets count whole calendar months, so they err high.
 - The prior x64 Linux rehearsal failed under emulation on this Apple-silicon Mac. A check on the production host is still needed to verify the deployed x64 runtime.
 - There are no saved plans yet, so planning inputs other than remembered facts must be repeated in each conversation.
-- A full memory leaves little token headroom: 30 near-full Chinese facts on a planning turn used about 28,600 of the 32,000-token cap in the paid eval.
-- The on-screen privacy notice does not name DeepSeek, by the owner's decision. DeepSeek is named in Open Source Acknowledgements.
+- A full memory leaves little token headroom: 30 near-full Chinese facts on a planning turn used about 28,600 of the 32,000-token cap in the paid eval under the previous provider. Under Claude, whose tokenizer counts about 1.8× more, the same case used about 40,000, and the cap is now 64,000 (`backend/eval/reports/2026-10-29.md`).
+- The on-screen privacy notice does not name the AI provider, by the owner's decision. The privacy policy names it.
 
 ## Hardening
 
@@ -130,7 +130,7 @@ The two hardening branches have been recovered from the interrupted session. Pro
 
 | Branch | What it adds | Done when |
 | --- | --- | --- |
-| `feat/agent-eval` — [PR #67](https://github.com/rick-mingyu-liu/TermPocket/pull/67) | 36 fictional prompts in English, Chinese and mixed, with expected tools, rows, goal proposals and reply checks. `npm run agent:eval` runs them against real DeepSeek. | Merged after independent review and all CI checks passed; harness, full backend tests and live acceptance complete. |
+| `feat/agent-eval` — [PR #67](https://github.com/rick-mingyu-liu/TermPocket/pull/67) | 36 fictional prompts in English, Chinese and mixed, with expected tools, rows, goal proposals and reply checks. `npm run agent:eval` runs them against the live AI provider. | Merged after independent review and all CI checks passed; harness, full backend tests and live acceptance complete. |
 | `chore/dependency-upgrades` — [PR #66](https://github.com/rick-mingyu-liu/TermPocket/pull/66) | Backend audit clean; Next.js 15.5.28 retains React 18 and the Pages Router. Backend 783/783 tests, frontend build/lint/locales and HTTP route checks pass; independent review and all PR CI checks pass. | Merged with the owner's explicit approval to ship verified fixes while tracking the remaining findings. **Zero-high objective remains open:** frontend has 7 high and 2 moderate package findings from build-tool dependencies (`braces`, `postcss-selector-parser`). Details: [`frontend/DEPENDENCIES.md`](frontend/DEPENDENCIES.md). |
 
 Ongoing dependency maintenance is configured in [`.github/dependabot.yml`](.github/dependabot.yml): weekly checks for the three npm projects and GitHub Actions, grouped minor/patch updates, separate major version PRs and separate security-update groups. Updates still require review and CI; no auto-merge is configured.
@@ -172,4 +172,4 @@ Decisions needed from the owner:
 - [x] `AGENT_ENABLED=true` and the AI provider key are set in production.
 - [x] Domain and email provider: termpocket.com, Resend (2026-10-16).
 - [x] Dependabot: the 2 open alerts (`braces` high, `postcss-selector-parser` moderate) are build-time only, via Tailwind 3 and `eslint-config-next`, and no patched `braces` release exists. On 2026-10-17 the owner decided to leave them open and revisit with a Tailwind 4 migration after launch ([`frontend/DEPENDENCIES.md`](frontend/DEPENDENCIES.md)).
-- [ ] DeepSeek spending: the app-side caps exist (60 turns a day per user, 600 across all users). A provider-side limit or prepaid balance is an owner check.
+- [ ] Claude API spending: the app-side caps exist (60 turns a day per user, 600 across all users). A provider-side limit or prepaid balance is an owner check.

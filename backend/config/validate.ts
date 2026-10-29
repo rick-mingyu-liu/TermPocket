@@ -76,6 +76,11 @@ function validateConfig(): void {
   if (process.env.AGENT_RUNTIME) {
     console.warn('⚠️  AGENT_RUNTIME is ignored — Pocky always runs in-process. Remove the variable.');
   }
+
+  // Pocky moved from DeepSeek to Claude; the old variables are read by nothing.
+  for (const key of ['DEEPSEEK_API_KEY', 'DEEPSEEK_MODEL']) {
+    if (process.env[key]) console.warn(`⚠️  ${key} is ignored — Pocky now uses Claude (CLAUDE_API_KEY, CLAUDE_MODEL). Remove the variable.`);
+  }
 }
 
 export = validateConfig;
