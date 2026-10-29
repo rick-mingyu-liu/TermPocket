@@ -86,11 +86,12 @@ describe('output never leaks a secret', () => {
   });
 
   test('a model override that is not a plain id is never echoed', () => {
-    const odd = 'claude haiku; key=sk-whatever';
-    const checks = configChecks(settings({ model: odd }));
-    const model = find(checks, 'config.claude_model');
-    assert.equal(model.status, 'FAIL');
-    assert.ok(!formatReport(checks).includes(odd));
+    for (const odd of ['claude haiku; key=sk-whatever', 'claude-opus-5-5 key=sk-x']) {
+      const checks = configChecks(settings({ model: odd }));
+      const model = find(checks, 'config.claude_model');
+      assert.equal(model.status, 'FAIL', odd);
+      assert.ok(!formatReport(checks).includes('sk-'), odd);
+    }
   });
 
   test('a model that cannot turn thinking off fails; Haiku is only a warning', () => {

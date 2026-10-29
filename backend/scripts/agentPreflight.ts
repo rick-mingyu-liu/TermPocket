@@ -103,7 +103,7 @@ export function configChecks(s: PreflightSettings): Check[] {
   const model = s.agent.model;
   if (model === DEFAULT_MODEL) checks.push(check('PASS', 'config.claude_model', `default (${DEFAULT_MODEL})`));
   // These cannot turn thinking off: every turn would be a 400 (runtime.thinkingFor).
-  else if (/^claude-(opus-5-5|fable-)/.test(model)) checks.push(check('FAIL', 'config.claude_model', `override: ${model} cannot turn thinking off; use claude-sonnet-5-5 or claude-haiku-5-5`));
+  else if (/^claude-(opus-5-5|fable-)/.test(model)) checks.push(check('FAIL', 'config.claude_model', 'override is Opus 5.5 or Fable, which cannot turn thinking off; use claude-sonnet-5-5 or claude-haiku-5-5'));
   else if (/^[A-Za-z0-9._:-]{1,64}$/.test(model)) checks.push(check('WARN', 'config.claude_model', `override: ${model} (only ${DEFAULT_MODEL} has acceptance coverage)`));
   else checks.push(check('FAIL', 'config.claude_model', 'override set but not a plain model id'));
   const a = s.agent;
