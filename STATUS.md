@@ -121,7 +121,7 @@ Limitations:
 - Monthly goal targets count whole calendar months, so they err high.
 - The prior x64 Linux rehearsal failed under emulation on this Apple-silicon Mac. A check on the production host is still needed to verify the deployed x64 runtime.
 - There are no saved plans yet, so planning inputs other than remembered facts must be repeated in each conversation.
-- A full memory leaves little token headroom: 30 near-full Chinese facts on a planning turn used about 28,600 of the 32,000-token cap in the paid eval.
+- A full memory leaves little token headroom: 30 near-full Chinese facts on a planning turn used about 28,600 of the 32,000-token cap in the paid eval under the previous provider. Under Claude, whose tokenizer counts about 1.8× more, the same case used about 40,000, and the cap is now 64,000 (`backend/eval/reports/2026-10-29.md`).
 - The on-screen privacy notice does not name the AI provider, by the owner's decision. The privacy policy names it.
 
 ## Hardening
