@@ -25,13 +25,13 @@ import { categories, currencies, decimalCents, formatCents, validateDay, validat
  * real record tools (recordsFor) with `db.query` and `getExchangeRate`
  * replaced in this process by in-memory versions: no database is opened and
  * any query the fixture does not recognise throws. The only network traffic
- * is the runtime's own request to DeepSeek.
+ * is the runtime's own request to the Claude API.
  *
  * Output: one line per run, then a summary. A reply excerpt (at most 200
  * characters) is printed only beside an expectation it failed. The API key is
  * never printed. Exit 0 when everything passed (or the pass rate reached
  * --min-pass), 1 otherwise, 2 for bad arguments, an invalid case file, or a
- * missing AGENT_ENABLED=true / DEEPSEEK_API_KEY.
+ * missing AGENT_ENABLED=true / CLAUDE_API_KEY.
  */
 
 export const TOOL_NAMES = ['propose_transactions', 'spending_summary', 'compare_spending', 'transaction_details', 'spending_baseline', 'list_goals', 'calculate_scenario', 'propose_goal', 'propose_memory'] as const;
@@ -721,7 +721,7 @@ export async function main(argv: string[], deps: MainDeps): Promise<number> {
   let options: Options;
   try { options = parseArgs(argv); } catch (error) { err(`${(error as Error).message}\n${USAGE}`); return 2; }
   if (!deps.agent.enabled || !deps.agent.apiKey) {
-    err('agent:eval runs real model turns: set AGENT_ENABLED=true and DEEPSEEK_API_KEY in the environment.');
+    err('agent:eval runs real model turns: set AGENT_ENABLED=true and CLAUDE_API_KEY in the environment.');
     return 2;
   }
   let file: CaseFile;

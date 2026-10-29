@@ -418,7 +418,7 @@ test('the HTTP client takes nothing from the host\'s ANTHROPIC_* variables, Open
     await new Anthropic({ ...clientOptions(), fetch }).messages.create({ model: 'm', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] });
     assert.equal(sent.length, 1);
     const [request] = sent as [{ url: string; headers: Headers }];
-    assert.equal(request.url, 'https://api.deepseek.com/anthropic/v1/messages');
+    assert.equal(request.url, 'https://api.anthropic.com/v1/messages');
     assert.equal(request.headers.get('x-api-key'), 'fictional-test-key');
     for (const name of ['authorization', 'traceparent', 'tracestate', 'baggage']) assert.equal(request.headers.get(name), null, name);
   } finally {

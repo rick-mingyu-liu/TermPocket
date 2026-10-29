@@ -45,8 +45,8 @@ export interface AgentResult {
 }
 type ReadTool = 'spending_summary' | 'compare_spending' | 'transaction_details' | 'spending_baseline' | 'list_goals' | 'calculate_scenario';
 const outputBudgetError = 'agent_output_budget: The result is too large for the remaining tool budget. Narrow the window, filter by category or type, lower limit, or use spending_summary.';
-/** DeepSeek's Anthropic-compatible endpoint. */
-const providerUrl = 'https://api.deepseek.com/anthropic';
+/** The Claude API, named explicitly so ANTHROPIC_BASE_URL can never redirect it. */
+const providerUrl = 'https://api.anthropic.com';
 /** Repair hints for propose_goal failures: fixed text, never user data. */
 const goalErrors: Record<string, string> = {
   agent_invalid_input: 'agent_invalid_input: Check the fields: name 1-255 characters; target_amount a positive decimal up to 99999999.99; current_amount 0 to target_amount; currency one of the six; target_date YYYY-MM-DD, required for create, cannot be cleared, and not in the past when set or changed; goal_id and expected_updated_at exactly as list_goals returned them, only for update; an update must change something.',
@@ -497,7 +497,7 @@ export function cacheOnSuccess<T>(load: () => Promise<T>): () => Promise<T> {
 
 /**
  * The HTTP client's settings. Every one is explicit so none comes from the
- * host's ANTHROPIC_* variables: the key is DeepSeek's, no bearer token is sent,
+ * host's ANTHROPIC_* variables: the key is CLAUDE_API_KEY, no bearer token is sent,
  * the client never logs, and it neither records OpenTelemetry spans nor sends
  * trace headers (left unset, the SDK reads ANTHROPIC_OPEN_TELEMETRY_* and could
  * put request content in spans). ANTHROPIC_CUSTOM_HEADERS, which the SDK adds
@@ -515,7 +515,7 @@ export function clientOptions(): ClientOptions {
 }
 
 /** One HTTP client per process, created on the first turn. */
-const deepseekClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
+const claudeClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
 
 /** The model's content, echoed back as request params: only the fields the API defines, never extras. */
 function echo(content: ContentBlock[]): ContentBlockParam[] {
@@ -546,7 +546,7 @@ const inputSchema = (shape: z.ZodRawShape): Tool.InputSchema => {
  * schemas and their results, so the envelope's context is the only date the
  * model sees.
  */
-export function createDirectRuntime(loadClient: () => Promise<MessagesClient> = deepseekClient) {
+export function createDirectRuntime(loadClient: () => Promise<MessagesClient> = claudeClient) {
   return async function run(input: AgentInput, onProgress?: (event: {toolCalls: number}) => void): Promise<AgentResult> {
     admitInput(input);
     const turn = openTurn(input, onProgress);
@@ -558,8 +558,9 @@ export function createDirectRuntime(loadClient: () => Promise<MessagesClient> = 
       for (let step = 1; ; step++) {
         const response = await Promise.race([client.messages.create({
           model:config.agent.model, max_tokens:config.agent.maxOutputTokens, system:systemPrompt, messages, tools,
-          // DeepSeek reasons by default when the field is absent: thousands of
-          // hidden characters per round trip that count against the budgets.
+          // Haiku 5.5 thinks by default when the field is absent: hidden
+          // reasoning that counts against every output budget. Kept explicit
+          // (DeepSeek had the same default); Sonnet/Opus 5.5 reject this value.
           thinking:{type:'disabled'},
         }, {signal:turn.controller.signal}), turn.aborted]);
         // Keyed per request: every response is a separate billed call, whatever id it carries.

@@ -48,17 +48,17 @@
         "id": "ai-providers",
         "h": "Current AI providers",
         "p": [
-          "DeepSeek provides the API used by Pocky, with processing in China, outside Canada. Its API terms apply to this integration. Its general privacy policy does not cover the processing of end-user data from applications such as TermPocket.",
+          "Anthropic provides the API used by Pocky (its Claude models), with processing in the United States and possibly other countries, outside Canada. Its commercial terms apply to this integration.",
           "We do not promise a fixed provider retention period or that API inputs are excluded from model training. We will update this section when the provider changes and notify you of changes to how your existing information is used, as described below."
         ],
         "links": [
           {
             "label": "API terms",
-            "href": "https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html"
+            "href": "https://www.anthropic.com/legal/commercial-terms"
           },
           {
             "label": "Provider privacy policy",
-            "href": "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html"
+            "href": "https://www.anthropic.com/legal/privacy"
           }
         ]
       },

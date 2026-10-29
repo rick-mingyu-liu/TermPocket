@@ -4,7 +4,7 @@
 # (`npm ci --include=dev`, which builds dist/), loads schema.sql into the
 # docker-compose.test.yml database, then runs `npm run agent:preflight`. Pass
 # --live to also run one fictional Pocky turn, which proves the runtime
-# reaches DeepSeek from Linux.
+# reaches the Claude API from Linux.
 #
 #   docker compose -f docker-compose.test.yml up -d --wait
 #   backend/scripts/rehearse-linux.sh            # preflight only
@@ -17,7 +17,7 @@
 #
 # Secrets: the source is streamed into the container with every .env file left
 # out, so no dependency's install script can read DATABASE_URL (in the main
-# checkout that is production). --live takes DEEPSEEK_API_KEY from the
+# checkout that is production). --live takes CLAUDE_API_KEY from the
 # environment, or from that one line of backend/.env; it reaches the container
 # by name only (never on a command line) and is withheld from `npm ci`.
 set -euo pipefail
@@ -34,18 +34,18 @@ fi
 
 key_args=()
 if [[ " $* " == *" --live "* ]]; then
-  if [[ -z "${DEEPSEEK_API_KEY:-}" && -f "$root/backend/.env" ]]; then
+  if [[ -z "${CLAUDE_API_KEY:-}" && -f "$root/backend/.env" ]]; then
     # Accepts an `export ` prefix, surrounding quotes and a CRLF line ending.
-    DEEPSEEK_API_KEY=$(sed -nE 's/^(export[[:space:]]+)?DEEPSEEK_API_KEY=//p' "$root/backend/.env" | head -n 1 | tr -d '\r')
-    DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY#[\"\']}
-    DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY%[\"\']}
+    CLAUDE_API_KEY=$(sed -nE 's/^(export[[:space:]]+)?CLAUDE_API_KEY=//p' "$root/backend/.env" | head -n 1 | tr -d '\r')
+    CLAUDE_API_KEY=${CLAUDE_API_KEY#[\"\']}
+    CLAUDE_API_KEY=${CLAUDE_API_KEY%[\"\']}
   fi
-  if [[ -z "${DEEPSEEK_API_KEY:-}" ]]; then
-    echo "--live needs DEEPSEEK_API_KEY in the environment or backend/.env" >&2
+  if [[ -z "${CLAUDE_API_KEY:-}" ]]; then
+    echo "--live needs CLAUDE_API_KEY in the environment or backend/.env" >&2
     exit 1
   fi
-  export DEEPSEEK_API_KEY
-  key_args=(-e DEEPSEEK_API_KEY)
+  export CLAUDE_API_KEY
+  key_args=(-e CLAUDE_API_KEY)
 fi
 
 echo "Rehearsing on $platform with Node $node_version" >&2
@@ -59,9 +59,9 @@ docker run --rm -i --platform "$platform" --network "$network" \
   "node:${node_version}-bookworm-slim" \
   bash -euo pipefail -c '
     mkdir /app && tar -C /app -xf - && cd /app
-    key=${DEEPSEEK_API_KEY-}
-    unset DEEPSEEK_API_KEY
+    key=${CLAUDE_API_KEY-}
+    unset CLAUDE_API_KEY
     npm ci --include=dev --no-audit --no-fund --loglevel=error
     node dist/db/setup.js
-    DEEPSEEK_API_KEY=$key npm run --silent agent:preflight -- "$@"
+    CLAUDE_API_KEY=$key npm run --silent agent:preflight -- "$@"
   ' rehearse "$@"

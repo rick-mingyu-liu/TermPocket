@@ -87,7 +87,7 @@ describe('startup configuration check', () => {
   test('warns for each missing optional key, naming what it breaks', () => {
     const { code, output } = runWith({ JWT_SECRET: GOOD_SECRET, DATABASE_URL: 'postgres://x/y' });
     assert.equal(code, 0);
-    assert.doesNotMatch(output, /DEEPSEEK/);
+    assert.doesNotMatch(output, /DEEPSEEK|CLAUDE_API_KEY/);
     assert.match(output, /MAILBOXLAYER_API_KEY is not set/);
     // The consequence matters more than the name. This one was wrong until
     // round 10: it said registration 500s, which was true and is no longer.
@@ -101,6 +101,14 @@ describe('startup configuration check', () => {
     const { code, output } = runWith({ JWT_SECRET: GOOD_SECRET, DATABASE_URL: 'postgres://x/y', AGENT_RUNTIME: 'direct' });
     assert.equal(code, 0);
     assert.match(output, /AGENT_RUNTIME is ignored/);
+  });
+
+  test('starts, but warns, when the retired DeepSeek variables are still set, never printing the key', () => {
+    const { code, output } = runWith({ JWT_SECRET: GOOD_SECRET, DATABASE_URL: 'postgres://x/y', DEEPSEEK_API_KEY: 'sk-old-secret', DEEPSEEK_MODEL: 'deepseek-flash' });
+    assert.equal(code, 0);
+    assert.match(output, /DEEPSEEK_API_KEY is ignored — Pocky now uses Claude/);
+    assert.match(output, /DEEPSEEK_MODEL is ignored/);
+    assert.doesNotMatch(output, /sk-old-secret/);
   });
 
   test('refuses to start when ANTHROPIC_CUSTOM_HEADERS is set: the AI client would send them to the provider', () => {

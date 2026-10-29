@@ -50,7 +50,7 @@ Client (frontend / axios)
    External APIs                   PostgreSQL
    (exchange rates,               (users, transactions,
     address validation,            savings_goals, access_tokens,
-    SMTP, DeepSeek)                import_batches, agent_*, legacy tables)
+    SMTP, Claude API)              import_batches, agent_*, legacy tables)
         ▲
         │  cron / hourly timer (out-of-band, not request-driven)
 ┌─────────────────────────────────────────────────────────────┐
@@ -151,7 +151,7 @@ These are minor and common in Express apps, but worth noting:
 
 ## Removed features
 
-The stock watchlist and one-shot AI planning are removed entirely. Their routers (`/investments`, `/ai`), controllers, the `/goals/from-ai-plan` route, the AI-plan expiry filter and its hourly cleanup are gone, so those paths fall through to the global 404. Migration `014_drop_watchlist_ai_plans.sql` drops the `watchlist` and `ai_plans` tables; deploy the code before applying it. The optional `/agent` recording flow separately calls DeepSeek. MCP financial facts, imports, manual transactions and savings goals remain active.
+The stock watchlist and one-shot AI planning are removed entirely. Their routers (`/investments`, `/ai`), controllers, the `/goals/from-ai-plan` route, the AI-plan expiry filter and its hourly cleanup are gone, so those paths fall through to the global 404. Migration `014_drop_watchlist_ai_plans.sql` drops the `watchlist` and `ai_plans` tables; deploy the code before applying it. The optional `/agent` recording flow separately calls the Claude API. MCP financial facts, imports, manual transactions and savings goals remain active.
 
 
 ## Conversation recording
@@ -163,7 +163,7 @@ JWT-authenticated POST /agent/conversations/:id/messages
   → strict application input validation + process slot
   → store.beginTurn: owner lock, request identity, admission, user message
   → release database transaction
-  → runtime.runAgent: in-process tool loop over HTTP → DeepSeek
+  → runtime.runAgent: in-process tool loop over HTTP → the Claude API
       ↔ one in-process MCP tool: propose_transactions
          validate whole pending batch; return pending_review only
   → store.finishTurn: recheck owner/run/lease, persist reply and draft revision
@@ -185,7 +185,7 @@ The model only proposes rows. Chat messages such as “yes” cannot authorize f
 
 ### Runtime isolation and resource bounds
 
-[runtime.ts](services/agent/runtime.ts) runs the tool loop in the backend process with the plain Anthropic client (`@anthropic-ai/sdk` `0.135.0`, loaded lazily on the first turn) against DeepSeek's Anthropic-compatible endpoint, `deepseek-flash` by default, and Zod `4.6.7` schemas. Every client option is explicit (key, no bearer token, logging off, OpenTelemetry spans and trace headers off), so nothing comes from the host's `ANTHROPIC_*` variables; `ANTHROPIC_CUSTOM_HEADERS`, which the SDK adds to every request regardless, makes the startup check refuse to start. The request carries only the system prompt, the JSON envelope, the eight tools' schemas and their results; there is no child process, temporary directory or session transcript. Tool handlers have no ledger-write or arbitrary shell/filesystem/SQL/network capability. Until 2026-10 the same loop ran through the Claude Agent SDK, which spawned a ~240 MB CLI process per turn and injected the host's date; it was removed after a week of production on the in-process loop.
+[runtime.ts](services/agent/runtime.ts) runs the tool loop in the backend process with the plain Anthropic client (`@anthropic-ai/sdk` `0.135.0`, loaded lazily on the first turn) against the Claude API (`https://api.anthropic.com`), `claude-haiku-5-5` by default (until 2026-10-29 DeepSeek's Anthropic-compatible endpoint and `deepseek-flash`), and Zod `4.6.7` schemas. Every client option is explicit (key, no bearer token, logging off, OpenTelemetry spans and trace headers off), so nothing comes from the host's `ANTHROPIC_*` variables; `ANTHROPIC_CUSTOM_HEADERS`, which the SDK adds to every request regardless, makes the startup check refuse to start. The request carries only the system prompt, the JSON envelope, the eight tools' schemas and their results; there is no child process, temporary directory or session transcript. Tool handlers have no ledger-write or arbitrary shell/filesystem/SQL/network capability. Until 2026-10 the same loop ran through the Claude Agent SDK, which spawned a ~240 MB CLI process per turn and injected the host's date; it was removed after a week of production on the in-process loop.
 
 Every `tool_use` block counts as an attempt before its name or arguments are checked, and the handler separately limits executions. The handler checks the server-owned run-revocation callback before running. Unknown tools and schema failures are answered with an error code and the turn goes on. `AbortController`, the request deadline and storage run/lease checks prevent late output from publishing after cancellation or deletion; each handler is raced against the turn, so a hung query cannot hold it past the deadline. Cross-process cancellation is enforced at tool invocation and final publication.
 
@@ -205,9 +205,9 @@ Usage stores the provider's real token counts. Raw provider errors and conversat
 
 ### Availability, privacy and retention
 
-`AGENT_ENABLED=false` leaves `/agent/status` available but blocks all other agent routes before database access and omits agent cleanup from maintenance. It does not erase existing data. `AGENT_ENABLED=true` means migration `013` is installed and storage access is enabled. Without `DEEPSEEK_API_KEY`, only new model turns are unavailable: history, draft edits, confirmation, undo and deletion still work.
+`AGENT_ENABLED=false` leaves `/agent/status` available but blocks all other agent routes before database access and omits agent cleanup from maintenance. It does not erase existing data. `AGENT_ENABLED=true` means migration `013` is installed and storage access is enabled. Without `CLAUDE_API_KEY`, only new model turns are unavailable: history, draft edits, confirmation, undo and deletion still work.
 
-TermPocket stores messages until the user deletes the conversation. It sends the current message, bounded relevant history, pending draft and date/currency/timezone context to DeepSeek. Authorized administrators can access stored conversations. There is no end-to-end encryption guarantee and no promise that deleting local history erases provider-held data. The frontend discloses these boundaries; passwords and account credentials should not be submitted.
+TermPocket stores messages until the user deletes the conversation. It sends the current message, bounded relevant history, pending draft and date/currency/timezone context to Anthropic. Authorized administrators can access stored conversations. There is no end-to-end encryption guarantee and no promise that deleting local history erases provider-held data. The frontend discloses these boundaries; passwords and account credentials should not be submitted.
 
 Drafts expire 24 hours after the model proposal, enforced during reads/writes. Manual edits and partial confirmation preserve the deadline. Existing hourly maintenance removes expired drafts, terminal runs and admission records older than 30 days, and receipts after 30 days or after undo expiry when their conversation has been deleted. Receipts contain request hashes, transaction IDs and exact versions, not transaction descriptions or amounts. Admission records survive history deletion, preventing a budget reset through chat deletion. Messages survive run-metadata cleanup through a column-specific nullable run foreign key. No periodic polling, extra frequent cleanup schedule or provider-side transcript store is introduced.
 
@@ -215,6 +215,6 @@ Drafts expire 24 hours after the model proposal, enforced during reads/writes. M
 
 Fresh `schema.sql` and migration [`013_conversational_transactions.sql`](db/migrations/013_conversational_transactions.sql) require PostgreSQL 15+ for column-specific `ON DELETE SET NULL`. The migration audits transaction-source compatibility and aborts rather than rewriting incompatible financial records. Apply and verify locally or in staging first; production migration/enablement is a separate operator action, not performed by this implementation. Leave the feature flag false until its tables exist.
 
-The backend host must allow outbound HTTPS to `https://api.deepseek.com/anthropic` and allow HTTP requests longer than the 90-second deadline plus teardown. This is a Node-hosted backend feature. Local live-provider acceptance covers bilingual input, corrections, multiple tool roundtrips, hypotheticals, missing details, cancellation, deadlines and errors; target-host Linux compatibility, capacity and throttling still need verification.
+The backend host must allow outbound HTTPS to `https://api.anthropic.com` and allow HTTP requests longer than the 90-second deadline plus teardown. This is a Node-hosted backend feature. Local live-provider acceptance covers bilingual input, corrections, multiple tool roundtrips, hypotheticals, missing details, cancellation, deadlines and errors; target-host Linux compatibility, capacity and throttling still need verification.
 
 Unit tests cover validation, HTTP isolation, runtime restrictions and maintenance without provider access. Storage and fresh/upgrade migration tests require explicit `TEST_DATABASE_URL` and isolated fictional data; they must never borrow a production database from `.env`.

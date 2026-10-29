@@ -92,8 +92,11 @@ const config = {
   // Deliberate opt-in; only the confirmation endpoint may write transactions.
   agent: {
     enabled: process.env.AGENT_ENABLED === 'true',
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    model: process.env.DEEPSEEK_MODEL || 'deepseek-flash',
+    apiKey: process.env.CLAUDE_API_KEY,
+    // The runtime sends thinking:{type:'disabled'}, which Claude Haiku 5.5
+    // accepts; Sonnet 5.5 and Opus 5.5 reject it, so changing the model
+    // needs a runtime change too.
+    model: process.env.CLAUDE_MODEL || 'claude-haiku-5-5',
     timeoutMs: 90_000,
     maxTurns: 10,
     maxToolCalls: 8,
