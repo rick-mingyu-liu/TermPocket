@@ -972,7 +972,10 @@
         "tools": {"include": ["propose_memory"], "exclude": ["propose_transactions", "propose_goal"]},
         "maxToolCalls": 2,
         "memoryProposal": {"action": "forget", "kind": "expense", "ref": "m2"},
-        "reply": {"mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "been forgotten", "i've forgotten"]}
+        "reply": {
+          "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n't )\\bbeen forgotten\\b"]
+        }
       }
     },
     {
@@ -988,7 +991,10 @@
         "tools": {"include": ["propose_memory"], "exclude": ["propose_transactions", "propose_goal"]},
         "maxToolCalls": 2,
         "memoryProposal": {"action": "update", "ref": "m2", "amount": "1050.00"},
-        "reply": {"mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "been forgotten", "i've forgotten"]}
+        "reply": {
+          "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n't )\\bbeen forgotten\\b"]
+        }
       }
     },
     {

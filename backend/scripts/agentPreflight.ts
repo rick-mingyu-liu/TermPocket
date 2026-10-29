@@ -30,7 +30,7 @@ export interface PreflightSettings {
   agent: Pick<typeof config.agent, 'enabled' | 'apiKey' | 'model' | 'timeoutMs' | 'maxToolCalls' | 'maxRows' | 'maxOutputTokens' | 'maxTotalTokens'>;
 }
 
-const DEFAULT_MODEL = 'claude-haiku-5-5';
+const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const AGENT_TABLES = ['agent_conversations', 'agent_runs', 'agent_messages', 'agent_drafts', 'agent_receipts', 'agent_admissions'] as const;
 const LEGACY_TABLES = ['watchlist', 'ai_plans'] as const;
 const PROPOSALS_TABLE = 'agent_goal_proposals';

@@ -517,6 +517,17 @@ export function clientOptions(): ClientOptions {
 /** One HTTP client per process, created on the first turn. */
 const claudeClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
 
+/**
+ * Thinking as off as each model allows. Left unset, Claude thinks by default
+ * (as DeepSeek did): hidden reasoning that counts against every output budget.
+ * Haiku 5.5 accepts 'disabled'; Sonnet 5.5 rejects it with a 400 and offers
+ * 'between_tools' instead, which SDK 0.135.0's types predate.
+ */
+export function thinkingFor(model: string): MessageCreateParamsNonStreaming['thinking'] {
+  if (model.startsWith('claude-sonnet-5-5')) return {type:'between_tools'} as unknown as MessageCreateParamsNonStreaming['thinking'];
+  return {type:'disabled'};
+}
+
 /** The model's content, echoed back as request params: only the fields the API defines, never extras. */
 function echo(content: ContentBlock[]): ContentBlockParam[] {
   return content.flatMap((block): ContentBlockParam[] => {
@@ -558,10 +569,7 @@ export function createDirectRuntime(loadClient: () => Promise<MessagesClient> = 
       for (let step = 1; ; step++) {
         const response = await Promise.race([client.messages.create({
           model:config.agent.model, max_tokens:config.agent.maxOutputTokens, system:systemPrompt, messages, tools,
-          // Haiku 5.5 thinks by default when the field is absent: hidden
-          // reasoning that counts against every output budget. Kept explicit
-          // (DeepSeek had the same default); Sonnet/Opus 5.5 reject this value.
-          thinking:{type:'disabled'},
+          thinking:thinkingFor(config.agent.model),
         }, {signal:turn.controller.signal}), turn.aborted]);
         // Keyed per request: every response is a separate billed call, whatever id it carries.
         turn.observe(`${step}:${response.id}`, response.content, response.usage);

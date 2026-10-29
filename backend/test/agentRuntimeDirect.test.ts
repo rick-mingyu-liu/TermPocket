@@ -1,7 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { MessageCreateParamsNonStreaming, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages';
-import { cacheOnSuccess, clientOptions, createDirectRuntime, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
+import { cacheOnSuccess, clientOptions, createDirectRuntime, thinkingFor, type DirectResponse, type MessagesClient } from '../services/agent/runtime';
 import config = require('../config');
 import { AgentError, type AgentRecords } from '../services/agent/types';
 import logger = require('../utils/logger');
@@ -74,7 +74,8 @@ test('direct: one tool call sends the same prompt, envelope and tools, then retu
   const [first, second] = s.requests;
   assert.equal(first!.model, config.agent.model);
   assert.equal(first!.max_tokens, config.agent.maxOutputTokens);
-  assert.deepEqual(first!.thinking, { type: 'disabled' });
+  assert.deepEqual(first!.thinking, thinkingFor(config.agent.model));
+  assert.notEqual(first!.thinking, undefined);
   assert.match(String(first!.system), /^You are Pocky/);
   assert.deepEqual(first!.messages.length, 1);
   const envelope = JSON.parse(String(first!.messages[0]!.content)) as Record<string, unknown>;
@@ -392,6 +393,11 @@ test('direct: a response cut off at max_tokens never runs its tools', async () =
     assert.deepEqual(fake.calls, []);
     assert.equal(s.requests.length, 1);
   }
+});
+
+test('thinking is as off as each model allows: disabled for Haiku, between_tools for Sonnet 5.5, which rejects disabled', () => {
+  assert.deepEqual(thinkingFor('claude-haiku-5-5'), { type: 'disabled' });
+  assert.deepEqual(thinkingFor('claude-sonnet-5-5'), { type: 'between_tools' });
 });
 
 test('the HTTP client takes nothing from the host\'s ANTHROPIC_* variables, OpenTelemetry included', async () => {

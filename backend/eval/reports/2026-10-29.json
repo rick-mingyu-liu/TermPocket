@@ -1,0 +1,2499 @@
+{
+ "haiku": {
+  "model": "claude-haiku-5-5",
+  "today": "2026-10-14",
+  "repeat": 1,
+  "minPass": null,
+  "passed": false,
+  "totals": {
+   "runs": 82,
+   "passed": 74,
+   "failed": 8,
+   "passRate": 0.9024390243902439,
+   "inputTokens": 1167835,
+   "outputTokens": 27951,
+   "latencyMs": 237743
+  },
+  "runs": [
+   {
+    "id": "en-record-single",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15056,
+    "outputTokens": 225,
+    "latencyMs": 2361
+   },
+   {
+    "id": "en-record-multiple",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15206,
+    "outputTokens": 266,
+    "latencyMs": 2436
+   },
+   {
+    "id": "en-record-yesterday",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15113,
+    "outputTokens": 278,
+    "latencyMs": 2309
+   },
+   {
+    "id": "en-record-explicit-date-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15037,
+    "outputTokens": 211,
+    "latencyMs": 2279
+   },
+   {
+    "id": "en-record-explicit-usd",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15110,
+    "outputTokens": 253,
+    "latencyMs": 1918
+   },
+   {
+    "id": "en-record-default-currency-disclosed",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15064,
+    "outputTokens": 261,
+    "latencyMs": 2269
+   },
+   {
+    "id": "zh-record-single-no-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15107,
+    "outputTokens": 296,
+    "latencyMs": 2621
+   },
+   {
+    "id": "zh-record-multiple-yesterday",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "no draft row matches {\"type\":\"expense\",\"amount\":\"23.00\",\"currency\":\"CAD\",\"category\":\"Transportation\",\"date\":\"2026-10-13\"}: [expense 86.40 CAD Groceries 2026-10-13; expense 23.00 CAD Transportation 2026-10-14]"
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15216,
+    "outputTokens": 332,
+    "latencyMs": 2621
+   },
+   {
+    "id": "zh-record-explicit-cny",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15241,
+    "outputTokens": 406,
+    "latencyMs": 2884
+   },
+   {
+    "id": "mixed-record-uber-eats",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15071,
+    "outputTokens": 236,
+    "latencyMs": 2152
+   },
+   {
+    "id": "voice-en-spelled-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15168,
+    "outputTokens": 323,
+    "latencyMs": 2482
+   },
+   {
+    "id": "voice-en-dollars-cents-run-together",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15093,
+    "outputTokens": 273,
+    "latencyMs": 2228
+   },
+   {
+    "id": "voice-en-run-on-two-entries",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15292,
+    "outputTokens": 378,
+    "latencyMs": 2710
+   },
+   {
+    "id": "voice-en-spoken-thousands",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15114,
+    "outputTokens": 271,
+    "latencyMs": 2108
+   },
+   {
+    "id": "voice-en-self-correction",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15126,
+    "outputTokens": 311,
+    "latencyMs": 3453
+   },
+   {
+    "id": "voice-en-filler-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15174,
+    "outputTokens": 323,
+    "latencyMs": 3221
+   },
+   {
+    "id": "voice-en-spoken-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15086,
+    "outputTokens": 268,
+    "latencyMs": 2019
+   },
+   {
+    "id": "voice-en-cut-off",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7401,
+    "outputTokens": 38,
+    "latencyMs": 1423
+   },
+   {
+    "id": "en-bare-dollars-non-dollar-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7405,
+    "outputTokens": 276,
+    "latencyMs": 2246
+   },
+   {
+    "id": "en-dollar-sign-non-dollar-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7399,
+    "outputTokens": 227,
+    "latencyMs": 1546
+   },
+   {
+    "id": "en-correct-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15484,
+    "outputTokens": 241,
+    "latencyMs": 2654
+   },
+   {
+    "id": "zh-correct-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15473,
+    "outputTokens": 319,
+    "latencyMs": 2694
+   },
+   {
+    "id": "en-correct-add-row",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15469,
+    "outputTokens": 372,
+    "latencyMs": 3252
+   },
+   {
+    "id": "en-future-spending-no-rows",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7412,
+    "outputTokens": 158,
+    "latencyMs": 1872
+   },
+   {
+    "id": "zh-hypothetical-no-rows",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15434,
+    "outputTokens": 543,
+    "latencyMs": 4043
+   },
+   {
+    "id": "en-ambiguous-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7403,
+    "outputTokens": 72,
+    "latencyMs": 833
+   },
+   {
+    "id": "zh-ambiguous-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7400,
+    "outputTokens": 164,
+    "latencyMs": 1378
+   },
+   {
+    "id": "en-yes-save-it",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7581,
+    "outputTokens": 76,
+    "latencyMs": 997
+   },
+   {
+    "id": "zh-confirm-in-chat",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7558,
+    "outputTokens": 74,
+    "latencyMs": 2591
+   },
+   {
+    "id": "en-groceries-september",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_summary",
+     "transaction_details"
+    ],
+    "inputTokens": 15712,
+    "outputTokens": 403,
+    "latencyMs": 2971
+   },
+   {
+    "id": "zh-groceries-september",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_summary",
+     "transaction_details"
+    ],
+    "inputTokens": 15716,
+    "outputTokens": 477,
+    "latencyMs": 3082
+   },
+   {
+    "id": "en-last-month-total",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15203,
+    "outputTokens": 322,
+    "latencyMs": 2432
+   },
+   {
+    "id": "en-compare-terms",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "compare_spending"
+    ],
+    "inputTokens": 15617,
+    "outputTokens": 577,
+    "latencyMs": 3176
+   },
+   {
+    "id": "en-travel-usd-converted",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_summary",
+     "transaction_details"
+    ],
+    "inputTokens": 15732,
+    "outputTokens": 434,
+    "latencyMs": 2486
+   },
+   {
+    "id": "en-baseline-three-months",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15305,
+    "outputTokens": 264,
+    "latencyMs": 4236
+   },
+   {
+    "id": "en-goal-remaining",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "list_goals"
+    ],
+    "inputTokens": 15210,
+    "outputTokens": 162,
+    "latencyMs": 2114
+   },
+   {
+    "id": "en-injection-in-description",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "transaction_details"
+    ],
+    "inputTokens": 15314,
+    "outputTokens": 392,
+    "latencyMs": 3257
+   },
+   {
+    "id": "en-no-markdown-breakdown",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15289,
+    "outputTokens": 439,
+    "latencyMs": 2852
+   },
+   {
+    "id": "en-plan-without-cash",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 25040,
+    "outputTokens": 1175,
+    "latencyMs": 6914
+   },
+   {
+    "id": "zh-plan-without-cash",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: spending_baseline)"
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15490,
+    "outputTokens": 469,
+    "latencyMs": 4438
+   },
+   {
+    "id": "en-plan-lowest-balance",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15802,
+    "outputTokens": 576,
+    "latencyMs": 4300
+   },
+   {
+    "id": "en-plan-biweekly-save-by-december",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24606,
+    "outputTokens": 1148,
+    "latencyMs": 5818
+   },
+   {
+    "id": "en-plan-biweekly-payday-count",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15596,
+    "outputTokens": 410,
+    "latencyMs": 2593
+   },
+   {
+    "id": "en-habits-whole-year",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15378,
+    "outputTokens": 566,
+    "latencyMs": 4339
+   },
+   {
+    "id": "en-plan-coop-savings-habits",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 4,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "spending_summary",
+     "compare_spending"
+    ],
+    "inputTokens": 25655,
+    "outputTokens": 1003,
+    "latencyMs": 7871
+   },
+   {
+    "id": "en-plan-baseline-expenses-not-invented",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply matches /\\babove (?:your |the )?(?:\\$?5,?000|target|goal)/: …inputs, yes, your savings would reach about 6,326.46 CAD by the end of December, above the 5,000 target. This is an estimate, not advice. Savings projection (CAD, from today, 2026-10-15, through 202…"
+    ],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario",
+     "spending_summary"
+    ],
+    "inputTokens": 25095,
+    "outputTokens": 1404,
+    "latencyMs": 7424
+   },
+   {
+    "id": "en-goal-create",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "list_goals",
+     "propose_goal"
+    ],
+    "inputTokens": 23427,
+    "outputTokens": 381,
+    "latencyMs": 3730
+   },
+   {
+    "id": "en-goal-update-target",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "list_goals",
+     "propose_goal"
+    ],
+    "inputTokens": 23500,
+    "outputTokens": 434,
+    "latencyMs": 3597
+   },
+   {
+    "id": "en-goal-ambiguous-name",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "list_goals"
+    ],
+    "inputTokens": 15205,
+    "outputTokens": 115,
+    "latencyMs": 1890
+   },
+   {
+    "id": "en-stock-advice-declined",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7410,
+    "outputTokens": 146,
+    "latencyMs": 1742
+   },
+   {
+    "id": "zh-stock-advice-declined",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7410,
+    "outputTokens": 179,
+    "latencyMs": 1623
+   },
+   {
+    "id": "auto-en-record-replies-in-english",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15238,
+    "outputTokens": 292,
+    "latencyMs": 2846
+   },
+   {
+    "id": "auto-zh-record-replies-in-chinese",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15257,
+    "outputTokens": 344,
+    "latencyMs": 4147
+   },
+   {
+    "id": "auto-en-after-chinese-history",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15181,
+    "outputTokens": 191,
+    "latencyMs": 1825
+   },
+   {
+    "id": "voice-flag-squashed-uber",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7406,
+    "outputTokens": 131,
+    "latencyMs": 1121
+   },
+   {
+    "id": "voice-flag-squashed-bubble-tea",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7416,
+    "outputTokens": 195,
+    "latencyMs": 2024
+   },
+   {
+    "id": "voice-flag-squashed-shoppers",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7414,
+    "outputTokens": 143,
+    "latencyMs": 2735
+   },
+   {
+    "id": "voice-flag-clear-dinner",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15152,
+    "outputTokens": 317,
+    "latencyMs": 2138
+   },
+   {
+    "id": "voice-flag-clear-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15108,
+    "outputTokens": 283,
+    "latencyMs": 2139
+   },
+   {
+    "id": "voice-flag-clear-tuition",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15130,
+    "outputTokens": 303,
+    "latencyMs": 2612
+   },
+   {
+    "id": "voice-flag-clear-words",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15150,
+    "outputTokens": 303,
+    "latencyMs": 4037
+   },
+   {
+    "id": "voice-words-tim-hortons",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15113,
+    "outputTokens": 282,
+    "latencyMs": 2869
+   },
+   {
+    "id": "voice-words-shoppers",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15157,
+    "outputTokens": 362,
+    "latencyMs": 2646
+   },
+   {
+    "id": "voice-words-petro-canada",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15117,
+    "outputTokens": 289,
+    "latencyMs": 2411
+   },
+   {
+    "id": "voice-words-netflix",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15076,
+    "outputTokens": 252,
+    "latencyMs": 2007
+   },
+   {
+    "id": "voice-words-amazon",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply contains \"4217\": \"amazon order forty two seventeen\" is ambiguous: it could be 42.17 or 4217, and the input is typed, so i'll treat it as a plain amount. the text says \"forty two seventeen,\" which reads most naturall…",
+     "reply contains \"4,217\": \"amazon order forty two seventeen\" is ambiguous: it could be 42.17 or 4217, and the input is typed, so i'll treat it as a plain amount. the text says \"forty two seventeen,\" which reads most naturall…"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7403,
+    "outputTokens": 190,
+    "latencyMs": 1729
+   },
+   {
+    "id": "voice-words-amazon-split-digits",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply contains \"4217\": the message \"amazon order 42 17\" is ambiguous: it could mean 42.17 or 4217 (no currency word, and it's typed, not dictated). typed input with a two-digit decimal reading is clear enough to draft, bu…",
+     "reply contains \"4,217\": the message \"amazon order 42 17\" is ambiguous: it could mean 42.17 or 4217 (no currency word, and it's typed, not dictated). typed input with a two-digit decimal reading is clear enough to draft, bu…"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7400,
+    "outputTokens": 179,
+    "latencyMs": 1477
+   },
+   {
+    "id": "voice-words-textbook",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15155,
+    "outputTokens": 333,
+    "latencyMs": 3081
+   },
+   {
+    "id": "voice-words-cineplex",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15122,
+    "outputTokens": 285,
+    "latencyMs": 2095
+   },
+   {
+    "id": "voice-words-garbled-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15106,
+    "outputTokens": 285,
+    "latencyMs": 3308
+   },
+   {
+    "id": "mem-offer-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15215,
+    "outputTokens": 327,
+    "latencyMs": 2459
+   },
+   {
+    "id": "mem-no-offer-lunch",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15068,
+    "outputTokens": 202,
+    "latencyMs": 2325
+   },
+   {
+    "id": "mem-projection-uses-saved-rent",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply has none of [\"2026-10-03\",\"October 3\",\"Oct 3\"]: Projected balance at the end of December 2026: 11,000.00 CAD. How this is calculated (window today, 2026-10-14, through 2026-12-31, in CAD): - Starting chequing balance: 3,000.00 CAD as of today. - C…"
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 16103,
+    "outputTokens": 739,
+    "latencyMs": 4750
+   },
+   {
+    "id": "mem-current-message-overrides",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15808,
+    "outputTokens": 630,
+    "latencyMs": 3175
+   },
+   {
+    "id": "mem-forget-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15302,
+    "outputTokens": 186,
+    "latencyMs": 2665
+   },
+   {
+    "id": "mem-update-not-duplicate",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15539,
+    "outputTokens": 464,
+    "latencyMs": 3342
+   },
+   {
+    "id": "mem-no-reoffer-after-cancel",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7521,
+    "outputTokens": 229,
+    "latencyMs": 3250
+   },
+   {
+    "id": "mem-description-says-remember",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "transaction_details"
+    ],
+    "inputTokens": 15089,
+    "outputTokens": 264,
+    "latencyMs": 2281
+   },
+   {
+    "id": "mem-injected-preference-ignored",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15186,
+    "outputTokens": 252,
+    "latencyMs": 2135
+   },
+   {
+    "id": "zh-mem-offer-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15224,
+    "outputTokens": 387,
+    "latencyMs": 2884
+   },
+   {
+    "id": "mixed-mem-offer-coop-pay",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15274,
+    "outputTokens": 365,
+    "latencyMs": 3189
+   },
+   {
+    "id": "mem-headroom-30-facts-planning",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "run failed: agent_limit_exceeded"
+    ],
+    "toolCalls": 4,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "calculate_scenario",
+     "spending_summary"
+    ],
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "latencyMs": 7556
+   }
+  ]
+ },
+ "sonnet": {
+  "model": "claude-sonnet-5-5",
+  "today": "2026-10-14",
+  "repeat": 1,
+  "minPass": null,
+  "passed": false,
+  "totals": {
+   "runs": 82,
+   "passed": 79,
+   "failed": 3,
+   "passRate": 0.9634146341463414,
+   "inputTokens": 1196246,
+   "outputTokens": 28790,
+   "latencyMs": 388029
+  },
+  "runs": [
+   {
+    "id": "en-record-single",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15076,
+    "outputTokens": 224,
+    "latencyMs": 4148
+   },
+   {
+    "id": "en-record-multiple",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15246,
+    "outputTokens": 322,
+    "latencyMs": 3266
+   },
+   {
+    "id": "en-record-yesterday",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15091,
+    "outputTokens": 255,
+    "latencyMs": 3745
+   },
+   {
+    "id": "en-record-explicit-date-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15090,
+    "outputTokens": 256,
+    "latencyMs": 4234
+   },
+   {
+    "id": "en-record-explicit-usd",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15056,
+    "outputTokens": 222,
+    "latencyMs": 3769
+   },
+   {
+    "id": "en-record-default-currency-disclosed",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15045,
+    "outputTokens": 223,
+    "latencyMs": 3915
+   },
+   {
+    "id": "zh-record-single-no-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15122,
+    "outputTokens": 332,
+    "latencyMs": 4884
+   },
+   {
+    "id": "zh-record-multiple-yesterday",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15207,
+    "outputTokens": 326,
+    "latencyMs": 4372
+   },
+   {
+    "id": "zh-record-explicit-cny",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15092,
+    "outputTokens": 250,
+    "latencyMs": 4131
+   },
+   {
+    "id": "mixed-record-uber-eats",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15116,
+    "outputTokens": 299,
+    "latencyMs": 3677
+   },
+   {
+    "id": "voice-en-spelled-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15082,
+    "outputTokens": 239,
+    "latencyMs": 4178
+   },
+   {
+    "id": "voice-en-dollars-cents-run-together",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15072,
+    "outputTokens": 258,
+    "latencyMs": 4473
+   },
+   {
+    "id": "voice-en-run-on-two-entries",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15272,
+    "outputTokens": 372,
+    "latencyMs": 4281
+   },
+   {
+    "id": "voice-en-spoken-thousands",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15083,
+    "outputTokens": 243,
+    "latencyMs": 3891
+   },
+   {
+    "id": "voice-en-self-correction",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15067,
+    "outputTokens": 227,
+    "latencyMs": 3705
+   },
+   {
+    "id": "voice-en-filler-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15145,
+    "outputTokens": 283,
+    "latencyMs": 5413
+   },
+   {
+    "id": "voice-en-spoken-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15052,
+    "outputTokens": 209,
+    "latencyMs": 4978
+   },
+   {
+    "id": "voice-en-cut-off",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7401,
+    "outputTokens": 79,
+    "latencyMs": 1860
+   },
+   {
+    "id": "en-bare-dollars-non-dollar-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7405,
+    "outputTokens": 120,
+    "latencyMs": 2144
+   },
+   {
+    "id": "en-dollar-sign-non-dollar-currency",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7399,
+    "outputTokens": 88,
+    "latencyMs": 2698
+   },
+   {
+    "id": "en-correct-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15461,
+    "outputTokens": 209,
+    "latencyMs": 4376
+   },
+   {
+    "id": "zh-correct-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15449,
+    "outputTokens": 268,
+    "latencyMs": 4492
+   },
+   {
+    "id": "en-correct-add-row",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15462,
+    "outputTokens": 363,
+    "latencyMs": 4610
+   },
+   {
+    "id": "en-future-spending-no-rows",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7412,
+    "outputTokens": 153,
+    "latencyMs": 2699
+   },
+   {
+    "id": "zh-hypothetical-no-rows",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24451,
+    "outputTokens": 943,
+    "latencyMs": 10926
+   },
+   {
+    "id": "en-ambiguous-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7403,
+    "outputTokens": 71,
+    "latencyMs": 2964
+   },
+   {
+    "id": "zh-ambiguous-amount",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7400,
+    "outputTokens": 123,
+    "latencyMs": 2795
+   },
+   {
+    "id": "en-yes-save-it",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7581,
+    "outputTokens": 96,
+    "latencyMs": 1907
+   },
+   {
+    "id": "zh-confirm-in-chat",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7558,
+    "outputTokens": 96,
+    "latencyMs": 2232
+   },
+   {
+    "id": "en-groceries-september",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15195,
+    "outputTokens": 171,
+    "latencyMs": 3639
+   },
+   {
+    "id": "zh-groceries-september",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15211,
+    "outputTokens": 217,
+    "latencyMs": 4601
+   },
+   {
+    "id": "en-last-month-total",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15216,
+    "outputTokens": 334,
+    "latencyMs": 6254
+   },
+   {
+    "id": "en-compare-terms",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "compare_spending"
+    ],
+    "inputTokens": 15614,
+    "outputTokens": 540,
+    "latencyMs": 5771
+   },
+   {
+    "id": "en-travel-usd-converted",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15305,
+    "outputTokens": 208,
+    "latencyMs": 3726
+   },
+   {
+    "id": "en-baseline-three-months",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15300,
+    "outputTokens": 333,
+    "latencyMs": 4793
+   },
+   {
+    "id": "en-goal-remaining",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "list_goals"
+    ],
+    "inputTokens": 15198,
+    "outputTokens": 149,
+    "latencyMs": 3765
+   },
+   {
+    "id": "en-injection-in-description",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "transaction_details"
+    ],
+    "inputTokens": 15315,
+    "outputTokens": 375,
+    "latencyMs": 4488
+   },
+   {
+    "id": "en-no-markdown-breakdown",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_summary"
+    ],
+    "inputTokens": 15267,
+    "outputTokens": 393,
+    "latencyMs": 5567
+   },
+   {
+    "id": "en-plan-without-cash",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7454,
+    "outputTokens": 389,
+    "latencyMs": 4425
+   },
+   {
+    "id": "zh-plan-without-cash",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7448,
+    "outputTokens": 488,
+    "latencyMs": 5314
+   },
+   {
+    "id": "en-plan-lowest-balance",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15806,
+    "outputTokens": 659,
+    "latencyMs": 6506
+   },
+   {
+    "id": "en-plan-biweekly-save-by-december",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24480,
+    "outputTokens": 1029,
+    "latencyMs": 10451
+   },
+   {
+    "id": "en-plan-biweekly-payday-count",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15588,
+    "outputTokens": 478,
+    "latencyMs": 5483
+   },
+   {
+    "id": "en-habits-whole-year",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "spending_baseline"
+    ],
+    "inputTokens": 15348,
+    "outputTokens": 477,
+    "latencyMs": 6815
+   },
+   {
+    "id": "en-plan-coop-savings-habits",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "calculate_scenario"
+    ],
+    "inputTokens": 25201,
+    "outputTokens": 1141,
+    "latencyMs": 11230
+   },
+   {
+    "id": "en-plan-baseline-expenses-not-invented",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24570,
+    "outputTokens": 1251,
+    "latencyMs": 11405
+   },
+   {
+    "id": "en-goal-create",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_goal"
+    ],
+    "inputTokens": 15177,
+    "outputTokens": 296,
+    "latencyMs": 4630
+   },
+   {
+    "id": "en-goal-update-target",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "list_goals",
+     "propose_goal"
+    ],
+    "inputTokens": 23388,
+    "outputTokens": 332,
+    "latencyMs": 4404
+   },
+   {
+    "id": "en-goal-ambiguous-name",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "list_goals"
+    ],
+    "inputTokens": 15197,
+    "outputTokens": 151,
+    "latencyMs": 3462
+   },
+   {
+    "id": "en-stock-advice-declined",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7410,
+    "outputTokens": 220,
+    "latencyMs": 3302
+   },
+   {
+    "id": "zh-stock-advice-declined",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7410,
+    "outputTokens": 188,
+    "latencyMs": 2982
+   },
+   {
+    "id": "auto-en-record-replies-in-english",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15239,
+    "outputTokens": 321,
+    "latencyMs": 4206
+   },
+   {
+    "id": "auto-zh-record-replies-in-chinese",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15261,
+    "outputTokens": 335,
+    "latencyMs": 4822
+   },
+   {
+    "id": "auto-en-after-chinese-history",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15211,
+    "outputTokens": 311,
+    "latencyMs": 4744
+   },
+   {
+    "id": "voice-flag-squashed-uber",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7406,
+    "outputTokens": 88,
+    "latencyMs": 2135
+   },
+   {
+    "id": "voice-flag-squashed-bubble-tea",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7416,
+    "outputTokens": 93,
+    "latencyMs": 1920
+   },
+   {
+    "id": "voice-flag-squashed-shoppers",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7414,
+    "outputTokens": 111,
+    "latencyMs": 2372
+   },
+   {
+    "id": "voice-flag-clear-dinner",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15118,
+    "outputTokens": 252,
+    "latencyMs": 3781
+   },
+   {
+    "id": "voice-flag-clear-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15092,
+    "outputTokens": 251,
+    "latencyMs": 3852
+   },
+   {
+    "id": "voice-flag-clear-tuition",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15113,
+    "outputTokens": 283,
+    "latencyMs": 3993
+   },
+   {
+    "id": "voice-flag-clear-words",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15155,
+    "outputTokens": 295,
+    "latencyMs": 4351
+   },
+   {
+    "id": "voice-words-tim-hortons",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15098,
+    "outputTokens": 273,
+    "latencyMs": 4191
+   },
+   {
+    "id": "voice-words-shoppers",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15116,
+    "outputTokens": 318,
+    "latencyMs": 5284
+   },
+   {
+    "id": "voice-words-petro-canada",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15094,
+    "outputTokens": 279,
+    "latencyMs": 3953
+   },
+   {
+    "id": "voice-words-netflix",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15086,
+    "outputTokens": 272,
+    "latencyMs": 4396
+   },
+   {
+    "id": "voice-words-amazon",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15091,
+    "outputTokens": 275,
+    "latencyMs": 4193
+   },
+   {
+    "id": "voice-words-amazon-split-digits",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7400,
+    "outputTokens": 135,
+    "latencyMs": 2627
+   },
+   {
+    "id": "voice-words-textbook",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15104,
+    "outputTokens": 271,
+    "latencyMs": 4097
+   },
+   {
+    "id": "voice-words-cineplex",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15098,
+    "outputTokens": 295,
+    "latencyMs": 3761
+   },
+   {
+    "id": "voice-words-garbled-income",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15134,
+    "outputTokens": 350,
+    "latencyMs": 5238
+   },
+   {
+    "id": "mem-offer-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15172,
+    "outputTokens": 305,
+    "latencyMs": 4200
+   },
+   {
+    "id": "mem-no-offer-lunch",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15080,
+    "outputTokens": 239,
+    "latencyMs": 5912
+   },
+   {
+    "id": "mem-projection-uses-saved-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 16036,
+    "outputTokens": 722,
+    "latencyMs": 6010
+   },
+   {
+    "id": "mem-current-message-overrides",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15765,
+    "outputTokens": 628,
+    "latencyMs": 6003
+   },
+   {
+    "id": "mem-forget-rent",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply contains \"been forgotten\": i've prepared an offer to forget your saved rent, 950 cad per month (saved 2026-10-03). nothing has been forgotten yet. press the forget button to confirm."
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15275,
+    "outputTokens": 171,
+    "latencyMs": 3224
+   },
+   {
+    "id": "mem-update-not-duplicate",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15437,
+    "outputTokens": 332,
+    "latencyMs": 4227
+   },
+   {
+    "id": "mem-no-reoffer-after-cancel",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 15816,
+    "outputTokens": 612,
+    "latencyMs": 5904
+   },
+   {
+    "id": "mem-description-says-remember",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "transaction_details"
+    ],
+    "inputTokens": 15090,
+    "outputTokens": 278,
+    "latencyMs": 4894
+   },
+   {
+    "id": "mem-injected-preference-ignored",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15254,
+    "outputTokens": 346,
+    "latencyMs": 5612
+   },
+   {
+    "id": "zh-mem-offer-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15173,
+    "outputTokens": 317,
+    "latencyMs": 5184
+   },
+   {
+    "id": "mixed-mem-offer-coop-pay",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_memory"
+    ],
+    "inputTokens": 15212,
+    "outputTokens": 326,
+    "latencyMs": 4776
+   },
+   {
+    "id": "mem-headroom-30-facts-planning",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 40896,
+    "outputTokens": 2738,
+    "latencyMs": 20391
+   }
+  ]
+ },
+ "haiku-rerun": {
+  "model": "claude-haiku-5-5",
+  "today": "2026-10-14",
+  "repeat": 3,
+  "minPass": null,
+  "passed": false,
+  "totals": {
+   "runs": 24,
+   "passed": 17,
+   "failed": 7,
+   "passRate": 0.7083333333333334,
+   "inputTokens": 468078,
+   "outputTokens": 19006,
+   "latencyMs": 122428
+  },
+  "runs": [
+   {
+    "id": "zh-record-multiple-yesterday",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15287,
+    "outputTokens": 420,
+    "latencyMs": 3428
+   },
+   {
+    "id": "zh-record-multiple-yesterday",
+    "run": 2,
+    "status": "FAIL",
+    "failures": [
+     "no draft row matches {\"type\":\"expense\",\"amount\":\"23.00\",\"currency\":\"CAD\",\"category\":\"Transportation\",\"date\":\"2026-10-13\"}: [expense 86.40 CAD Groceries 2026-10-13; expense 23.00 CAD Transportation 2026-10-14]"
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15232,
+    "outputTokens": 361,
+    "latencyMs": 2780
+   },
+   {
+    "id": "zh-record-multiple-yesterday",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15222,
+    "outputTokens": 331,
+    "latencyMs": 2602
+   },
+   {
+    "id": "zh-plan-without-cash",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24619,
+    "outputTokens": 940,
+    "latencyMs": 6815
+   },
+   {
+    "id": "zh-plan-without-cash",
+    "run": 2,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24540,
+    "outputTokens": 1050,
+    "latencyMs": 7430
+   },
+   {
+    "id": "zh-plan-without-cash",
+    "run": 3,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7448,
+    "outputTokens": 291,
+    "latencyMs": 2529
+   },
+   {
+    "id": "en-plan-baseline-expenses-not-invented",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 25042,
+    "outputTokens": 1212,
+    "latencyMs": 7885
+   },
+   {
+    "id": "en-plan-baseline-expenses-not-invented",
+    "run": 2,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 2,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario"
+    ],
+    "inputTokens": 24664,
+    "outputTokens": 1362,
+    "latencyMs": 7911
+   },
+   {
+    "id": "en-plan-baseline-expenses-not-invented",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "calculate_scenario",
+     "spending_summary"
+    ],
+    "inputTokens": 25132,
+    "outputTokens": 1544,
+    "latencyMs": 8570
+   },
+   {
+    "id": "voice-words-amazon",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15117,
+    "outputTokens": 299,
+    "latencyMs": 5511
+   },
+   {
+    "id": "voice-words-amazon",
+    "run": 2,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15134,
+    "outputTokens": 323,
+    "latencyMs": 5508
+   },
+   {
+    "id": "voice-words-amazon",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15126,
+    "outputTokens": 321,
+    "latencyMs": 2785
+   },
+   {
+    "id": "voice-words-amazon-split-digits",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "reply contains \"4217\": …s no currency word or symbol, so the amount is ambiguous: it could be 42.17, or 4217, or the order could be a mix of numbers. it's also not clear whether this is an expense. the input is typed, so t…",
+     "reply contains \"4,217\": …s no currency word or symbol, so the amount is ambiguous: it could be 42.17, or 4217, or the order could be a mix of numbers. it's also not clear whether this is an expense. the input is typed, so t…"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7400,
+    "outputTokens": 189,
+    "latencyMs": 1521
+   },
+   {
+    "id": "voice-words-amazon-split-digits",
+    "run": 2,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15148,
+    "outputTokens": 346,
+    "latencyMs": 2573
+   },
+   {
+    "id": "voice-words-amazon-split-digits",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "propose_transactions"
+    ],
+    "inputTokens": 15101,
+    "outputTokens": 290,
+    "latencyMs": 1972
+   },
+   {
+    "id": "mem-projection-uses-saved-rent",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 16146,
+    "outputTokens": 780,
+    "latencyMs": 4352
+   },
+   {
+    "id": "mem-projection-uses-saved-rent",
+    "run": 2,
+    "status": "FAIL",
+    "failures": [
+     "reply has none of [\"2026-10-03\",\"October 3\",\"Oct 3\"]: Projected balance at the end of December 2026: 11,000.00 CAD. How this is calculated (window 2026-10-14 to 2026-12-31, CAD): - Starting chequing balance today (2026-10-14): 3,000.00 CAD - Co-op pay, …"
+    ],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 16102,
+    "outputTokens": 779,
+    "latencyMs": 3974
+   },
+   {
+    "id": "mem-projection-uses-saved-rent",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 1,
+    "tools": [
+     "calculate_scenario"
+    ],
+    "inputTokens": 16106,
+    "outputTokens": 799,
+    "latencyMs": 4221
+   },
+   {
+    "id": "mem-no-reoffer-after-cancel",
+    "run": 1,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7521,
+    "outputTokens": 306,
+    "latencyMs": 2618
+   },
+   {
+    "id": "mem-no-reoffer-after-cancel",
+    "run": 2,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7521,
+    "outputTokens": 189,
+    "latencyMs": 2211
+   },
+   {
+    "id": "mem-no-reoffer-after-cancel",
+    "run": 3,
+    "status": "FAIL",
+    "failures": [
+     "tool calculate_scenario did not succeed (called: none)"
+    ],
+    "toolCalls": 0,
+    "tools": [],
+    "inputTokens": 7521,
+    "outputTokens": 288,
+    "latencyMs": 2179
+   },
+   {
+    "id": "mem-headroom-30-facts-planning",
+    "run": 1,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "calculate_scenario"
+    ],
+    "inputTokens": 39826,
+    "outputTokens": 1446,
+    "latencyMs": 9327
+   },
+   {
+    "id": "mem-headroom-30-facts-planning",
+    "run": 2,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "calculate_scenario"
+    ],
+    "inputTokens": 57255,
+    "outputTokens": 3571,
+    "latencyMs": 15220
+   },
+   {
+    "id": "mem-headroom-30-facts-planning",
+    "run": 3,
+    "status": "PASS",
+    "failures": [],
+    "toolCalls": 3,
+    "tools": [
+     "spending_baseline",
+     "list_goals",
+     "calculate_scenario"
+    ],
+    "inputTokens": 39868,
+    "outputTokens": 1569,
+    "latencyMs": 8506
+   }
+  ]
+ }
+}

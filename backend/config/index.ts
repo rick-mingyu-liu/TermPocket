@@ -93,10 +93,9 @@ const config = {
   agent: {
     enabled: process.env.AGENT_ENABLED === 'true',
     apiKey: process.env.CLAUDE_API_KEY,
-    // The runtime sends thinking:{type:'disabled'}, which Claude Haiku 5.5
-    // accepts; Sonnet 5.5 and Opus 5.5 reject it, so changing the model
-    // needs a runtime change too.
-    model: process.env.CLAUDE_MODEL || 'claude-haiku-5-5',
+    // claude-haiku-5-5 or claude-sonnet-5-5: runtime.thinkingFor() turns
+    // thinking off the way each accepts. Opus 5.5 cannot turn it off at all.
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-5-5',
     timeoutMs: 90_000,
     maxTurns: 10,
     maxToolCalls: 8,
@@ -120,7 +119,9 @@ const config = {
     maxRows: 12,
     maxConversations: 100,
     maxMessagesPerConversation: 200,
-    maxTotalTokens: 32_000,
+    // Input and output across a turn's round trips. Claude's tokenizer counts
+    // about 1.8x what DeepSeek's did for the same prompt (32k was set then).
+    maxTotalTokens: 64_000,
     maxToolOutputChars: 16_000,
     // Remembered facts (docs/MEMORY.md): at most this many per user, and
     // context.memory measured as serialised JSON, apart from the history

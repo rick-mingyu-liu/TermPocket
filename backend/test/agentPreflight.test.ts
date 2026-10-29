@@ -24,8 +24,8 @@ function settings(overrides: { enabled?: boolean; apiKey?: string; model?: strin
     agent: {
       enabled: overrides.enabled ?? false,
       apiKey: 'apiKey' in overrides ? overrides.apiKey : FAKE_KEY,
-      model: overrides.model ?? 'claude-haiku-5-5',
-      timeoutMs: 90_000, maxToolCalls: 8, maxRows: 12, maxOutputTokens: 4000, maxTotalTokens: 32_000,
+      model: overrides.model ?? 'claude-sonnet-5-5',
+      timeoutMs: 90_000, maxToolCalls: 8, maxRows: 12, maxOutputTokens: 4000, maxTotalTokens: 64_000,
     },
   };
 }
