@@ -521,10 +521,10 @@ const claudeClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import(
  * Thinking as off as each model allows. Left unset, Claude thinks by default
  * (as DeepSeek did): hidden reasoning that counts against every output budget.
  * Haiku 5.5 accepts 'disabled'; Sonnet 5.5 rejects it with a 400 and offers
- * 'between_tools' instead, which SDK 0.135.0's types predate.
+ * 'between_tools' instead. Opus 5.5 and Fable reject both (preflight FAILs them).
  */
 export function thinkingFor(model: string): MessageCreateParamsNonStreaming['thinking'] {
-  if (model.startsWith('claude-sonnet-5-5')) return {type:'between_tools'} as unknown as MessageCreateParamsNonStreaming['thinking'];
+  if (model.startsWith('claude-sonnet-5-5')) return {type:'between_tools'};
   return {type:'disabled'};
 }
 

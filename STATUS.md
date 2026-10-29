@@ -95,7 +95,7 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 
 Owner checks before a public post (none can be verified from the repo):
 
-- A DeepSeek provider-side spending limit or prepaid balance. The app-side caps are done (#90).
+- A spend limit in the Anthropic Console (Pocky moved from DeepSeek to Claude in #184). The app-side caps are done (#90).
 - `DEMO_REFRESH_ENABLED=true` in production.
 - Delete the leftover `AGENT_RUNTIME` variable on Render (ignored since #102; it only logs a startup warning).
 - Screenshot import timed on a mid-range phone.
@@ -172,4 +172,4 @@ Decisions needed from the owner:
 - [x] `AGENT_ENABLED=true` and the AI provider key are set in production.
 - [x] Domain and email provider: termpocket.com, Resend (2026-10-16).
 - [x] Dependabot: the 2 open alerts (`braces` high, `postcss-selector-parser` moderate) are build-time only, via Tailwind 3 and `eslint-config-next`, and no patched `braces` release exists. On 2026-10-17 the owner decided to leave them open and revisit with a Tailwind 4 migration after launch ([`frontend/DEPENDENCIES.md`](frontend/DEPENDENCIES.md)).
-- [ ] DeepSeek spending: the app-side caps exist (60 turns a day per user, 600 across all users). A provider-side limit or prepaid balance is an owner check.
+- [ ] Claude API spending (DeepSeek until #184): the app-side caps exist (60 turns a day per user, 600 across all users). A provider-side limit or prepaid balance is an owner check.

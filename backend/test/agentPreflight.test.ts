@@ -93,6 +93,13 @@ describe('output never leaks a secret', () => {
     assert.ok(!formatReport(checks).includes(odd));
   });
 
+  test('a model that cannot turn thinking off fails; Haiku is only a warning', () => {
+    for (const model of ['claude-opus-5-5', 'claude-fable-5-1']) {
+      assert.equal(find(configChecks(settings({ model })), 'config.claude_model').status, 'FAIL', model);
+    }
+    assert.equal(find(configChecks(settings({ model: 'claude-haiku-5-5' })), 'config.claude_model').status, 'WARN');
+  });
+
   test('details stay on one line', () => {
     assert.equal(formatLine({ status: 'WARN', name: 'x', detail: 'a\nb\r\nc' }).split('\n').length, 1);
   });

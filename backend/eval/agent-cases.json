@@ -974,7 +974,7 @@
         "memoryProposal": {"action": "forget", "kind": "expense", "ref": "m2"},
         "reply": {
           "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
-          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n't )\\bbeen forgotten\\b"]
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n['’]t )\\bbeen\\s+forgotten\\b"]
         }
       }
     },
@@ -993,7 +993,7 @@
         "memoryProposal": {"action": "update", "ref": "m2", "amount": "1050.00"},
         "reply": {
           "mustNotContain": ["has been saved", "i've saved", "i have saved", "i've remembered", "i have remembered", "is now remembered", "i've forgotten"],
-          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n't )\\bbeen forgotten\\b"]
+          "mustNotMatch": ["(?<!\\bnothing has |\\bnot |n['’]t )\\bbeen\\s+forgotten\\b"]
         }
       }
     },

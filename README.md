@@ -181,7 +181,7 @@ WEEKLY_REPORT_ENABLED=   # unset: weekly reports only under NODE_ENV=production
 # Optional conversation recording: enable only after migration 013.
 AGENT_ENABLED=false
 CLAUDE_API_KEY=          # Claude API key (console.anthropic.com); without it, new model turns are unavailable
-CLAUDE_MODEL=            # optional; default claude-haiku-5-5 (other models need a runtime change)
+CLAUDE_MODEL=            # optional; default claude-sonnet-5-5 (claude-haiku-5-5 also works; Opus 5.5 cannot turn thinking off)
 AGENT_MAX_CONCURRENT_RUNS=4   # model turns at once on this process
 ```
 
