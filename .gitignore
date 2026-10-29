@@ -26,3 +26,5 @@ node_modules/
 !/docs/PHASE-2.md
 !/docs/VOICE.md
 !/docs/MEMORY.md
+!/docs/architecture.drawio
+!/docs/architecture.png
