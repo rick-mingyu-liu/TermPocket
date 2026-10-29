@@ -411,7 +411,7 @@ export default function Login() {
 
             <div className="text-center space-y-4">
               <p className="text-muted-foreground">
-                {t('TermPocket is free, in English and Chinese. Try the demo account, or create your own.')}
+                {t('TermPocket is free. Try the demo account, or create your own.')}
               </p>
               <div className="flex gap-3 justify-center flex-wrap">
                 <Button onClick={() => router.push('/register')}>

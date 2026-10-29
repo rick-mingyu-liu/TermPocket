@@ -211,7 +211,7 @@ export default function Dashboard() {
   const { resolvedTheme } = useTheme();
   const [categoryView, setCategoryView] = useState<CategoryView>('all');
   const [period, setPeriod] = useState<PeriodKey>('thisTerm');
-  const { t, i18n } = useTranslation('common');
+  const { t } = useTranslation('common');
 
   // Get user's default currency from localStorage (preferences)
   let defaultCurrency = 'CAD';
@@ -438,16 +438,6 @@ export default function Dashboard() {
               {/* Desktop actions */}
               <div className="hidden sm:flex gap-2 flex-wrap">
                 <ThemeToggle />
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const nextLang = i18n.language === 'en' ? 'zh' : 'en';
-                    i18n.changeLanguage(nextLang);
-                    router.push(router.asPath, router.asPath, { locale: nextLang });
-                  }}
-                >
-                  {i18n.language === 'en' ? '中文' : 'EN'}
-                </Button>
                 <Button
                   onClick={() => router.push('/transactions/new')}
                   className="aurora-glow"

@@ -1,6 +1,5 @@
 import Head from 'next/head'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { ArrowLeft } from 'lucide-react'
 import { BrandLogo } from '@/components/BrandLogo'
@@ -44,7 +43,6 @@ function Paragraphs({ text }: { text?: string[] }) {
 /** Public, unauthenticated page for the privacy policy or the terms. */
 export default function LegalPage({ doc }: { doc: LegalDoc }) {
   const { t } = useTranslation(['common', 'legal'])
-  const router = useRouter()
   const other: LegalDoc = doc === 'privacy' ? 'terms' : 'privacy'
   const intro = list<string>(t(`legal:${doc}.intro`, { returnObjects: true }))
   const sections = list<LegalSection>(t(`legal:${doc}.sections`, { returnObjects: true }))
@@ -62,16 +60,7 @@ export default function LegalPage({ doc }: { doc: LegalDoc }) {
               <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               <BrandLogo className="h-7" />
             </Link>
-            <div className="flex items-center gap-2">
-              <Link
-                href={router.pathname}
-                locale={router.locale === 'zh' ? 'en' : 'zh'}
-                className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                {router.locale === 'zh' ? 'English' : '中文'}
-              </Link>
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
           </div>
         </header>
 
