@@ -90,6 +90,7 @@ describe('output never leaks a secret', () => {
       const checks = configChecks(settings({ model: odd }));
       const model = find(checks, 'config.claude_model');
       assert.equal(model.status, 'FAIL', odd);
+      assert.ok(!formatReport(checks).includes(odd), odd);
       assert.ok(!formatReport(checks).includes('sk-'), odd);
     }
   });
