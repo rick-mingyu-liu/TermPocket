@@ -240,6 +240,10 @@ To keep it current without intervention, set `DEMO_REFRESH_ENABLED=true`. The ho
 
 ## Architecture
 
+[![TermPocket architecture: the browser (Next.js, on-device OCR and dictation), the Express API with Pocky and the scheduler, Neon PostgreSQL, external services, and delivery](docs/architecture.png)](docs/architecture.png)
+
+The source is [`docs/architecture.drawio`](docs/architecture.drawio); open it in draw.io or at app.diagrams.net to edit it, then export it over `docs/architecture.png`.
+
 ```
 backend/                        Express + PostgreSQL API (TypeScript)
 ├── app.ts                      helmet, morgan, cors, routers, error handlers
