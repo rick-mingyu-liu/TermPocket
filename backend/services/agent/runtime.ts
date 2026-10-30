@@ -553,8 +553,8 @@ const inputSchema = (shape: z.ZodRawShape): Tool.InputSchema => {
 /**
  * Prompt caching, two breakpoints. The one on the system prompt covers the
  * tools and the system prompt, which are the same for every turn of every user
- * (turns without memory, the demo account's and those before 022, share a
- * second prefix without propose_memory), so any turn within five minutes of
+ * (turns where memory is unavailable, the demo account's and those before
+ * 022, share a second prefix without propose_memory), so any turn within five minutes of
  * another reads them back. The top-level one
  * moves to the last block of each request, so each later round trip in a turn
  * reads everything the one before it sent. Both use the default five-minute
