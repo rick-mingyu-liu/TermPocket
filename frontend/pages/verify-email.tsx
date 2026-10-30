@@ -99,7 +99,7 @@ export default function VerifyEmail() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl bg-card border border-border text-card-foreground">
+          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1 text-center">
               <div className="flex justify-center mb-4">
                 {getStatusIcon()}

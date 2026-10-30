@@ -181,7 +181,7 @@ export default function Register() {
           </div>
 
           <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-            <Card className="shadow-xl bg-card border border-border text-card-foreground">
+            <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
               <CardHeader className="space-y-1 text-center">
                 <div className="flex justify-center mb-4">
                   <CheckCircle className="h-16 w-16 text-green-500" />
@@ -252,7 +252,7 @@ export default function Register() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl bg-card border border-border text-card-foreground">
+          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Create account')}</CardTitle>
               <CardDescription className="text-center">{t('Enter your information to create your account')}</CardDescription>
