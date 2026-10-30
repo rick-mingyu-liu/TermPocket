@@ -33,16 +33,20 @@
         </mxCell>
 
         <mxCell id="db" value="&lt;b style='font-size:15px'&gt;Neon PostgreSQL&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;Transactions · goals · conversations · memories&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
-          <mxGeometry x="900" y="160" width="330" height="100" as="geometry" />
+          <mxGeometry x="900" y="160" width="330" height="90" as="geometry" />
         </mxCell>
         <mxCell id="claude" value="&lt;b style='font-size:15px'&gt;Claude API&lt;/b&gt; (Anthropic)&lt;br&gt;&lt;span style='font-size:12px'&gt;Claude Sonnet 5.5 · tool use · prompt caching&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
-          <mxGeometry x="900" y="286" width="330" height="90" as="geometry" />
+          <mxGeometry x="900" y="290" width="330" height="80" as="geometry" />
         </mxCell>
         <mxCell id="email" value="&lt;b style='font-size:15px'&gt;Email&lt;/b&gt; (Resend)&lt;br&gt;&lt;span style='font-size:12px'&gt;Verification · weekly report&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
-          <mxGeometry x="900" y="400" width="330" height="70" as="geometry" />
+          <mxGeometry x="900" y="376" width="330" height="56" as="geometry" />
         </mxCell>
 
-        <mxCell id="agent" value="&lt;b style='font-size:15px'&gt;Your own AI agent&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;e.g. Claude, over MCP with a revocable token&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+        <mxCell id="rates" value="&lt;b style='font-size:15px'&gt;Exchange rates&lt;/b&gt; (Frankfurter)&lt;br&gt;&lt;span style='font-size:12px'&gt;Totals converted to your currency when read&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="444" width="330" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agent" value="&lt;b style='font-size:15px'&gt;Your own AI agent&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;e.g. Claude, over MCP with a revocable 90-day token&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
           <mxGeometry x="40" y="540" width="300" height="80" as="geometry" />
         </mxCell>
         <mxCell id="delivery" value="&lt;b style='font-size:15px'&gt;Delivery&lt;/b&gt;&amp;nbsp;&amp;nbsp; GitHub Actions CI (lint · 1,000+ tests · build)&amp;nbsp; →&amp;nbsp; Vercel (frontend) · Render (backend)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
@@ -52,8 +56,22 @@
         <mxCell id="e1" value="HTTPS + JWT" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="rest">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" value="text only" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#82B366;exitX=1;exitY=0.5;entryX=0;entryY=0.6667;" edge="1" parent="1" source="ondevice" target="api">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e2a" value="OCR text" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#82B366;exitX=1;exitY=0.3;entryX=0;entryY=0.8;" edge="1" parent="1" source="ondevice" target="rest">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="380" y="336" />
+              <mxPoint x="380" y="236" />
+            </Array>
+            <mxPoint as="offset" x="-18" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2b" value="dictated text" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#82B366;exitX=1;exitY=0.7;entryX=0;entryY=0.7;" edge="1" parent="1" source="ondevice" target="pocky">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="405" y="384" />
+              <mxPoint x="405" y="356" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="e3" value="SQL" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="rest" target="db">
           <mxGeometry relative="1" as="geometry" />
@@ -61,7 +79,10 @@
         <mxCell id="e4" value="tool use" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#B85450;fontColor=#B85450;" edge="1" parent="1" source="pocky" target="claude">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="weekly report" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.86;exitDx=0;exitDy=0;entryX=0;entryY=0.5;" edge="1" parent="1" source="api" target="email">
+        <mxCell id="e5" value="email" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.78;exitDx=0;exitDy=0;entryX=0;entryY=0.5;" edge="1" parent="1" source="api" target="email">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="rates" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.954;exitDx=0;exitDy=0;entryX=0;entryY=0.5;" edge="1" parent="1" source="api" target="rates">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e6" value="MCP" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#9673A6;fontColor=#9673A6;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="agent" target="mcp">
