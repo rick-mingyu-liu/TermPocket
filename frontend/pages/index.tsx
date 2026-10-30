@@ -525,7 +525,7 @@ export default function Dashboard() {
           <div className="overflow-x-auto scrollbar-hide -mx-2 pb-2 sm:mx-0 sm:pb-0">
             <div className="flex gap-4 min-w-[600px] sm:grid sm:grid-cols-4 lg:grid-cols-4 sm:gap-6 mb-8">
               {/* Total Income Card */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{t('Total Income')}</CardTitle>
                   <TrendingUp className="h-4 w-4 text-green-600" />
@@ -540,7 +540,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               {/* Total Expenses Card */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{t('Total Expenses')}</CardTitle>
                   <TrendingDown className="h-4 w-4 text-red-600" />
@@ -555,7 +555,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               {/* Net Income Card */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">{t('Net Income')}</CardTitle>
                   <DollarSign className="h-4 w-4 text-blue-600" />
@@ -570,7 +570,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               {/* Active Goals Card (shrunk) */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5 flex flex-col items-center justify-center text-center px-2">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5 flex flex-col items-center justify-center text-center px-2">
                 <CardHeader className="flex flex-col items-center justify-center space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     {t('Active Goals')}
@@ -589,7 +589,7 @@ export default function Dashboard() {
           {summary && summary.monthlyBreakdown && summary.monthlyBreakdown.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Monthly Trend Chart */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
@@ -706,7 +706,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Category Breakdown */}
-              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+              <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -779,7 +779,7 @@ export default function Dashboard() {
               </Card>
             </div>
           ) : (
-            <Card className="mb-8 transition-colors duration-200 hover:bg-muted/80 cursor-pointer dark:hover:bg-white/2.5">
+            <Card className="mb-8 transition-colors duration-200 hover:bg-muted/80 cursor-pointer dark:hover:bg-white/5">
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -798,7 +798,7 @@ export default function Dashboard() {
 
           {/* Savings Goals */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+            <Card className="transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -862,7 +862,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Transactions */}
-          <Card className="mb-8 mt-8 transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/2.5">
+          <Card className="mb-8 mt-8 transition-colors duration-200 hover:bg-muted/80 dark:hover:bg-white/5">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

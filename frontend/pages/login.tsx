@@ -142,7 +142,7 @@ export default function Login() {
         <meta name="description" content="Sign in to your TermPocket account" />
       </Head>
 
-      <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 aurora-particles">
+      <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-background aurora-particles">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
@@ -158,7 +158,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100">
+          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Welcome back')}</CardTitle>
               <CardDescription className="text-center">
@@ -209,7 +209,7 @@ export default function Login() {
                       id="email"
                       type="email"
                       placeholder={t('Enter your email')}
-                      className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                      className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('email', {
@@ -235,7 +235,7 @@ export default function Login() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder={t('Enter your password')}
-                      className="pl-10 pr-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('password', {
@@ -318,7 +318,7 @@ export default function Login() {
 
       {/* Who are we Modal */}
       <Dialog open={showIntro} onOpenChange={setShowIntro}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border border-yellow-400 dark:border-yellow-500 shadow-2xl text-gray-900 dark:text-gray-100">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border border-yellow-400 dark:border-yellow-500 shadow-2xl text-foreground">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <Image

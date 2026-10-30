@@ -171,7 +171,7 @@ export default function Register() {
           <meta name="description" content="Verify your TermPocket account" />
         </Head>
 
-        <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+        <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
             <div className="text-center">
               <h1 className="mx-auto mb-4 flex justify-center">
@@ -181,7 +181,7 @@ export default function Register() {
           </div>
 
           <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-            <Card className="shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100">
+            <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
               <CardHeader className="space-y-1 text-center">
                 <div className="flex justify-center mb-4">
                   <CheckCircle className="h-16 w-16 text-green-500" />
@@ -241,7 +241,7 @@ export default function Register() {
         <meta name="description" content="Create your TermPocket account" />
       </Head>
 
-      <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+      <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
@@ -252,7 +252,7 @@ export default function Register() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100">
+          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Create account')}</CardTitle>
               <CardDescription className="text-center">{t('Enter your information to create your account')}</CardDescription>
@@ -267,7 +267,7 @@ export default function Register() {
                       <Input
                         id="first_name"
                         placeholder={t('First name')}
-                        className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                        className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                         onInput={handleInputChange}
                         onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         {...register('first_name', {
@@ -292,7 +292,7 @@ export default function Register() {
                       <Input
                         id="last_name"
                         placeholder={t('Last name')}
-                        className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                        className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                         onInput={handleInputChange}
                         onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         {...register('last_name', {
@@ -319,7 +319,7 @@ export default function Register() {
                       id="email"
                       type="email"
                       placeholder={t('Enter your email')}
-                      className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                      className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('email', {
@@ -346,7 +346,7 @@ export default function Register() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder={t('Create a password')}
-                      className="pl-10 pr-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('password', {
@@ -385,7 +385,7 @@ export default function Register() {
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder={t('Confirm your password')}
-                      className="pl-10 pr-10 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('confirmPassword', {
