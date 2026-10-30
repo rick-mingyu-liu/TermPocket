@@ -240,7 +240,7 @@ To keep it current without intervention, set `DEMO_REFRESH_ENABLED=true`. The ho
 
 ## Architecture
 
-[![TermPocket at a glance: the web app and on-device AI, the Express API with Pocky, Neon PostgreSQL, the Claude API, email, MCP, and delivery](docs/architecture-overview.png)](docs/architecture-overview.png)
+[![TermPocket at a glance: the web app and on-device AI, the Express API with Pocky, Neon PostgreSQL, the Claude API, email, exchange rates, MCP, and delivery](docs/architecture-overview.png)](docs/architecture-overview.png)
 
 The detailed version:
 
