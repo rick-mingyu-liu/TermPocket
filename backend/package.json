@@ -17,6 +17,7 @@
     "access-token": "node dist/db/accessToken.js",
     "agent:eval": "node dist/scripts/agentEval.js",
     "agent:preflight": "node dist/scripts/agentPreflight.js",
+    "stats": "node dist/scripts/stats.js",
     "lint": "eslint .",
     "test": "npm run build && node --test 'dist/test/**/*.test.js'"
   },
