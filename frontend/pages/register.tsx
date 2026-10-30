@@ -267,7 +267,7 @@ export default function Register() {
                       <Input
                         id="first_name"
                         placeholder={t('First name')}
-                        className="pl-10 bg-background border-input text-foreground"
+                        className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                         onInput={handleInputChange}
                         onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         {...register('first_name', {
@@ -292,7 +292,7 @@ export default function Register() {
                       <Input
                         id="last_name"
                         placeholder={t('Last name')}
-                        className="pl-10 bg-background border-input text-foreground"
+                        className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                         onInput={handleInputChange}
                         onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         {...register('last_name', {
@@ -319,7 +319,7 @@ export default function Register() {
                       id="email"
                       type="email"
                       placeholder={t('Enter your email')}
-                      className="pl-10 bg-background border-input text-foreground"
+                      className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('email', {
@@ -346,7 +346,7 @@ export default function Register() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder={t('Create a password')}
-                      className="pl-10 pr-10 bg-background border-input text-foreground"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('password', {
@@ -385,7 +385,7 @@ export default function Register() {
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder={t('Confirm your password')}
-                      className="pl-10 pr-10 bg-background border-input text-foreground"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('confirmPassword', {

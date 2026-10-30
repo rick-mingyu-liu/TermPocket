@@ -209,7 +209,7 @@ export default function Login() {
                       id="email"
                       type="email"
                       placeholder={t('Enter your email')}
-                      className="pl-10 bg-background border-input text-foreground"
+                      className="pl-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('email', {
@@ -235,7 +235,7 @@ export default function Login() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder={t('Enter your password')}
-                      className="pl-10 pr-10 bg-background border-input text-foreground"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-background border-gray-300 dark:border-input text-foreground"
                       onInput={handleInputChange}
                       onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       {...register('password', {
