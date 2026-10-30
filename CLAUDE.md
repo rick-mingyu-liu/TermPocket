@@ -20,6 +20,7 @@ npm run db:migrate     # apply pending db/migrations/ and record them (--status,
 backend/scripts/rehearse-linux.sh [--live]  # from the repo root, with docker-compose.test.yml up: Render's npm ci + build + preflight in a fresh node:<.node-version> Linux container
 npm run agent:eval     # opt-in paid Pocky evaluation: 82 fictional cases, real runtime/Claude API, in-memory records (no DB); README "Evaluating Pocky"
 npm run agent:preflight  # read-only Pocky deploy check (config, DB/migrations 013-015, every shipped migration against schema_migrations, the HTTP client, Claude API reachability); `-- --live` adds one fictional model turn through the runtime. Runbook: README "Deploying Pocky to production"
+npm run stats          # owner usage totals (sign-ups, active accounts, records by source, Pocky turns/tokens/saves, memories, tokens): aggregates only, one rolled-back READ ONLY transaction, demo account excluded; run in Render's shell. scripts/stats.ts; README "Usage stats"
 npm run lint           # eslint . (eslint 9, flat config in eslint.config.mjs; TypeScript only, via typescript-eslint)
 npm test               # builds, then node --test 'dist/test/**/*.test.js' — unit tests always run; see below for the integration suite
 ```
@@ -59,6 +60,8 @@ npm test               # node --test — scorer unit tests
   **`sharedContracts.test.ts` checks that every category the frontend's picker offers has an explicit colour in `CATEGORY_COLORS`.** Like `demoData.test.ts`, it reads files outside `backend/`, so it fails on a checkout without `frontend/`. (It also pinned the copies in a React Native client, `mobile/`, until that client was removed.)
 
   `agentPreflight.test.ts` covers `scripts/agentPreflight.ts`'s pure parts: no secret (fake key, DB URL, password, host) survives formatting, the exit code follows FAIL alone, 013/014/015 PASS/WARN/FAIL from stubbed catalog facts, and that gathering facts issues only `SELECT`s.
+
+  `stats.test.ts` covers `scripts/stats.ts` on a fake database: every statement an aggregate `SELECT` naming no personal column, `NOT is_demo` in every user-scoped query, tables and columns absent before 013/016/022/023 reported as unavailable rather than queried, and a report of labels and numbers only; `statsDb.test.ts` (needs `TEST_DATABASE_URL`) runs the queries on the real schema in a rolled-back transaction and checks an ordinary account counts and the demo account does not.
 
   `agentEval.test.ts` covers the fictional evaluation harness: scoring and numeric boundaries, tool-argument conditions (`tools.anyOf` / `tools.everyCall`: `min`, `notBefore`, `monthlyExpensesMin`, `optional`), reply `mustMatch`/`mustNotMatch` patterns, strict fixture SQL/ownership/cursors/FX/goal versions, real-tool totals, CLI validation and pass thresholds, blocked pool access and restoration, bounded key-redacted output. `npm run agent:eval` is opt-in and paid; it never runs in CI and never opens a database. Cases, defaults and fixture data live under `backend/eval/`; keep them fictional. Required tools must succeed; excluded tools include failed handler calls.
 
