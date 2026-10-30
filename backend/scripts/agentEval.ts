@@ -5,7 +5,7 @@ import db = require('../db/connection');
 import exchangeRateService = require('../services/exchangeRateService');
 import { packageRoot } from '../utils/packageRoot';
 import { errorSummary } from '../utils/errorSummary';
-import { runAgent, type AgentInput, type AgentResult, type RecalledFact } from '../services/agent/runtime';
+import { claudeClient, createDirectRuntime, type AgentInput, type AgentResult, type MessagesClient, type RecalledFact } from '../services/agent/runtime';
 import { recordsFor } from '../services/agent/investigation';
 import { GOAL_VERSION_SQL, validateGoalFields } from '../services/agent/planning';
 import { prepareMemoryProposal, validateMemoryFields } from '../services/agent/memory';
@@ -713,6 +713,20 @@ export interface MainDeps {
   err: (line: string) => void;
   caseFile?: unknown;
   fixture?: unknown;
+  /** Prompt-cache tokens so far, read from the provider's usage; reported, never scored. */
+  cacheTokens?: () => CacheTokens;
+}
+
+export interface CacheTokens { read: number; write: number }
+
+/** Wraps the client so each response's prompt-cache usage is added to `tally`. */
+export function tallyingClient(client: MessagesClient, tally: CacheTokens): MessagesClient {
+  return { messages: { create: async (body, options) => {
+    const response = await client.messages.create(body, options);
+    tally.read += response.usage.cache_read_input_tokens ?? 0;
+    tally.write += response.usage.cache_creation_input_tokens ?? 0;
+    return response;
+  } } };
 }
 
 export async function main(argv: string[], deps: MainDeps): Promise<number> {
@@ -750,15 +764,17 @@ export async function main(argv: string[], deps: MainDeps): Promise<number> {
     restore();
   }
   const totals = totalsOf(reports);
+  const cache = deps.cacheTokens?.();
   const passed = options.minPass === undefined ? totals.failed === 0 : totals.passRate >= options.minPass;
-  if (options.json) out(JSON.stringify({ model, today: file.defaults.today, repeat: options.repeat, minPass: options.minPass ?? null, passed, totals, runs: reports }, null, 2));
-  else out(`\n${passed ? 'Eval passed' : 'Eval FAILED'}: ${formatSummary(totals)}${options.minPass === undefined ? '' : ` (min pass ${(options.minPass * 100).toFixed(1)}%)`}`);
+  if (options.json) out(JSON.stringify({ model, today: file.defaults.today, repeat: options.repeat, minPass: options.minPass ?? null, passed, totals, ...(cache ? { cache } : {}), runs: reports }, null, 2));
+  else out(`\n${passed ? 'Eval passed' : 'Eval FAILED'}: ${formatSummary(totals)}${cache ? `; of the input, ${cache.read} read from and ${cache.write} written to the prompt cache` : ''}${options.minPass === undefined ? '' : ` (min pass ${(options.minPass * 100).toFixed(1)}%)`}`);
   return passed ? 0 : 1;
 }
 
 if (require.main === module) {
+  const cache: CacheTokens = { read: 0, write: 0 };
   main(process.argv.slice(2), {
-    agent: config.agent, runtime: runAgent,
+    agent: config.agent, runtime: createDirectRuntime(() => claudeClient().then(client => tallyingClient(client, cache))), cacheTokens: () => ({ ...cache }),
     out: line => process.stdout.write(`${line}\n`), err: line => process.stderr.write(`${line}\n`),
   })
     .catch((error: unknown) => { process.stderr.write(`agent:eval crashed (${errorSummary(error).error})\n`); return 1; })

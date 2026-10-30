@@ -76,7 +76,17 @@ test('direct: one tool call sends the same prompt, envelope and tools, then retu
   assert.equal(first!.max_tokens, config.agent.maxOutputTokens);
   assert.deepEqual(first!.thinking, thinkingFor(config.agent.model));
   assert.notEqual(first!.thinking, undefined);
-  assert.match(String(first!.system), /^You are Pocky/);
+  // Prompt caching: one breakpoint ends the shared tools + system prefix, the
+  // top-level one follows the conversation; every request is the same shape.
+  const system = first!.system as Array<{ type: string; text: string; cache_control?: unknown }>;
+  assert.equal(system.length, 1);
+  assert.match(system[0]!.text, /^You are Pocky/);
+  assert.deepEqual(system[0]!.cache_control, { type: 'ephemeral' });
+  for (const body of s.requests) {
+    assert.deepEqual(body.cache_control, { type: 'ephemeral' });
+    assert.deepEqual(body.system, first!.system);
+    assert.deepEqual(body.tools, first!.tools);
+  }
   assert.deepEqual(first!.messages.length, 1);
   const envelope = JSON.parse(String(first!.messages[0]!.content)) as Record<string, unknown>;
   assert.deepEqual(Object.keys(envelope), ['currentMessage', 'history', 'pendingRows', 'context']);

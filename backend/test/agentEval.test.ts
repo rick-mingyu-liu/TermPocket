@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import db = require('../db/connection');
 import exchangeRateService = require('../services/exchangeRateService');
 import { recordsFor } from '../services/agent/investigation';
-import type { AgentResult } from '../services/agent/runtime';
+import type { AgentResult, DirectResponse } from '../services/agent/runtime';
 import { AgentError, type DraftRow } from '../services/agent/types';
-import { caseRecords, evalFacts, fixtureQuery, installFixture, loadJson, main, MEMORY_VERSION, memoryFixtureQuery, monthlyExpenses, normalizeText, findNeedle, parseArgs, runCase, scoreRun, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
+import { caseRecords, evalFacts, fixtureQuery, installFixture, loadJson, main, MEMORY_VERSION, memoryFixtureQuery, monthlyExpenses, normalizeText, findNeedle, parseArgs, runCase, scoreRun, tallyingClient, trackRecords, validateCaseFile, type CaseFile, type EvalCase, type Fixture, type MainDeps } from '../scripts/agentEval';
 
 const file = validateCaseFile(loadJson('agent-cases.json'));
 const fixture = loadJson('agent-fixture.json') as Fixture;
@@ -290,6 +290,21 @@ describe('CLI orchestration without provider or database', () => {
     assert.equal(await main(['--case', 'test-case', '--repeat', '2', '--min-pass', '0.5', '--json'], h.deps), 0); assert.equal(db.query, saved);
     const report = JSON.parse(h.output.join('')) as { totals: { runs: number; passed: number; failed: number }; runs: Array<{ tools: string[] }> };
     assert.equal(report.totals.runs, 2); assert.equal(report.totals.passed, 1); assert.equal(report.totals.failed, 1); assert.deepEqual(report.runs[0]?.tools, ['spending_summary']);
+  });
+  test('prompt-cache tokens are tallied from usage and reported only when provided', async () => {
+    const tally = { read: 0, write: 0 };
+    const usages = [{ input_tokens: 10, output_tokens: 1, cache_read_input_tokens: 700, cache_creation_input_tokens: 50 }, { input_tokens: 5, output_tokens: 1, cache_read_input_tokens: null, cache_creation_input_tokens: null }];
+    const client = tallyingClient({ messages: { create: async () => ({ id: 'm', content: [], stop_reason: 'end_turn', usage: usages.shift()! } as unknown as DirectResponse) } }, tally);
+    const signal = new AbortController().signal;
+    await client.messages.create({ model: 'm', max_tokens: 1, messages: [] }, { signal }); await client.messages.create({ model: 'm', max_tokens: 1, messages: [] }, { signal });
+    assert.deepEqual(tally, { read: 700, write: 50 });
+    const plain = harness(); await main(['--json'], plain.deps);
+    assert.equal((JSON.parse(plain.output.join('')) as { cache?: unknown }).cache, undefined);
+    const h = harness(); h.deps.cacheTokens = () => ({ read: 700, write: 50 });
+    await main(['--json'], h.deps);
+    assert.deepEqual((JSON.parse(h.output.join('')) as { cache?: unknown }).cache, { read: 700, write: 50 });
+    const text = harness(); text.deps.cacheTokens = () => ({ read: 700, write: 50 }); await main([], text.deps);
+    assert.match(text.output.join('\n'), /700 read from and 50 written to the prompt cache/);
   });
   test('failure output is bounded, redacts keys and omits provider error messages', async () => {
     const h = harness(); h.deps.runtime = async () => result(`sk-fictional-eval-secret ${'x'.repeat(5000)}`);
