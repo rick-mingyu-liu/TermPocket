@@ -28,3 +28,5 @@ node_modules/
 !/docs/MEMORY.md
 !/docs/architecture.drawio
 !/docs/architecture.png
+!/docs/architecture-overview.drawio
+!/docs/architecture-overview.png
