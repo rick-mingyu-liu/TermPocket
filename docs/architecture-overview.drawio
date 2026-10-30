@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="termpocket-overview" name="TermPocket overview">
+    <mxGraphModel dx="1280" dy="680" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="680" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b style='font-size:26px'&gt;TermPocket&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:14px;color:#555555'&gt;Personal finance for students, with an AI assistant · how it fits together&lt;/span&gt;" style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="device" value="Your phone or laptop" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#F2F6FC;strokeColor=#6C8EBF;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;fontStyle=1;fontSize=15;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="300" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="web" value="&lt;b style='font-size:15px'&gt;Web app&lt;/b&gt;&lt;br&gt;Next.js 15 · React · TypeScript&lt;br&gt;&lt;span style='font-size:11px;color:#444444'&gt;Dashboard · transactions · goals&lt;br&gt;chat with Pocky · English and 中文&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="150" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ondevice" value="&lt;b style='font-size:15px'&gt;On-device AI&lt;/b&gt;&lt;br&gt;Screenshot OCR (ONNX) · voice (Whisper)&lt;br&gt;&lt;span style='font-size:11px;color:#444444'&gt;Images and audio never leave the device;&lt;br&gt;only the text is sent&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="300" width="260" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api" value="TermPocket API · Express + TypeScript on Render" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFF8EE;strokeColor=#D79B00;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;fontStyle=1;fontSize=15;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="430" y="100" width="380" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="rest" value="&lt;b style='font-size:15px'&gt;REST API&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;Sign-in (JWT) · transactions · goals&lt;br&gt;term summaries · screenshot import&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="450" y="167" width="340" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="pocky" value="&lt;b style='font-size:15px'&gt;Pocky, the AI assistant&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;Records spending from chat, answers questions&lt;br&gt;about your records, projects cash flow,&lt;br&gt;proposes savings goals, remembers facts&lt;/span&gt;&lt;br&gt;&lt;span style='font-size:11px;color:#444444'&gt;It only drafts: you save with a button&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="450" y="268" width="340" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp" value="&lt;b&gt;/mcp&lt;/b&gt; · read-only totals for your own AI agent" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="450" y="410" width="340" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db" value="&lt;b style='font-size:15px'&gt;Neon PostgreSQL&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;Transactions · goals · conversations · memories&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="160" width="330" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="claude" value="&lt;b style='font-size:15px'&gt;Claude API&lt;/b&gt; (Anthropic)&lt;br&gt;&lt;span style='font-size:12px'&gt;Claude Sonnet 5.5 · tool use · prompt caching&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="286" width="330" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="email" value="&lt;b style='font-size:15px'&gt;Email&lt;/b&gt; (Resend)&lt;br&gt;&lt;span style='font-size:12px'&gt;Verification · weekly report&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="400" width="330" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agent" value="&lt;b style='font-size:15px'&gt;Your own AI agent&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:12px'&gt;e.g. Claude, over MCP with a revocable token&lt;/span&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="delivery" value="&lt;b style='font-size:15px'&gt;Delivery&lt;/b&gt;&amp;nbsp;&amp;nbsp; GitHub Actions CI (lint · 1,000+ tests · build)&amp;nbsp; →&amp;nbsp; Vercel (frontend) · Render (backend)" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=13;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="430" y="540" width="800" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="HTTPS + JWT" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="rest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="text only" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#82B366;exitX=1;exitY=0.5;entryX=0;entryY=0.6667;" edge="1" parent="1" source="ondevice" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="SQL" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="rest" target="db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="tool use" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#B85450;fontColor=#B85450;" edge="1" parent="1" source="pocky" target="claude">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="weekly report" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;fontSize=11;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.86;exitDx=0;exitDy=0;entryX=0;entryY=0.5;" edge="1" parent="1" source="api" target="email">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="MCP" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#9673A6;fontColor=#9673A6;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="agent" target="mcp">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="580" />
+              <mxPoint x="390" y="510" />
+              <mxPoint x="620" y="510" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
