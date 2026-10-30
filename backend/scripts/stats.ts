@@ -153,9 +153,12 @@ export async function gatherStats(db: Db, schema: string): Promise<Stats> {
   }
 
   // Before migration 023 a token has no expires_at and never expires.
-  const live = columns.has('access_tokens.expires_at')
-    ? `AND COALESCE(x.expires_at, x.created_at + make_interval(days => ${Number(config.accessTokens.ttlDays)})) > now()` : '';
-  const tokens = (await db.query(`SELECT count(*) AS active FROM access_tokens x ${NOT_DEMO} WHERE x.revoked_at IS NULL ${live}`)).rows[0];
+  const expiring = columns.has('access_tokens.expires_at');
+  const tokens = (await db.query(
+    `SELECT count(*) AS active FROM access_tokens x ${NOT_DEMO} WHERE x.revoked_at IS NULL
+     ${expiring ? 'AND COALESCE(x.expires_at, x.created_at + make_interval(days => $1)) > now()' : ''}`,
+    expiring ? [config.accessTokens.ttlDays] : []
+  )).rows[0];
 
   return {
     signups: windowed(users, 'signups'),
@@ -186,7 +189,7 @@ export function formatStats(s: Stats, today: string): string {
     '',
     'Accounts',
     row('sign-ups (kept)', s.signups),
-    row('verified email', s.verified),
+    row('  of which verified', s.verified),
     row('active (recorded something)', s.activeAccounts),
     '',
     'Records',

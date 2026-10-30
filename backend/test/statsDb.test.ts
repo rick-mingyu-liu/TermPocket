@@ -23,16 +23,19 @@ describe('stats against the database', { skip: !enabled }, () => {
   after(async () => { if (db) { client.release(); await db.getPool().end(); } });
 
   test('counts an ordinary account, never the demo account', async () => {
-    await client.query('BEGIN');
+    // One snapshot, so rows other test files commit meanwhile cannot move the counts.
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
     try {
       const schema = String((await client.query('SELECT current_schema() AS s')).rows[0]!.s);
       const before = await stats.gatherStats(client, schema);
-      await client.query('UPDATE users SET is_demo = FALSE WHERE is_demo = TRUE');
       const user = async (demo: boolean) => (await client.query<{ id: number }>(
         "INSERT INTO users(email,password_hash,first_name,last_name,email_verified,is_demo) VALUES($1,'x','Stats','Fictional',TRUE,$2) RETURNING id",
         [`stats-${randomUUID()}@example.invalid`, demo],
       )).rows[0]!.id;
-      for (const id of [await user(false), await user(true)]) {
+      // At most one demo account exists: reuse it rather than unflag it, which would make its rows count.
+      const existingDemo = (await client.query<{ id: number }>('SELECT id FROM users WHERE is_demo')).rows[0];
+      const demoId = existingDemo ? existingDemo.id : await user(true);
+      for (const id of [await user(false), demoId]) {
         await client.query("INSERT INTO transactions(user_id,amount,type,category,description,date,currency,source) VALUES($1,12.5,'expense','Dining Out','Fictional lunch',current_date,'CAD','agent')", [id]);
         await client.query("INSERT INTO savings_goals(user_id,name,target_amount,current_amount,target_date,currency) VALUES($1,'Fictional goal',500,0,current_date + 30,'CAD')", [id]);
       }
