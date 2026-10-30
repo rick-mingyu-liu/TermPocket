@@ -89,7 +89,7 @@ export default function VerifyEmail() {
         <meta name="description" content="Verify your TermPocket account email" />
       </Head>
 
-      <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+      <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
@@ -99,7 +99,7 @@ export default function VerifyEmail() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100">
+          <Card className="shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1 text-center">
               <div className="flex justify-center mb-4">
                 {getStatusIcon()}
