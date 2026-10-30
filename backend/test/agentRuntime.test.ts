@@ -7,6 +7,9 @@ import { AgentError } from '../services/agent/types';
 import { recordsFor } from '../services/agent/investigation';
 import db = require('../db/connection');
 
+/** The system prompt's text; the request sends it as one cached text block. */
+const systemText = (body: MessageCreateParamsNonStreaming) => (body.system as Array<{ text: string }>).map(b => b.text).join('');
+
 const unused = async () => assert.fail('records read without a tool call');
 const records = { spendingSummary: unused, compareSpending: unused, transactionDetails: unused, spendingBaseline: unused, listGoals: unused, calculateScenario: unused, prepareGoalProposal: unused, prepareMemoryProposal: unused };
 const input = { content: 'Coffee 5 CAD today', history: [], pendingRows: [], currency: 'CAD', timezone: 'America/Toronto', language: 'en' as const, today: '2026-10-14', signal: new AbortController().signal, records };
@@ -60,7 +63,7 @@ function directHarness(model: Model, finalText = 'Please review the draft.') {
 async function harness(model: Model): Promise<Harness> {
   const h = directHarness(model);
   const runtime = createDirectRuntime(async () => h.client);
-  return { runtime, prompt: () => JSON.parse(String(h.requests[0]!.messages[0]!.content)) as Record<string, unknown>, system: () => String(h.requests[0]!.system) };
+  return { runtime, prompt: () => JSON.parse(String(h.requests[0]!.messages[0]!.content)) as Record<string, unknown>, system: () => systemText(h.requests[0]!) };
 }
 
 const text = (result: ToolOut) => result.content[0]!.text!;

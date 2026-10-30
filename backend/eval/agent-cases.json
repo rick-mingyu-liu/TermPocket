@@ -1037,7 +1037,7 @@
         "maxToolCalls": 2,
         "draft": {"count": 1, "rows": [{"type": "expense", "amount": "12.50", "currency": "CAD", "category": "Dining Out", "date": "2026-10-14"}]},
         "memoryProposal": null,
-        "reply": {"mustContainAny": [["confirm", "review"]], "mustNotContain": ["has been saved", "i've saved", "i have saved", "been recorded", "is saved"]}
+        "reply": {"mustContainAny": [["confirm", "review"]], "mustNotContain": ["has been saved", "i've saved", "i have saved", "been recorded"], "mustNotMatch": ["(?<!\\bnothing |\\bnot )\\bis saved\\b"]}
       }
     },
     {

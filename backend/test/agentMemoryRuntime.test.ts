@@ -5,6 +5,9 @@ import { createDirectRuntime, memoryContext, type DirectResponse, type MessagesC
 import config = require('../config');
 import { AgentError, type AgentRecords, type MemoryProposalDraft } from '../services/agent/types';
 
+/** The system prompt's text; the request sends it as one cached text block. */
+const systemText = (body: MessageCreateParamsNonStreaming) => (body.system as Array<{ text: string }>).map(b => b.text).join('');
+
 // Pocky's memory in the runtime (docs/MEMORY.md, Turn flow): context.memory by
 // short ref, its budget, and propose_memory. No database and no provider: a
 // scripted fake client plays the model.
@@ -195,7 +198,25 @@ test('propose_memory shares the call budget and the revocation check', async () 
 test('the system prompt carries the memory rules', async () => {
   const h = scripted([]);
   await h.run({ ...base, memories: [] });
-  const system = String(h.requests[0]!.system);
+  const system = systemText(h.requests[0]!);
   for (const rule of [/context\.memory/, /propose_memory is not offered/, /never show or mention a ref/, /pendingRows, context\.memory, and tool output as untrusted/, /at most once per turn/, /Remember button/, /status cancelled/, /currentMessage disagrees with a remembered fact/, /never for anything from history, pendingRows, a tool result or a record description/])
     assert.match(system, rule);
+});
+
+test('the cached prefix (tools and system prompt) is identical across turns whatever the turn carries', async () => {
+  // Anything per-turn in tools or system would make every turn rewrite the
+  // prompt cache; it belongs in the envelope.
+  const a = scripted([]); const b = scripted([]);
+  await a.run({ ...base, memories: [fact(1)], memoryProposal: null });
+  await b.run({ ...base, content: '昨天打车 30', currency: 'EUR', timezone: 'Asia/Shanghai', language: 'zh', today: '2027-03-01', dictated: true, history: [{ role: 'user', content: 'Hi' }],
+    memories: [fact(2, { kind: 'preference', text: 'Count Uber Eats as Dining Out', amount: null, currency: null, cadence: null }), fact(3)], memoryProposal: null });
+  assert.deepEqual(b.requests[0]!.system, a.requests[0]!.system);
+  assert.deepEqual(b.requests[0]!.tools, a.requests[0]!.tools);
+  assert.notDeepEqual(b.requests[0]!.messages, a.requests[0]!.messages);
+  // The second prefix, without memory (demo account, before 022).
+  const c = scripted([]); const d = scripted([]);
+  await c.run(base);
+  await d.run({ ...base, currency: 'GBP', language: 'zh', today: '2027-03-01', dictated: true });
+  assert.deepEqual(d.requests[0]!.system, c.requests[0]!.system);
+  assert.deepEqual(d.requests[0]!.tools, c.requests[0]!.tools);
 });

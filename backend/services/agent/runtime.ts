@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 // The ESM typings, which the client's import() below resolves to.
 import type { ClientOptions } from '@anthropic-ai/sdk' with { 'resolution-mode': 'import' };
-import type { ContentBlock, ContentBlockParam, Message, MessageCreateParamsNonStreaming, MessageParam, Tool, ToolResultBlockParam, ToolUseBlock } from '@anthropic-ai/sdk/resources/messages';
+import type { ContentBlock, ContentBlockParam, Message, MessageCreateParamsNonStreaming, MessageParam, TextBlockParam, Tool, ToolResultBlockParam, ToolUseBlock } from '@anthropic-ai/sdk/resources/messages';
 import config = require('../../config');
 import logger = require('../../utils/logger');
 import { errorSummary } from '../../utils/errorSummary';
@@ -515,7 +515,7 @@ export function clientOptions(): ClientOptions {
 }
 
 /** One HTTP client per process, created on the first turn. */
-const claudeClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
+export const claudeClient: () => Promise<MessagesClient> = cacheOnSuccess(() => import('@anthropic-ai/sdk').then(({default: Anthropic}) => new Anthropic(clientOptions())));
 
 /**
  * Thinking as off as each model allows. Left unset, Claude thinks by default
@@ -551,6 +551,22 @@ const inputSchema = (shape: z.ZodRawShape): Tool.InputSchema => {
 };
 
 /**
+ * Prompt caching, two breakpoints. The one on the system prompt covers the
+ * tools and the system prompt, which are the same for every turn of every user
+ * (turns where memory is unavailable, the demo account's and those before
+ * 022, share a second prefix without propose_memory), so any turn within five minutes of
+ * another reads them back. The top-level one
+ * moves to the last block of each request, so each later round trip in a turn
+ * reads everything the one before it sent. Both use the default five-minute
+ * TTL. Anything that changes per turn (the date, memories, the envelope) is in
+ * `messages`, after the first breakpoint; a date in the system prompt or the
+ * tools would make every turn rewrite it. Cached tokens still count in full
+ * against the turn's token budget (observe()).
+ */
+const CACHE = {type:'ephemeral'} as const;
+const cachedSystem: TextBlockParam[] = [{type:'text', text:systemPrompt, cache_control:CACHE}];
+
+/**
  * Pocky's tool loop, run in this process over plain HTTP. It replaced the
  * Claude Agent SDK, which spawned a ~240 MB CLI process per turn and injected
  * the host's date into the request. The request carries only the system prompt, the JSON envelope, the tools'
@@ -568,8 +584,8 @@ export function createDirectRuntime(loadClient: () => Promise<MessagesClient> = 
       const messages: MessageParam[] = [{role:'user', content:prompt(input)}];
       for (let step = 1; ; step++) {
         const response = await Promise.race([client.messages.create({
-          model:config.agent.model, max_tokens:config.agent.maxOutputTokens, system:systemPrompt, messages, tools,
-          thinking:thinkingFor(config.agent.model),
+          model:config.agent.model, max_tokens:config.agent.maxOutputTokens, system:cachedSystem, messages, tools,
+          thinking:thinkingFor(config.agent.model), cache_control:CACHE,
         }, {signal:turn.controller.signal}), turn.aborted]);
         // Keyed per request: every response is a separate billed call, whatever id it carries.
         turn.observe(`${step}:${response.id}`, response.content, response.usage);
