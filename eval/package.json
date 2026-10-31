@@ -2,15 +2,18 @@
   "name": "mindgo-import-eval",
   "version": "1.0.0",
   "private": true,
-  "description": "Benchmark for the screenshot import: on-device OCR plus the backend parser",
+  "description": "Benchmarks for the screenshot import (on-device OCR plus the backend parser) and the on-device voice dictation",
   "type": "module",
   "scripts": {
     "generate": "node generate.mjs",
     "benchmark": "node run.mjs",
     "fixtures": "node exportFixtures.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "voice:generate": "node voice/generate.mjs",
+    "voice:benchmark": "node voice/run.mjs"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.3.1",
     "@napi-rs/canvas": "1.0.13",
     "onnxruntime-node": "1.30.0",
     "ppu-paddle-ocr": "6.6.1"

@@ -16,6 +16,7 @@ import MemoryProposalCard from '@/components/agent/MemoryProposalCard'
 import { readPreferences } from '@/lib/preferences'
 import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
 import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MemoryConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
+import { api } from '@/utils/api'
 
 // Visiting or updating a conversation must not change its place in history.
 const creationOrder = (items: Conversation[]) => [...items].sort((a, b) =>
@@ -24,6 +25,10 @@ const creationOrder = (items: Conversation[]) => [...items].sort((a, b) =>
 const DEFAULT_TITLE = 'New conversation'
 // Must equal the server's amount rule in services/agent/validation.ts.
 const AMOUNT_PATTERN = /^(0|[1-9]\d{0,7})\.\d{2}$/
+// How many of the user's most recent transaction descriptions the transcriber
+// may learn merchant names from (the API's largest page; the worker's prompt
+// keeps at most 40 of them, letters only).
+const VOCABULARY_LIMIT = 200
 // A transcript still counts as in the composer while at least half of its
 // words are there: edits keep a dictated message flagged, typing over it does not.
 const holdsTranscript = (content: string, transcript: string) => {
@@ -76,6 +81,18 @@ export default function AgentPage() {
   const [canDictate, setCanDictate] = useState(false)
   useEffect(() => { setCanDictate(dictationSupported()) }, [])
   useEffect(() => { if (!content.trim()) setTranscripts([]) }, [content])
+  // The transcriber's vocabulary: the user's most recent transaction
+  // descriptions, newest first (the API orders by date DESC, id DESC), read
+  // once per visit and only when the user dictates. They stay in this tab and
+  // the dictation worker; nothing new leaves the browser. A failed read means
+  // no vocabulary, never a dialog (`background`) or a failed dictation.
+  const vocabulary = useRef<Promise<string[]> | null>(null)
+  const dictationTerms = () => {
+    vocabulary.current ??= api.get<{ transactions: { description: string | null }[] }>('/transactions', { params: { limit: VOCABULARY_LIMIT }, background: true })
+      .then(response => response.data.transactions.map(row => row.description ?? '').filter(Boolean))
+      .catch(() => [])
+    return vocabulary.current
+  }
   // Insert the transcript at the cursor (or append), never replacing what is there.
   const dictation = useDictation(text => {
     const box = composer.current
@@ -89,7 +106,7 @@ export default function AgentPage() {
     })
     setTranscripts(previous => [...previous, text])
     box?.focus()
-  })
+  }, dictationTerms)
   // Recording or transcribing: a transcript is on its way into this composer.
   // Loading the model is not: Send stays usable while it downloads.
   const dictating = dictation.state.status === 'recording' || dictation.state.status === 'transcribing'
