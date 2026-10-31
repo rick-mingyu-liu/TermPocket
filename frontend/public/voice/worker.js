@@ -6,12 +6,21 @@
 // (1.31.0-dev); every file it loads is served from this site by
 // scripts/voice-assets.js, which pins each one by version and SHA-256. The
 // directory names below must match that script's; change them together.
+// audio.js (silence trimming, level) and prompt.js (Whisper's prompt) are
+// plain modules shared with the Node benchmark in eval/voice/, so what is
+// measured there is what runs here.
 //
-// Messages in:  { type: 'load' }, { type: 'transcribe', id, audio: Float32Array (16 kHz mono) }
+// Messages in:  { type: 'load' }
+//               { type: 'transcribe', id, audio: Float32Array (16 kHz mono), terms?: string[] }
+//                 `terms` are the user's recent transaction descriptions,
+//                 newest first; they bias recognition towards those words.
 // Messages out: { type: 'progress', loaded, total }, { type: 'ready' },
 //               { type: 'result', id, text }, { type: 'error', id?, message }
-// Audio stays in this worker's memory; nothing is uploaded, stored or logged.
+// Audio, terms and transcripts stay in this worker's memory; nothing is
+// uploaded, stored or logged.
 import { AutoProcessor, AutoTokenizer, WhisperForConditionalGeneration, Tensor, env } from '/voice/transformers-4.3.1/transformers.min.js'
+import { prepare } from '/voice/audio.js'
+import { buildPromptIds } from '/voice/prompt.js'
 
 const ORT_VERSION = '1.31.0-dev.20260914-8d85527a0'
 const MODEL = 'whisper-base.en-51eefc0'
@@ -38,13 +47,6 @@ try {
   setup = error
 }
 
-// The words prompt ("w2" in docs/VOICE.md: 58/60 usable amounts on synthetic
-// voices, 20/20 on the owner's iPhone). Lowercase, no punctuation, amounts in
-// words, so Whisper writes "uber twenty three forty" rather than "Uber 2340".
-// Transformers.js 4.3.1 ignores generate({prompt_ids}), so the prompt goes in
-// as decoder input: <|startofprev|> prompt <|startoftranscript|><|notimestamps|>.
-const PROMPT = 'pizza at dominos eighteen twenty five parking seven fifty yesterday paid twelve hundred rent sobeys forty three oh six today'
-
 let loading = null
 
 function load() {
@@ -62,23 +64,46 @@ function load() {
     AutoProcessor.from_pretrained(MODEL, { progress_callback }),
     AutoTokenizer.from_pretrained(MODEL, { progress_callback }),
     WhisperForConditionalGeneration.from_pretrained(MODEL, { dtype: 'q8', device: 'wasm', progress_callback }),
-  ]).then(([processor, tokenizer, model]) => {
-    const special = token => tokenizer.convert_tokens_to_ids(token)
-    const ids = [special('<|startofprev|>'), ...tokenizer.encode(' ' + PROMPT, { add_special_tokens: false }),
-      special('<|startoftranscript|>'), special('<|notimestamps|>')]
-    return { processor, tokenizer, model, ids }
-  })
+  ]).then(([processor, tokenizer, model]) => ({ processor, tokenizer, model }))
   // A failed load may be retried by the next request.
   loading.catch(() => { loading = null })
   return loading
 }
 
+// The prompt (prompt.js): the "w2" amount examples (58/60 usable amounts on
+// synthetic voices, 20/20 on the owner's iPhone) — lowercase, no punctuation,
+// amounts in words, so Whisper writes "uber twenty three forty" rather than
+// "Uber 2340" — followed by the user's recent merchant names in the same
+// style, within 200 tokens. Transformers.js 4.3.1 ignores
+// generate({prompt_ids}), so the prompt goes in as decoder input:
+// <|startofprev|> prompt <|startoftranscript|><|notimestamps|>.
+// Encoded once per distinct terms list: a session whose terms do not change
+// pays for the tokenizer once.
+let cachedPrompt = null
+
+function promptFor(tokenizer, terms) {
+  const list = Array.isArray(terms) ? terms.filter(term => typeof term === 'string') : []
+  const key = list.join('\n')
+  if (cachedPrompt?.tokenizer === tokenizer && cachedPrompt.key === key) return cachedPrompt.ids
+  const special = token => tokenizer.convert_tokens_to_ids(token)
+  const encode = text => tokenizer.encode(text, { add_special_tokens: false })
+  const ids = [special('<|startofprev|>'), ...buildPromptIds(encode, list), special('<|startoftranscript|>'), special('<|notimestamps|>')]
+  cachedPrompt = { tokenizer, key, ids }
+  return ids
+}
+
 // Whisper marks non-speech as "[BLANK_AUDIO]", "(silence)", "[Music]" and the like.
 const clean = text => text.replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
 
-async function transcribe(audio) {
-  const { processor, tokenizer, model, ids } = await load()
-  const { input_features } = await processor(audio)
+/** The transcript, or '' when the recording holds no speech (the model is not run). */
+async function transcribe(audio, terms) {
+  const { processor, tokenizer, model } = await load()
+  // Trim the silence around the speech and bring it to a known level; a
+  // silent take comes back empty and is reported as no speech.
+  const speech = prepare(audio)
+  if (speech.length === 0) return ''
+  const ids = promptFor(tokenizer, terms)
+  const { input_features } = await processor(speech)
   const decoder_input_ids = new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length])
   const out = await model.generate({ inputs: input_features, decoder_input_ids, max_new_tokens: 96 })
   return clean(tokenizer.batch_decode(out.slice(null, [ids.length, null]), { skip_special_tokens: true })[0] ?? '')
@@ -91,7 +116,7 @@ self.onmessage = async ({ data }) => {
     try { await load(); postMessage({ type: 'ready' }) }
     catch (error) { postMessage({ type: 'error', message: describe(error) }) }
   } else if (data?.type === 'transcribe') {
-    try { postMessage({ type: 'result', id: data.id, text: await transcribe(data.audio) }) }
+    try { postMessage({ type: 'result', id: data.id, text: await transcribe(data.audio, data.terms) }) }
     catch (error) { postMessage({ type: 'error', id: data.id, message: describe(error) }) }
   }
 }

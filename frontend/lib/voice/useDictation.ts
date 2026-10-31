@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 const SAMPLE_RATE = 16_000
 /** Recording stops by itself after this long. */
 export const DICTATION_LIMIT_MS = 15_000
-/** Below this peak level a recording is treated as silence, so Whisper is never asked to invent words for it. */
-const SILENCE_PEAK = 0.01
 /** A recording smaller than this holds no usable speech (a tap-tap, or a recorder that produced nothing). */
 const MIN_RECORDING_BYTES = 1_000
+/** A vocabulary source slower than this is skipped for the recording at hand; dictation never waits on it for long. */
+const TERMS_TIMEOUT_MS = 3_000
 /** A model download that reports no progress for this long is treated as failed. */
 const LOAD_STALL_MS = 5 * 60_000
 
@@ -60,9 +60,16 @@ async function toWhisperInput(blob: Blob, context: AudioContext): Promise<Float3
   }
 }
 
-function silent(audio: Float32Array): boolean {
-  for (let i = 0; i < audio.length; i++) if (Math.abs(audio[i]!) >= SILENCE_PEAK) return false
-  return true
+/**
+ * The vocabulary for one recording: `source`'s terms, or none when it fails
+ * or has not answered within TERMS_TIMEOUT_MS. Never rejects.
+ */
+function termsWithin(source: Promise<readonly string[]>): Promise<string[]> {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve([]), TERMS_TIMEOUT_MS)
+    source.then(terms => { clearTimeout(timer); resolve(Array.isArray(terms) ? [...terms] : []) },
+      () => { clearTimeout(timer); resolve([]) })
+  })
 }
 
 /**
@@ -72,8 +79,17 @@ function silent(audio: Float32Array): boolean {
  * `onText` and never sent anywhere. The model worker lives at
  * /voice/worker.js and is created on first use and terminated on unmount.
  * Audio exists only in this tab's memory: it is not uploaded, stored or logged.
+ * The worker trims the silence around the speech and decides whether there
+ * was any (public/voice/audio.js), so a silent take is 'noSpeech' here.
+ *
+ * `terms`, when given, supplies words to bias recognition towards (the user's
+ * recent transaction descriptions, newest first). It is called as each
+ * recording starts, so its fetch overlaps the recording, and awaited before
+ * transcribing for at most 3 s; a failure or a slow answer means no terms for
+ * that recording, never a failed or delayed dictation. The terms go to the
+ * worker with the audio and nowhere else.
  */
-export function useDictation(onText: (text: string) => void) {
+export function useDictation(onText: (text: string) => void, terms?: () => Promise<readonly string[]>) {
   const [state, setState] = useState<DictationState>({ status: 'idle' })
   const [error, setError] = useState<DictationError | null>(null)
   const worker = useRef<Worker | null>(null)
@@ -90,6 +106,8 @@ export function useDictation(onText: (text: string) => void) {
   const mounted = useRef(true)
   const deliver = useRef(onText)
   deliver.current = onText
+  const vocabulary = useRef(terms)
+  vocabulary.current = terms
 
   const update = (next: DictationState) => { if (mounted.current) setState(next) }
   const fail = (code: DictationError) => { if (mounted.current) { setError(code); setState({ status: 'idle' }) } }
@@ -133,12 +151,12 @@ export function useDictation(onText: (text: string) => void) {
     return promise
   }, [stopWorker])
 
-  const transcribe = (audio: Float32Array) => new Promise<string>((resolve, reject) => {
+  const transcribe = (audio: Float32Array, terms: string[]) => new Promise<string>((resolve, reject) => {
     const w = worker.current
     if (!w) { reject(new Error('The speech engine is not running.')); return }
     const id = nextId.current++
     waiting.current.set(id, { resolve, reject })
-    w.postMessage({ type: 'transcribe', id, audio }, [audio.buffer])
+    w.postMessage({ type: 'transcribe', id, audio, terms }, [audio.buffer])
   })
 
   const release = () => {
@@ -177,6 +195,11 @@ export function useDictation(onText: (text: string) => void) {
     }
     if (!mounted.current) { media.getTracks().forEach(track => track.stop()); closeContext(); return }
     stream.current = media
+    // Ask for the vocabulary now, so its fetch runs while the user speaks.
+    // A throwing source counts as an empty answer, like a rejecting one.
+    let pendingTerms: Promise<readonly string[]> = Promise.resolve([])
+    try { pendingTerms = vocabulary.current?.() ?? pendingTerms } catch { /* no terms for this recording */ }
+    pendingTerms.catch(() => undefined)
     const chunks: Blob[] = []
     const r = new MediaRecorder(media)
     recorder.current = r
@@ -192,7 +215,7 @@ export function useDictation(onText: (text: string) => void) {
       try {
         // toWhisperInput closes the context.
         const audio = await toWhisperInput(blob, context)
-        const text = silent(audio) ? '' : await transcribe(audio)
+        const text = await transcribe(audio, await termsWithin(pendingTerms))
         if (!mounted.current) return
         if (!text) { fail('noSpeech'); return }
         update({ status: 'idle' })

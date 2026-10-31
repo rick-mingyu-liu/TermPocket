@@ -3,6 +3,17 @@ import Swal from 'sweetalert2'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
+// A request made in the background, whose caller handles (or ignores) every
+// failure itself: the response interceptor raises no dialog for it. A 401
+// still logs out, like everywhere else. Set `background: true` on reads the
+// user did not ask for and would not understand an error dialog about, such
+// as the dictation vocabulary fetched while the user speaks.
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    background?: boolean
+  }
+}
+
 // Where a personal agent connects to read totals; configured in its MCP client.
 export const MCP_ENDPOINT_URL = `${API_BASE_URL}/mcp`
 
@@ -47,6 +58,12 @@ api.interceptors.response.use(
     // shared authentication expiry behavior, without a second generic dialog.
     if (error.config?.url?.startsWith('/agent')) {
       if (response?.status === 401) logout()
+      return Promise.reject(error)
+    }
+
+    // A background read (see `background` above) must never interrupt the
+    // page with a dialog: its caller falls back quietly. A 401 still logs out.
+    if (error.config?.background && response?.status !== 401) {
       return Promise.reject(error)
     }
 

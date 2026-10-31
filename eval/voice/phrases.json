@@ -1,0 +1,25 @@
+{
+  "_comment": "The 20 fictional phrases of docs/VOICE.md round 2, with what a usable transcript must keep. `amount` is the spoken amount; `alsoAccept` lists other readings that count (bus pass: 128 or 1.28, since the words say either). `merchant` is the payee's words (null when the phrase names none); `date` the spoken date words; `keep` other words that must survive. All lowercase; the scorer normalises case and punctuation.",
+  "phrases": [
+    { "id": "01", "text": "lunch fifteen dollars", "amount": "15.00", "merchant": null, "date": null, "keep": ["lunch"] },
+    { "id": "02", "text": "uber twenty three forty", "amount": "23.40", "merchant": "uber", "date": null, "keep": [] },
+    { "id": "03", "text": "groceries at no frills sixty two eighteen yesterday", "amount": "62.18", "merchant": "no frills", "date": "yesterday", "keep": [] },
+    { "id": "04", "text": "paid rent one thousand one hundred fifty dollars", "amount": "1150.00", "merchant": null, "date": null, "keep": ["rent"] },
+    { "id": "05", "text": "coffee at tim hortons four seventy five", "amount": "4.75", "merchant": "tim hortons", "date": null, "keep": [] },
+    { "id": "06", "text": "bus pass one twenty eight yesterday", "amount": "128.00", "alsoAccept": ["1.28"], "merchant": null, "date": "yesterday", "keep": ["bus", "pass"] },
+    { "id": "07", "text": "got paid two thousand four hundred eighty from my co-op", "amount": "2480.00", "merchant": "co-op", "date": null, "keep": ["paid"] },
+    { "id": "08", "text": "textbook from the bookstore ninety nine ninety nine", "amount": "99.99", "merchant": "bookstore", "date": null, "keep": ["textbook"] },
+    { "id": "09", "text": "netflix sixteen ninety nine", "amount": "16.99", "merchant": "netflix", "date": null, "keep": [] },
+    { "id": "10", "text": "dinner at the keg eighty four dollars and twenty cents last night", "amount": "84.20", "merchant": "keg", "date": "last night", "keep": [] },
+    { "id": "11", "text": "haircut thirty five dollars", "amount": "35.00", "merchant": null, "date": null, "keep": ["haircut"] },
+    { "id": "12", "text": "phone bill sixty five dollars", "amount": "65.00", "merchant": null, "date": null, "keep": ["phone", "bill"] },
+    { "id": "13", "text": "shoppers drug mart twelve forty nine today", "amount": "12.49", "merchant": "shoppers drug mart", "date": "today", "keep": [] },
+    { "id": "14", "text": "twenty five us dollars on steam", "amount": "25.00", "merchant": "steam", "date": null, "keep": ["us"] },
+    { "id": "15", "text": "gas at petro canada fifty one thirty", "amount": "51.30", "merchant": "petro canada", "date": null, "keep": [] },
+    { "id": "16", "text": "spent nine fifty on bubble tea yesterday", "amount": "9.50", "merchant": "bubble tea", "date": "yesterday", "keep": [] },
+    { "id": "17", "text": "amazon order forty two seventeen", "amount": "42.17", "merchant": "amazon", "date": null, "keep": [] },
+    { "id": "18", "text": "tuition deposit five hundred dollars", "amount": "500.00", "merchant": null, "date": null, "keep": ["tuition"] },
+    { "id": "19", "text": "movie tickets at cineplex thirty two fifty", "amount": "32.50", "merchant": "cineplex", "date": null, "keep": [] },
+    { "id": "20", "text": "refund from best buy eighty nine ninety nine", "amount": "89.99", "merchant": "best buy", "date": null, "keep": [] }
+  ]
+}
