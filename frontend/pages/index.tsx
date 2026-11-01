@@ -220,6 +220,14 @@ export default function Dashboard() {
   const topUp = useGoalTopUp(goals)
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  // The pie chart's width, so the radius can leave room for its labels. Read
+  // from the wrapper when it mounts, then kept current by the
+  // ResponsiveContainer's own observer (whose first notification can be
+  // missed in an iframe, which is why the mount read is not optional).
+  const [pieChartWidth, setPieChartWidth] = useState(0)
+  const pieChartMounted = useCallback((node: HTMLDivElement | null) => {
+    if (node) setPieChartWidth(node.clientWidth)
+  }, [])
   const [isNewUser, setIsNewUser] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
   const { resolvedTheme } = useTheme();
@@ -399,6 +407,33 @@ export default function Dashboard() {
     return null
   }
 
+  // The pie's outer labels: slices under 5% get none. Both lines are built
+  // here so the radius below and the renderer measure the same text.
+  const PIE_LABEL_MIN_PERCENT = 0.05
+  const pieLabelLines = (name: string, value: number, type: 'income' | 'expense', percent: number) => ({
+    nameText: t(name),
+    valueText: `${type === 'income' ? '+' : '-'}${formatCurrency(value, summary?.targetCurrency || defaultCurrency)} (${(percent * 100).toFixed(1)}%)`,
+  })
+  const pieLabelWidth = (lines: { nameText: string; valueText: string }) =>
+    Math.max(measureText(lines.nameText, 12, 500), measureText(lines.valueText, 10, 400))
+  const PIE_LABEL_EDGE = 4
+
+  // The pie is centred, so a label pointing straight left or right needs
+  // radius + a short leader + its own width on its side of the centre. On a
+  // phone the full 80px pie left no such room, and a label pushed inside the
+  // chart ran onto the pie. Shrink the pie (never below 56px) until the
+  // widest visible label fits beside it; the renderer's clamp below is only a
+  // last resort for charts narrower than even that.
+  const pieRadius = (() => {
+    const total = categoryChartData.reduce((sum, entry) => sum + entry.value, 0)
+    if (!pieChartWidth || total <= 0) return 80
+    const widest = Math.max(0, ...categoryChartData
+      .filter((entry) => entry.value / total >= PIE_LABEL_MIN_PERCENT)
+      .map((entry) => pieLabelWidth(pieLabelLines(entry.name, entry.value, entry.type, entry.value / total))))
+    const leader = 16
+    return Math.round(Math.min(80, Math.max(56, pieChartWidth / 2 - PIE_LABEL_EDGE - widest - leader)))
+  })()
+
   // Custom label renderer for pie chart
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value, type }: any) => {
     const RADIAN = Math.PI / 180;
@@ -410,18 +445,15 @@ export default function Dashboard() {
     const labelY = cy + labelRadius * Math.sin(-midAngle * RADIAN);
     const textAnchor = x > cx ? 'start' : 'end';
     const dominantBaseline = y > cy ? 'auto' : 'middle';
-    if (percent < 0.05) return null;
-    const sign = type === 'income' ? '+' : '-';
-    const nameText = t(name);
-    const valueText = `${sign}${formatCurrency(value, summary?.targetCurrency || defaultCurrency)} (${(percent * 100).toFixed(1)}%)`;
-    // The SVG clips at its own edge, so on a phone-wide chart a label pointing
-    // left lost its first digit. Measure the wider line and pull the anchor
-    // inward so the whole label stays inside. The pie is centred (cx="50%")
-    // and the PieChart has no margin, so the chart is 2·cx wide; a chart that
-    // fits neither the pie nor the label (about 375px and below) overlaps the
-    // pie's edge rather than clipping the number.
-    const labelWidth = Math.max(measureText(nameText, 12, 500), measureText(valueText, 10, 400));
-    const edge = 4;
+    if (percent < PIE_LABEL_MIN_PERCENT) return null;
+    const lines = pieLabelLines(name, value, type, percent);
+    const { nameText, valueText } = lines;
+    // The SVG clips at its own edge, so a label pointing left once lost its
+    // first digit. Pull the anchor inward so the whole label stays inside; the
+    // pie is centred (cx="50%") and the PieChart has no margin, so the chart
+    // is 2·cx wide.
+    const labelWidth = pieLabelWidth(lines);
+    const edge = PIE_LABEL_EDGE;
     const labelX = textAnchor === 'end'
       ? Math.max(anchorX, edge + labelWidth)
       : Math.min(anchorX, 2 * cx - edge - labelWidth);
@@ -757,8 +789,8 @@ export default function Dashboard() {
                 <CardContent>
                   {categoryChartData.length > 0 ? (
                     <>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-80" ref={pieChartMounted}>
+                        <ResponsiveContainer width="100%" height="100%" onResize={(width) => setPieChartWidth(width)}>
                           <PieChart style={{ cursor: 'pointer' }}>
                             <Pie
                               data={categoryChartData}
@@ -766,7 +798,7 @@ export default function Dashboard() {
                               cy="50%"
                               labelLine={false}
                               label={renderCustomLabel}
-                              outerRadius={80}
+                              outerRadius={pieRadius}
                               fill="#8884d8"
                               dataKey="value"
                               style={{ cursor: 'pointer' }}
