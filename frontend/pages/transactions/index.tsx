@@ -224,6 +224,10 @@ export default function Transactions() {
                   {t('Add Transaction')}
                 </Button>
               </div>
+              {/* Mobile: the FAB adds a transaction; import needs its own button */}
+              <Button variant="outline" size="icon" className="sm:hidden shrink-0" onClick={() => router.push('/import')} aria-label={t('Import from screenshot')}>
+                <ScanText className="w-6 h-6" />
+              </Button>
             </div>
           </div>
         </div>

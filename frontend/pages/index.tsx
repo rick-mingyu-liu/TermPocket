@@ -86,6 +86,20 @@ interface Goal {
   convertedCurrency?: string
 }
 
+// Width of a label in the page's font, from a scratch canvas, so the pie's
+// labels can be kept inside the chart. Falls back to a rough per-character
+// estimate during SSR, where no label is laid out anyway.
+const measureText = (() => {
+  let ctx: CanvasRenderingContext2D | null | undefined
+  return (text: string, fontSize: number, weight: number) => {
+    if (typeof document === 'undefined') return text.length * fontSize * 0.6
+    ctx ??= document.createElement('canvas').getContext('2d')
+    if (!ctx) return text.length * fontSize * 0.6
+    ctx.font = `${weight} ${fontSize}px ${getComputedStyle(document.body).fontFamily}`
+    return ctx.measureText(text).width
+  }
+})()
+
 // Colour follows the category, not its rank in the pie, so a slice keeps the same
 // colour whether you're looking at the Overall, Spending or Income view.
 const CATEGORY_COLORS: Record<string, string> = {
@@ -392,18 +406,31 @@ export default function Dashboard() {
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const labelRadius = outerRadius + 20;
-    const labelX = cx + labelRadius * Math.cos(-midAngle * RADIAN);
+    const anchorX = cx + labelRadius * Math.cos(-midAngle * RADIAN);
     const labelY = cy + labelRadius * Math.sin(-midAngle * RADIAN);
     const textAnchor = x > cx ? 'start' : 'end';
     const dominantBaseline = y > cy ? 'auto' : 'middle';
     if (percent < 0.05) return null;
     const sign = type === 'income' ? '+' : '-';
+    const nameText = t(name);
+    const valueText = `${sign}${formatCurrency(value, summary?.targetCurrency || defaultCurrency)} (${(percent * 100).toFixed(1)}%)`;
+    // The SVG clips at its own edge, so on a phone-wide chart a label pointing
+    // left lost its first digit. Measure the wider line and pull the anchor
+    // inward so the whole label stays inside. The pie is centred (cx="50%")
+    // and the PieChart has no margin, so the chart is 2·cx wide; a chart that
+    // fits neither the pie nor the label (about 375px and below) overlaps the
+    // pie's edge rather than clipping the number.
+    const labelWidth = Math.max(measureText(nameText, 12, 500), measureText(valueText, 10, 400));
+    const edge = 4;
+    const labelX = textAnchor === 'end'
+      ? Math.max(anchorX, edge + labelWidth)
+      : Math.min(anchorX, 2 * cx - edge - labelWidth);
     return (
       <g key={`label-${index}`}>
         <line x1={x} y1={y} x2={labelX} y2={labelY} stroke="hsl(var(--muted-foreground))" strokeWidth={1} opacity={0.6} />
-        <text x={labelX} y={labelY} fill="hsl(var(--foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={12} fontWeight={500}>{t(name)}</text>
+        <text x={labelX} y={labelY} fill="hsl(var(--foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={12} fontWeight={500}>{nameText}</text>
         <text x={labelX} y={labelY + 15} fill="hsl(var(--muted-foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={10}>
-          {sign}{formatCurrency(value, summary?.targetCurrency || defaultCurrency)} ({(percent * 100).toFixed(1)}%)
+          {valueText}
         </text>
       </g>
     );
@@ -466,6 +493,9 @@ export default function Dashboard() {
                 >
                   <Plus className="w-8 h-8" />
                 </button>
+                <Button variant="outline" size="icon" onClick={() => router.push('/import')} aria-label={t('Import from screenshot')}>
+                  <ScanText className="w-6 h-6" />
+                </Button>
                 <Button variant="outline" size="icon" onClick={() => router.push('/settings')} aria-label={t('Settings')}>
                   <SettingsIcon className="w-6 h-6" />
                 </Button>
