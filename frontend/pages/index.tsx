@@ -392,18 +392,32 @@ export default function Dashboard() {
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const labelRadius = outerRadius + 20;
-    const labelX = cx + labelRadius * Math.cos(-midAngle * RADIAN);
+    const anchorX = cx + labelRadius * Math.cos(-midAngle * RADIAN);
     const labelY = cy + labelRadius * Math.sin(-midAngle * RADIAN);
     const textAnchor = x > cx ? 'start' : 'end';
     const dominantBaseline = y > cy ? 'auto' : 'middle';
     if (percent < 0.05) return null;
     const sign = type === 'income' ? '+' : '-';
+    const nameText = t(name);
+    const valueText = `${sign}${formatCurrency(value, summary?.targetCurrency || defaultCurrency)} (${(percent * 100).toFixed(1)}%)`;
+    // The SVG clips at its own edge, so on a phone-wide chart a label pointing
+    // left lost its first digit. Estimate the wider line's width (a CJK
+    // character is about one em, anything else about 0.6) and pull the anchor
+    // inward so the whole label stays inside. The pie is centred (cx="50%"),
+    // so the chart is 2·cx wide.
+    const widthOf = (text: string, fontSize: number) =>
+      Array.from(text).reduce((w, ch) => w + (ch.codePointAt(0)! > 0x2e7f ? 1 : 0.6) * fontSize, 0);
+    const labelWidth = Math.max(widthOf(nameText, 12), widthOf(valueText, 10));
+    const edge = 4;
+    const labelX = textAnchor === 'end'
+      ? Math.max(anchorX, edge + labelWidth)
+      : Math.min(anchorX, 2 * cx - edge - labelWidth);
     return (
       <g key={`label-${index}`}>
         <line x1={x} y1={y} x2={labelX} y2={labelY} stroke="hsl(var(--muted-foreground))" strokeWidth={1} opacity={0.6} />
-        <text x={labelX} y={labelY} fill="hsl(var(--foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={12} fontWeight={500}>{t(name)}</text>
+        <text x={labelX} y={labelY} fill="hsl(var(--foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={12} fontWeight={500}>{nameText}</text>
         <text x={labelX} y={labelY + 15} fill="hsl(var(--muted-foreground))" textAnchor={textAnchor} dominantBaseline={dominantBaseline} fontSize={10}>
-          {sign}{formatCurrency(value, summary?.targetCurrency || defaultCurrency)} ({(percent * 100).toFixed(1)}%)
+          {valueText}
         </text>
       </g>
     );
@@ -466,6 +480,9 @@ export default function Dashboard() {
                 >
                   <Plus className="w-8 h-8" />
                 </button>
+                <Button variant="outline" size="icon" onClick={() => router.push('/import')} aria-label={t('Import from screenshot')}>
+                  <ScanText className="w-6 h-6" />
+                </Button>
                 <Button variant="outline" size="icon" onClick={() => router.push('/settings')} aria-label={t('Settings')}>
                   <SettingsIcon className="w-6 h-6" />
                 </Button>
