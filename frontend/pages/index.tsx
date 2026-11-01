@@ -86,6 +86,20 @@ interface Goal {
   convertedCurrency?: string
 }
 
+// Width of a label in the page's font, from a scratch canvas, so the pie's
+// labels can be kept inside the chart. Falls back to a rough per-character
+// estimate during SSR, where no label is laid out anyway.
+const measureText = (() => {
+  let ctx: CanvasRenderingContext2D | null | undefined
+  return (text: string, fontSize: number, weight: number) => {
+    if (typeof document === 'undefined') return text.length * fontSize * 0.6
+    ctx ??= document.createElement('canvas').getContext('2d')
+    if (!ctx) return text.length * fontSize * 0.6
+    ctx.font = `${weight} ${fontSize}px ${getComputedStyle(document.body).fontFamily}`
+    return ctx.measureText(text).width
+  }
+})()
+
 // Colour follows the category, not its rank in the pie, so a slice keeps the same
 // colour whether you're looking at the Overall, Spending or Income view.
 const CATEGORY_COLORS: Record<string, string> = {
@@ -401,13 +415,12 @@ export default function Dashboard() {
     const nameText = t(name);
     const valueText = `${sign}${formatCurrency(value, summary?.targetCurrency || defaultCurrency)} (${(percent * 100).toFixed(1)}%)`;
     // The SVG clips at its own edge, so on a phone-wide chart a label pointing
-    // left lost its first digit. Estimate the wider line's width (a CJK
-    // character is about one em, anything else about 0.6) and pull the anchor
-    // inward so the whole label stays inside. The pie is centred (cx="50%"),
-    // so the chart is 2·cx wide.
-    const widthOf = (text: string, fontSize: number) =>
-      Array.from(text).reduce((w, ch) => w + (ch.codePointAt(0)! > 0x2e7f ? 1 : 0.6) * fontSize, 0);
-    const labelWidth = Math.max(widthOf(nameText, 12), widthOf(valueText, 10));
+    // left lost its first digit. Measure the wider line and pull the anchor
+    // inward so the whole label stays inside. The pie is centred (cx="50%")
+    // and the PieChart has no margin, so the chart is 2·cx wide; a chart that
+    // fits neither the pie nor the label (about 375px and below) overlaps the
+    // pie's edge rather than clipping the number.
+    const labelWidth = Math.max(measureText(nameText, 12, 500), measureText(valueText, 10, 400));
     const edge = 4;
     const labelX = textAnchor === 'end'
       ? Math.max(anchorX, edge + labelWidth)
