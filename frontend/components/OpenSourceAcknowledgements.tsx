@@ -31,7 +31,6 @@ const frontendProjects: Project[] = [
   ['react-i18next', 'https://github.com/i18next/react-i18next'],
   ['SweetAlert2', 'https://sweetalert2.github.io'],
   ['react-hot-toast', 'https://github.com/timolins/react-hot-toast'],
-  ['react-markdown', 'https://github.com/remarkjs/react-markdown'],
   ['Axios', 'https://axios-http.com'],
   ['clsx', 'https://github.com/lukeed/clsx'],
   ['Class Variance Authority', 'https://github.com/joe-bell/cva'],

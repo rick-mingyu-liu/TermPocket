@@ -244,38 +244,6 @@ try {
 raster(files.icon, path.join(ROOT, 'favicon', 'icon-192.png'), 192);
 raster(files.icon, path.join(ROOT, 'favicon', 'icon-512.png'), 512);
 
-// Expo launcher set, named as the removed mobile/app.json expected them.
-// iOS: opaque 1024, artwork inside the centre ~70% so the corner mask never
-// touches it. Android adaptive: the 66/108 safe circle is 61% of the canvas;
-// at 50% height the icon's farthest point (a loop top) reaches 55%.
-const LAUNCH_BG = '#EAF7EC';
-const launcher = [
-  ['icon.png', tile(LIGHT, 1024, 700, LAUNCH_BG)],
-  ['android-icon-foreground.png', tile(LIGHT, 1024, 512)],
-  ['android-icon-background.png', svgDoc('0 0 1024 1024', `<rect width="1024" height="1024" fill="${LAUNCH_BG}"/>`)],
-  ['android-icon-monochrome.png', monochromeLayer(1024, 512)],
-  ['splash-icon.png', tile(LIGHT, 1024, 760)],
-  ['favicon.png', svgDoc(ICON_VIEWBOX, iconShapes(LIGHT, { small: true }))],
-];
-// Android themes a monochrome layer by its alpha alone, so the details have
-// to be cut out of it: a white square masked by the mono icon with its two
-// colours swapped (ink -> opaque, paper -> transparent).
-function monochromeLayer(size, iconHeight) {
-  const swapped = { pocket: '#FFFFFF', back: '#FFFFFF', loop: '#FFFFFF', card: '#000000', header: '#FFFFFF', mint: '#000000' };
-  const s = iconHeight / ICON_BOX.h;
-  const tx = size / 2 - (ICON_BOX.x + ICON_BOX.w / 2) * s;
-  const ty = size / 2 - (ICON_BOX.y + ICON_BOX.h / 2) * s;
-  return svgDoc(`0 0 ${size} ${size}`, `<mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="${size}" height="${size}"><rect width="${size}" height="${size}" fill="#000"/><g transform="translate(${r1(tx)} ${r1(ty)}) scale(${+s.toFixed(5)})">${iconShapes(swapped)}</g></mask>\n  <rect width="${size}" height="${size}" fill="#FFFFFF" mask="url(#m)"/>`);
-}
-for (const [name, svg] of launcher) {
-  const src = write(`launcher/.${name}.svg`, svg);
-  try {
-    raster(src, path.join(ROOT, 'launcher', name), name === 'favicon.png' ? 48 : 1024);
-  } finally {
-    fs.rmSync(src, { force: true });
-  }
-}
-
 // Copies the web app serves.
 const copy = (from, to) => {
   fs.mkdirSync(path.dirname(path.join(PUBLIC, to)), { recursive: true });

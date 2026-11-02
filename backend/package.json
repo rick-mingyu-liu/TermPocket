@@ -1,7 +1,7 @@
 {
-  "name": "personal-finance-backend",
+  "name": "termpocket-backend",
   "version": "1.0.0",
-  "description": "Backend API for Personal Finance Web App",
+  "description": "TermPocket REST API (Express, PostgreSQL)",
   "main": "dist/app.js",
   "engines": {
     "node": "22.x"
@@ -61,6 +61,6 @@
     "postgresql",
     "ai"
   ],
-  "author": "Personal Finance App",
+  "author": "Mingyu Liu",
   "license": "SEE LICENSE IN ../LICENSE.md"
 }
