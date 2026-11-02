@@ -12,8 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import ReactMarkdown from 'react-markdown'
-import React from 'react'
 import Swal from 'sweetalert2'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { formatCurrency } from '@/utils/formatters';
@@ -44,9 +42,9 @@ interface GoalForm {
 function GoalDescriptionPreview({ description }: { description: string }) {
   return (
     <div className="mt-1">
-      <div className="bg-muted/60 rounded-md px-3 py-2 prose prose-sm max-w-none relative">
-        <div className="clamp-5-lines relative pr-2">
-          {React.createElement(ReactMarkdown as any, {}, description)}
+      <div className="bg-muted/60 rounded-md px-3 py-2 text-sm relative">
+        <div className="clamp-5-lines relative pr-2 whitespace-pre-wrap break-words">
+          {description}
           <div className="fade-bottom pointer-events-none" />
         </div>
       </div>
@@ -465,8 +463,8 @@ export default function Goals() {
               </div>
               <div>
                 <Label className="font-semibold">{t('Description')}</Label>
-                <div className="mt-1 prose prose-sm max-w-none bg-muted/60 rounded-md px-3 py-2">
-                  {React.createElement(ReactMarkdown as any, {}, viewingGoal.description)}
+                <div className="mt-1 text-sm bg-muted/60 rounded-md px-3 py-2 whitespace-pre-wrap break-words">
+                  {viewingGoal.description}
                 </div>
               </div>
             </div>

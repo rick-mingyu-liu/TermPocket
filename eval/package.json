@@ -1,5 +1,5 @@
 {
-  "name": "mindgo-import-eval",
+  "name": "termpocket-eval",
   "version": "1.0.0",
   "private": true,
   "description": "Benchmarks for the screenshot import (on-device OCR plus the backend parser) and the on-device voice dictation",

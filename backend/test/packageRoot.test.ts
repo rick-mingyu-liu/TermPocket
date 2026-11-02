@@ -15,7 +15,7 @@ describe('packageRoot', () => {
   test('finds backend/ from inside it, source or compiled', () => {
     const root = packageRoot(__dirname);
     assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).name,
-      'personal-finance-backend');
+      'termpocket-backend');
     assert.ok(fs.existsSync(path.join(root, 'db', 'schema.sql')));
   });
 

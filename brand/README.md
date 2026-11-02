@@ -25,7 +25,6 @@ into `frontend/public/`.
 | `svg/termpocket-icon-small.svg` | Simplified icon for 16–48 px: four heavier stitches, thicker loop outlines |
 | `png/` | Transparent PNG exports of the above |
 | `favicon/` | `favicon.ico` (16/32/48, from the small icon), `favicon.svg` (switches to the dark pocket under `prefers-color-scheme: dark`), `apple-touch-icon.png` (180, opaque), `icon-192.png`, `icon-512.png` |
-| `launcher/` | Expo launcher set, named as the removed `mobile/app.json` expected: `icon.png` (1024, opaque), `android-icon-foreground.png`, `-background.png`, `-monochrome.png`, `splash-icon.png`, `favicon.png` |
 | `src/wordmark.json` | Wordmark outlines and the font they came from |
 | `src/LICENSE-Figtree.txt` | The wordmark font's licence (SIL OFL 1.1) |
 

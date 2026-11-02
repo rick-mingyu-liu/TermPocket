@@ -37,6 +37,7 @@ On 2026-10-15 the production host was found to be on a plan without shell access
 
 | Item | State |
 | --- | --- |
+| Demo refresh | `DEMO_REFRESH_ENABLED=true` on Render since 2026-10-27: the hourly maintenance run rewrites the demo account when its last refresh is older than 14 days |
 | Frontend and backend | Both auto-deploy from `main`. The production frontend build calls the production backend (checked in the served JavaScript, 2026-10-15) |
 | Domain | termpocket.com (Namecheap). The site is https://www.termpocket.com; the apex redirects to www, and the old frontend URL redirects (307) to www, keeping the path and query. `CORS_ORIGIN` is a comma-separated list (#120) with www, the apex and the old frontend URL; `FRONTEND_URL` is the www address |
 | Email | Sent through Resend SMTP (#122 made `EMAIL_HOST`, `EMAIL_PORT` and `EMAIL_FROM` configurable), from `TermPocket <noreply@termpocket.com>`. The domain is verified in Resend; the owner tested that mail delivers. QA (2026-10-20) found the verification email lands in the junk folder: SPF and DKIM (on `send.`) and DMARC (`p=none`, no reporting address) are published, so the likely cause is the new domain's missing reputation. The register and resend screens now point to the junk folder (#155); click and open tracking in Resend, a DMARC `rua` address and a mail-tester score are owner checks. Namecheap forwards `privacy@`, `support@` and `noreply@` to the owner's Gmail |
@@ -96,12 +97,11 @@ Decision on goals: the owner chose a "suggested top-up" (#130, #131, #134) and d
 Owner checks before a public post (none can be verified from the repo):
 
 - A spend limit in the Anthropic Console (Pocky moved to Claude in #184). The app-side caps are done (#90).
-- `DEMO_REFRESH_ENABLED=true` in production.
 - Delete the leftover `AGENT_RUNTIME` variable on Render (ignored since #102; it only logs a startup warning).
 - Screenshot import timed on a mid-range phone.
 - Verification email deliverability: turn off click and open tracking in Resend, add a DMARC `rua` reporting address, score one message on mail-tester.com, and have a few test inboxes mark it "Not junk".
 - Review of the privacy policy and terms by a lawyer or a clinic; when to do the French version and the Quebec impact assessment.
-- After launch: a week of real use with memory, then check Render's logs for `Agent run hit a limit` (reason `total_tokens` or `memory_chars`) before deciding whether to raise the 32,000-token cap.
+- After launch: a week of real use with memory, then check Render's logs for `Agent run hit a limit` (reason `total_tokens` or `memory_chars`) before deciding whether to raise the 64,000-token cap.
 - The name "Pocky".
 
 ## Evidence and limitations

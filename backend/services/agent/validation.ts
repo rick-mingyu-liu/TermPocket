@@ -55,7 +55,6 @@ export function validateRows(value: unknown, allowEmpty = false): DraftRow[] {
     return { id, amount, description: description.trim(), category, type, date: day, currency };
   });
 }
-export const validateDraftRows = validateRows;
 /** The largest amount a DECIMAL(10,2) column holds, in cents. */
 export const MAX_AMOUNT_CENTS = 9_999_999_999;
 /**
