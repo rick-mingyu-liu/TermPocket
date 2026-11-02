@@ -1108,6 +1108,180 @@
         "draft": {"count": 0},
         "memoryProposal": null
       }
+    },
+    {
+      "id": "cat-render-hosting",
+      "language": "en",
+      "message": "Paid 5 CAD today for the Render hosting service for my backend.",
+      "note": "Cloud hosting and software subscriptions are Utilities, not Other Expenses. Fictional.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "5.00", "currency": "CAD", "category": "Utilities", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-github-subscription",
+      "language": "en",
+      "message": "GitHub Pro charged me 4 USD today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "4.00", "currency": "USD", "category": "Utilities", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-tnt-groceries",
+      "language": "en",
+      "message": "Spent 7 dollars at tnt yesterday.",
+      "note": "T&T Supermarket written as \"tnt\" with no other hint.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "7.00", "currency": "CAD", "category": "Groceries", "date": "2026-10-13" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "zh-cat-tnt-groceries",
+      "language": "zh",
+      "message": "昨天在大统华买菜花了 46.3",
+      "note": "大统华 is T&T.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "46.30", "currency": "CAD", "category": "Groceries", "date": "2026-10-13" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["确认","核对","查看"]] }
+      }
+    },
+    {
+      "id": "cat-costco-groceries",
+      "language": "en",
+      "message": "Costco run yesterday, 132.80.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "132.80", "currency": "CAD", "category": "Groceries", "date": "2026-10-13" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-presto-transit",
+      "language": "en",
+      "message": "Loaded 20 onto my Presto card today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "20.00", "currency": "CAD", "category": "Transportation", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-rogers-phone",
+      "language": "en",
+      "message": "Rogers phone bill 55.37 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "55.37", "currency": "CAD", "category": "Utilities", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-shoppers-prescription",
+      "language": "en",
+      "message": "Picked up a prescription at Shoppers for 18.99 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "18.99", "currency": "CAD", "category": "Healthcare", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-spotify-entertainment",
+      "language": "en",
+      "message": "Spotify charged 11.29 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "11.29", "currency": "CAD", "category": "Entertainment", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-westjet-travel",
+      "language": "en",
+      "message": "Booked a WestJet flight home for 289 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "289.00", "currency": "CAD", "category": "Travel", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-unknown-merchant-from-goods",
+      "language": "en",
+      "message": "Spent 14.50 at Lazeez on shawarma today.",
+      "note": "The merchant is not in any list; the goods say Dining Out.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "14.50", "currency": "CAD", "category": "Dining Out", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-unknown-merchant-best-guess",
+      "language": "en",
+      "message": "62 at Vincenzos today.",
+      "note": "An unfamiliar merchant with nothing else to go on: any specific guess beats Other Expenses.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "62.00", "currency": "CAD", "category": ["Groceries","Shopping","Dining Out"], "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-genuinely-other",
+      "language": "en",
+      "message": "Gave 20 to a friend’s charity run today.",
+      "note": "Other Expenses still exists for what fits nowhere.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "20.00", "currency": "CAD", "category": "Other Expenses", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-cra-tax-refund",
+      "language": "en",
+      "message": "Got 312 back from the CRA today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "312.00", "currency": "CAD", "category": "Tax Refund", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
     }
   ]
 }
