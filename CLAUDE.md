@@ -18,7 +18,7 @@ npm run db:setup       # create schema from db/schema.sql (idempotent, CREATE IF
 npm run db:seed        # (re)seed the demo account (john.doe@example.com / password123)
 npm run db:migrate     # apply pending db/migrations/ and record them (--status, --baseline NNN); direct endpoint only, never -pooler
 backend/scripts/rehearse-linux.sh [--live]  # from the repo root, with docker-compose.test.yml up: Render's npm ci + build + preflight in a fresh node:<.node-version> Linux container
-npm run agent:eval     # opt-in paid Pocky evaluation: 96 fictional cases, real runtime/Claude API, in-memory records (no DB); README "Evaluating Pocky"
+npm run agent:eval     # opt-in paid Pocky evaluation: 108 fictional cases, real runtime/Claude API, in-memory records (no DB); README "Evaluating Pocky"
 npm run agent:preflight  # read-only Pocky deploy check (config, DB/migrations 013-015, every shipped migration against schema_migrations, the HTTP client, Claude API reachability); `-- --live` adds one fictional model turn through the runtime. Runbook: README "Deploying Pocky to production"
 npm run stats          # owner usage totals (sign-ups, active accounts, records by source, Pocky turns/tokens/saves, memories, tokens): aggregates only, one rolled-back READ ONLY transaction, demo account excluded; run in Render's shell. scripts/stats.ts; README "Usage stats"
 npm run lint           # eslint . (eslint 9, flat config in eslint.config.mjs; TypeScript only, via typescript-eslint)
@@ -166,15 +166,27 @@ Schema lives in [backend/db/schema.sql](backend/db/schema.sql) and is applied wh
   object in [frontend/pages/transactions/new.tsx](frontend/pages/transactions/new.tsx)
   — the edit page and the dashboard both import it, and the dashboard uses it to
   decide whether a category is income or expense (unlisted names default to
-  expense). Adding one means five edits, not one: that list, `CATEGORY_COLORS`
-  in [frontend/pages/index.tsx](frontend/pages/index.tsx) (or it gets a
-  hash-derived colour), **both** `common.json` files, because the picker
-  renders each name through `t(category)`, and a definition in
-  [backend/services/agent/categoryGuidance.ts](backend/services/agent/categoryGuidance.ts), the category guide in Pocky's system prompt (`agentCategoryGuidance.test.ts` fails on a category without one). The manual transaction backend does not validate the
-  category against any list; the agent path validates its canonical copy in `services/agent/validation.ts`, pinned by `agentValidation.test.ts`. The seed's copy in
-  [backend/db/demoData.ts](backend/db/demoData.ts) is now pinned to this one by
-  `test/demoData.test.ts`, which parses this file and compares. The locale
-  files are still unguarded.
+  expense). There are 17 expense and 9 income categories; Software & Apps,
+  Personal Care, Fitness, Gifts & Donations, Fees & Charges, Scholarships &
+  Grants, Refunds and Gifts Received were added on 2026-11-02 so that hosting
+  bills, haircuts, gyms, gifts, bank fees, scholarships, refunds and money from
+  family stop landing in the two Other categories. Names must be unique across
+  income and expense, because the dashboard tells them apart by name. Adding one
+  means seven edits, not one: that list, `CATEGORY_COLORS` in
+  [frontend/pages/index.tsx](frontend/pages/index.tsx) (or it gets a
+  hash-derived colour; `sharedContracts.test.ts` fails), **both** `common.json`
+  files, because the picker renders each name through `t(category)`, the agent's
+  copy in `services/agent/validation.ts` (pinned by `agentValidation.test.ts`),
+  the seed's copy in [backend/db/demoData.ts](backend/db/demoData.ts) (pinned by
+  `test/demoData.test.ts`, which parses this file and compares), and a
+  definition in
+  [backend/services/agent/categoryGuidance.ts](backend/services/agent/categoryGuidance.ts),
+  the category guide in Pocky's system prompt (`agentCategoryGuidance.test.ts`
+  fails on a category without one). Merchant keywords in
+  `services/import/categorize.ts` are optional; they are the screenshot
+  importer's first guess and Pocky's examples. The manual transaction backend
+  does not validate the category against any list. The locale files are still
+  unguarded.
 - **i18n**: `next-i18next` with `en` and `zh` locales in [frontend/public/locales/](frontend/public/locales/). Add user-facing strings to both `common.json` files. **Pages get their translations from `getStaticProps`, never `getServerSideProps`** (`transactions/edit/[id]` adds `getStaticPaths` with `paths: []`, `fallback: 'blocking'`; it reads its id from `router.query` client-side): on Vercel's serverless functions `public/locales` is not in the bundle, so SSR pages shipped an empty `initialI18nStore` (raw keys such as `legalConsent`, `/zh/*` in English). `localePath` in [frontend/next-i18next.config.js](frontend/next-i18next.config.js) is also set to the absolute path on the server, as next-i18next recommends for serverless, but do not rely on it. Check a new page by reading `__NEXT_DATA__` → `pageProps._nextI18Next.initialI18nStore` (about 433 keys).
 - **Theme**: light/dark via [frontend/contexts/ThemeContext.tsx](frontend/contexts/ThemeContext.tsx).
 - **On-device dictation assets**: `public/voice/worker.js` (committed) imports `/voice/transformers-4.3.1/transformers.min.js` and sets `env.allowRemoteModels=false` and `env.localModelPath='/voice/'`. Transformers.js would fetch ONNX Runtime's `.mjs`/`.wasm` from jsDelivr; the worker keeps its choice of file (asyncify, or plain on Safari before 26 without WebGPU) and rewrites the URL to `/voice/ort-<version>/`, refusing any other version, so nothing is fetched from a CDN or Hugging Face at runtime. Webpack never sees any of it, so OCR's `onnxruntime-web$` alias and `/ort/` (1.30.0) are untouched. The directory names in the worker and in `scripts/voice-assets.js` must change together.
@@ -193,7 +205,7 @@ for anything already fixed lives in the comment next to the code, and the rest
 is in git history.
 
 - **Nothing guards the locale files against category drift.** Adding a
-  transaction category means five edits (see above); `test/demoData.test.ts`
+  transaction category means seven edits (see above); `test/demoData.test.ts`
   pins the backend copy to the frontend list, and `check:locales` fails when
   only one `common.json` gains it, but the picker calls `t(category)` with a
   variable its scan cannot see, so a category added to neither file still

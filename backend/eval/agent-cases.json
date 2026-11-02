@@ -1113,11 +1113,11 @@
       "id": "cat-render-hosting",
       "language": "en",
       "message": "Paid 5 CAD today for the Render hosting service for my backend.",
-      "note": "Cloud hosting and software subscriptions are Utilities, not Other Expenses. Fictional.",
+      "note": "Cloud hosting and software subscriptions are Software & Apps, not Other Expenses or Utilities. Fictional.",
       "expect": {
         "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
         "maxToolCalls": 2,
-        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "5.00", "currency": "CAD", "category": "Utilities", "date": "2026-10-14" }] },
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "5.00", "currency": "CAD", "category": "Software & Apps", "date": "2026-10-14" }] },
         "goalProposal": null,
         "reply": { "mustContainAny": [["confirm","review"]] }
       }
@@ -1129,7 +1129,7 @@
       "expect": {
         "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
         "maxToolCalls": 2,
-        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "4.00", "currency": "USD", "category": "Utilities", "date": "2026-10-14" }] },
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "4.00", "currency": "USD", "category": "Software & Apps", "date": "2026-10-14" }] },
         "goalProposal": null,
         "reply": { "mustContainAny": [["confirm","review"]] }
       }
@@ -1259,14 +1259,13 @@
       }
     },
     {
-      "id": "cat-genuinely-other",
+      "id": "cat-charity-donation",
       "language": "en",
       "message": "Gave 20 to a friend’s charity run today.",
-      "note": "Other Expenses still exists for what fits nowhere.",
       "expect": {
         "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
         "maxToolCalls": 2,
-        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "20.00", "currency": "CAD", "category": "Other Expenses", "date": "2026-10-14" }] },
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "20.00", "currency": "CAD", "category": "Gifts & Donations", "date": "2026-10-14" }] },
         "goalProposal": null,
         "reply": { "mustContainAny": [["confirm","review"]] }
       }
@@ -1281,6 +1280,153 @@
         "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "312.00", "currency": "CAD", "category": "Tax Refund", "date": "2026-10-14" }] },
         "goalProposal": null,
         "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-genuinely-other",
+      "language": "en",
+      "message": "Lost my wallet with 60 in cash in it today.",
+      "note": "Other Expenses still exists for what fits nowhere.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "60.00", "currency": "CAD", "category": "Other Expenses", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-chatgpt-software",
+      "language": "en",
+      "message": "ChatGPT Plus renewed today, 28.25.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "28.25", "currency": "CAD", "category": "Software & Apps", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-netflix-stays-entertainment",
+      "language": "en",
+      "message": "Netflix charged 16.49 today.",
+      "note": "Streaming stays in Entertainment after Software & Apps was added.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "16.49", "currency": "CAD", "category": "Entertainment", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-haircut-personal-care",
+      "language": "en",
+      "message": "Haircut at the barber today, 28.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "28.00", "currency": "CAD", "category": "Personal Care", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "zh-cat-haircut-personal-care",
+      "language": "zh",
+      "message": "今天理发花了 25",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "25.00", "currency": "CAD", "category": "Personal Care", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["确认","核对","查看"]] }
+      }
+    },
+    {
+      "id": "cat-gym-fitness",
+      "language": "en",
+      "message": "Paid 45 for my GoodLife membership today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "45.00", "currency": "CAD", "category": "Fitness", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-birthday-gift",
+      "language": "en",
+      "message": "Bought my sister a birthday present for 35 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "35.00", "currency": "CAD", "category": "Gifts & Donations", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-bank-fee",
+      "language": "en",
+      "message": "My bank charged me a 4.95 monthly account fee today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "expense", "amount": "4.95", "currency": "CAD", "category": "Fees & Charges", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-scholarship-income",
+      "language": "en",
+      "message": "Got a 1,000 scholarship deposited today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "1000.00", "currency": "CAD", "category": "Scholarships & Grants", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-refund-income",
+      "language": "en",
+      "message": "Best Buy refunded me 89.99 today for the headphones I returned.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "89.99", "currency": "CAD", "category": "Refunds", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "cat-parents-money",
+      "language": "en",
+      "message": "My parents sent me 500 today.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "500.00", "currency": "CAD", "category": "Gifts Received", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["confirm","review"]] }
+      }
+    },
+    {
+      "id": "zh-cat-red-envelope",
+      "language": "zh",
+      "message": "今天收到奶奶给的红包 200",
+      "note": "红包 received is Gifts Received.",
+      "expect": {
+        "tools": { "include": ["propose_transactions"], "exclude": ["propose_goal"] },
+        "maxToolCalls": 2,
+        "draft": { "count": 1, "newRows": 1, "rows": [{ "type": "income", "amount": "200.00", "currency": "CAD", "category": "Gifts Received", "date": "2026-10-14" }] },
+        "goalProposal": null,
+        "reply": { "mustContainAny": [["确认","核对","查看"]] }
       }
     }
   ]

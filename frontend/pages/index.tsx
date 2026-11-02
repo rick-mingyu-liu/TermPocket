@@ -124,6 +124,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Healthcare': '#f97316',
   'Education': '#14b8a6',
   'Travel': '#6366f1',
+  'Software & Apps': '#c026d3',
+  'Personal Care': '#f9a8d4',
+  'Fitness': '#0284c7',
+  'Gifts & Donations': '#9a3412',
+  'Fees & Charges': '#78716c',
   'Savings': '#64748b',
   'Other Expenses': '#a16207',
   // Income
@@ -132,6 +137,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Investment Returns': '#84cc16',
   'Business': '#0ea5e9',
   'Tax Refund': '#15803d',
+  'Scholarships & Grants': '#0d9488',
+  'Refunds': '#86efac',
+  'Gifts Received': '#6ee7b7',
   'Other Income': '#10b981',
 }
 

@@ -47,10 +47,14 @@ const DEMO_EMAIL = 'john.doe@example.com';
 
 /** Mirrors the canonical list in frontend/pages/transactions/new.tsx. */
 const CATEGORIES = {
-  income: ['Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund', 'Other Income'],
+  income: [
+    'Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund',
+    'Scholarships & Grants', 'Refunds', 'Gifts Received', 'Other Income',
+  ],
   expense: [
     'Groceries', 'Dining Out', 'Transportation', 'Housing', 'Utilities',
     'Entertainment', 'Shopping', 'Healthcare', 'Education', 'Travel',
+    'Software & Apps', 'Personal Care', 'Fitness', 'Gifts & Donations', 'Fees & Charges',
     'Savings', 'Other Expenses',
   ],
 };

@@ -30,7 +30,8 @@ test('the importer\'s merchant keywords appear as examples under their category'
   }
   // The two misses that motivated the guide.
   assert.ok(lineFor('Groceries')?.includes('t&t'));
-  assert.match(lineFor('Utilities') ?? '', /hosting/);
+  assert.match(lineFor('Software & Apps') ?? '', /hosting/);
+  assert.doesNotMatch(lineFor('Utilities') ?? '', /hosting|software/);
 });
 
 test('the catch-all categories are marked as last resorts and nothing else is', () => {

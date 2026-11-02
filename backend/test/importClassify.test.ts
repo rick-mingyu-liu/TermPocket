@@ -42,6 +42,21 @@ describe('categorize', () => {
     assert.equal(categorize('UBER *TRIP', 'expense'), 'Transportation');
     assert.equal(categorize("McDonald's #40", 'expense'), 'Dining Out');
     assert.equal(categorize('PAYROLL DEPOSIT', 'income'), 'Salary');
+    assert.equal(categorize('GITHUB, INC.', 'expense'), 'Software & Apps');
+    assert.equal(categorize('RENDER.COM', 'expense'), 'Software & Apps');
+    assert.equal(categorize('APPLE.COM/BILL', 'expense'), 'Software & Apps');
+    assert.equal(categorize('GOODLIFE FITNESS', 'expense'), 'Fitness');
+    assert.equal(categorize('MONTHLY FEE', 'expense'), 'Fees & Charges');
+    assert.equal(categorize('OSAP DISBURSEMENT', 'income'), 'Scholarships & Grants');
+    assert.equal(categorize('AMAZON REFUND', 'income'), 'Refunds');
+    // The longer tax-refund keywords outrank "refund".
+    assert.equal(categorize('CRA REFUND', 'income'), 'Tax Refund');
+    assert.equal(categorize('CANADA FED TAX REFUND', 'income'), 'Tax Refund');
+    // "interest charge" is a fee on the expense side; "interest" stays income.
+    assert.equal(categorize('INTEREST CHARGE', 'expense'), 'Fees & Charges');
+    assert.equal(categorize('INTEREST', 'income'), 'Investment Returns');
+    // A bare "render" is not how Render bills; only "render.com" is.
+    assert.equal(categorize('RENDER FARM PRINTS', 'expense'), null);
   });
 
   test('answers only within the transaction type, and only when sure', () => {
