@@ -27,11 +27,21 @@ export const KEYWORDS: Record<TransactionType, Record<string, string[]>> = {
     Education: ['university of waterloo', 'uwaterloo', 'w store', 'chegg', 'pearson', 'coursera'],
     Travel: ['air canada', 'westjet', 'via rail', 'airbnb', 'expedia', 'hotel', 'flair'],
     Housing: ['rent', 'property management'],
+    'Software & Apps': ['github', 'openai', 'chatgpt', 'anthropic', 'vercel', 'render com', 'digitalocean',
+      'icloud', 'google one', 'apple com bill', 'adobe', 'notion', 'figma', 'namecheap', 'godaddy'],
+    'Personal Care': ['barber', 'hair salon', 'nail salon', 'sephora'],
+    Fitness: ['goodlife', 'planet fitness', 'anytime fitness', 'warrior rec', 'gym'],
+    'Gifts & Donations': ['donation', 'charity', 'red cross', 'unicef', 'gofundme'],
+    'Fees & Charges': ['service charge', 'monthly fee', 'annual fee', 'overdraft', 'nsf', 'interest charge',
+      'late fee', 'atm fee'],
   },
   income: {
     Salary: ['payroll', 'salary', 'pay deposit'],
-    'Tax Refund': ['canada revenue', 'cra'],
+    // "tax refund" and "cra refund" outrank the shorter "refund" below.
+    'Tax Refund': ['canada revenue', 'cra', 'tax refund', 'cra refund'],
     'Investment Returns': ['dividend', 'interest'],
+    'Scholarships & Grants': ['scholarship', 'bursary', 'osap'],
+    Refunds: ['refund', 'reimbursement'],
   },
 };
 

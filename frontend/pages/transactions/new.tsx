@@ -34,6 +34,9 @@ export const categories = {
     'Investment Returns',
     'Business',
     'Tax Refund',
+    'Scholarships & Grants',
+    'Refunds',
+    'Gifts Received',
     'Other Income'
   ],
   expense: [
@@ -47,6 +50,11 @@ export const categories = {
     'Healthcare',
     'Education',
     'Travel',
+    'Software & Apps',
+    'Personal Care',
+    'Fitness',
+    'Gifts & Donations',
+    'Fees & Charges',
     'Savings',
     'Other Expenses'
   ]

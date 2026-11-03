@@ -13,8 +13,8 @@ export function cleanMemoryText(text: string): string {
   return text.toWellFormed().replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, ' ');
 }
 export const categories = {
-  income: ['Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund', 'Other Income'],
-  expense: ['Groceries', 'Dining Out', 'Transportation', 'Housing', 'Utilities', 'Entertainment', 'Shopping', 'Healthcare', 'Education', 'Travel', 'Savings', 'Other Expenses'],
+  income: ['Salary', 'Freelance', 'Investment Returns', 'Business', 'Tax Refund', 'Scholarships & Grants', 'Refunds', 'Gifts Received', 'Other Income'],
+  expense: ['Groceries', 'Dining Out', 'Transportation', 'Housing', 'Utilities', 'Entertainment', 'Shopping', 'Healthcare', 'Education', 'Travel', 'Software & Apps', 'Personal Care', 'Fitness', 'Gifts & Donations', 'Fees & Charges', 'Savings', 'Other Expenses'],
 };
 function invalid(): never { throw new AgentError('agent_invalid_input'); }
 export function validateUuid(value: unknown): string {
