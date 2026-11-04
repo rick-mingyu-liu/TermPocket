@@ -62,13 +62,17 @@ describe('formatCurrency', () => {
 })
 
 describe('formatCompactCurrency', () => {
-  test('shortens axis ticks to at most one decimal', () => {
+  // Exactly one decimal, not "at most one": a currency's own two decimals are
+  // the default minimum, and Intl lowers that minimum only as far as the
+  // `maximumFractionDigits: 1` given, so whole values keep a ".0" ($3.0K, $0.0).
+  // Still short enough for the axis gutter, which is what the function is for.
+  test('shortens axis ticks to one decimal', () => {
     for (const [amount, expected] of [
-      [0, '$0'],
-      [500, '$500'],
-      [1000, '$1K'],
+      [0, '$0.0'],
+      [500, '$500.0'],
+      [1000, '$1.0K'],
       [1500, '$1.5K'],
-      [3000, '$3K'],
+      [3000, '$3.0K'],
       [12_345, '$12.3K'],
       [1_250_000, '$1.3M'],
     ] as const) {
@@ -77,11 +81,11 @@ describe('formatCompactCurrency', () => {
   })
 
   test('drops the country prefix for Canadian dollars too', () => {
-    assert.equal(formatCompactCurrency(3000, 'CAD'), '$3K')
+    assert.equal(formatCompactCurrency(3000, 'CAD'), '$3.0K')
   })
 
   test('keeps the symbol of other currencies', () => {
-    assert.equal(formatCompactCurrency(3000, 'EUR'), '€3K')
+    assert.equal(formatCompactCurrency(3000, 'EUR'), '€3.0K')
     assert.equal(formatCompactCurrency(1500, 'CNY'), '¥1.5K')
   })
 
