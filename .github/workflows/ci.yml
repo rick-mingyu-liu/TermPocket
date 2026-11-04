@@ -84,4 +84,8 @@ jobs:
 
       - run: npm run lint
 
+      # Unit tests for pure frontend logic (test/*.test.ts), run by node --test
+      # through tsx. No DOM, no framework; seconds, so before the build.
+      - run: npm test
+
       - run: npm run build

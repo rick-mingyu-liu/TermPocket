@@ -31,6 +31,7 @@ npm run dev            # next dev  (http://localhost:3000)
 npm run build          # next build
 npm start              # next start (serve production build)
 npm run lint           # next lint (needs .eslintrc.json — without it, it prompts and hangs)
+npm test               # tsx --test 'test/**/*.test.ts' — pure-logic unit tests, see Tests below
 npm run check:locales  # every public/locales/<locale>/<ns>.json: fails on duplicate keys or a key one locale has and another lacks (plural forms compared by base key); warns on t() keys that resolve nowhere (`legal:` prefix → legal.json)
 npm run ocr-assets     # fetch + checksum the OCR model into public/models, copy ONNX Runtime into public/ort (runs before dev/build)
 npm run voice-assets   # fetch + checksum dictation assets into public/voice/<name>-<version>/ (Transformers.js 4.3.1, its ONNX Runtime 1.31.0-dev WASM, Whisper base.en q8, ~116 MB on disk); runs before dev/build after ocr-assets. Each download has a 120 s timeout and 3 attempts and is written via a .tmp rename. Behind a TLS-intercepting proxy, run with NODE_OPTIONS=--use-system-ca
@@ -81,9 +82,9 @@ npm test               # node --test — scorer unit tests
 
 **Additional MCP coverage:** `moneyFacts.test.ts` exercises pace windows, early-term spending, future-dated rows, zero baselines, clamping, leap years and timezone boundaries. `accessTokenRoutes.test.ts` covers JWT ownership, one-time secrets, validation, safe logs, transaction locking, revocation, the per-user mutation budget, the password re-check (demo first, never echoed or logged), the id-only audit lines, expiry in the listing and the limit, the pre-023 path, and the CLI's operator authorization; `mcp.test.ts` has an expired token's 401. The database-backed `api.test.ts` checks concurrent token creation through both the API and the shared service.
 
-The frontend has no tests. Verify UI changes by running the app.
+**Frontend tests cover pure logic only.** `frontend/test/*.test.ts` runs with `npm test` (`tsx --test`: `node --test` with TypeScript and the `@/` paths, no framework, no DOM): `date.test.ts` (all seven `lib/date.ts` helpers, most assertions swept across six timezones in-process, after a first test proving the `process.env.TZ` switch moves Intl too; DST days in Toronto) and `formatters.test.ts` (`formatCurrency` for the six offered currencies, `formatCompactCurrency`'s axis ticks, and the `-$0.00` a break-even float total prints today). Each file's first line says which failure it prevents. `next build` type-checks them (tsconfig includes `**/*.ts`); `next lint` does not lint them. Components have no tests; verify UI changes by running the app.
 
-CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint plus tests for the backend against a Postgres service container, and `check:locales`, lint and `build` for the frontend. It uses `npm ci`, so a `package.json` that disagrees with its lockfile fails the build rather than resolving to whatever the registry serves.
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint plus tests for the backend against a Postgres service container, and `check:locales`, lint, `npm test` and `build` for the frontend. It uses `npm ci`, so a `package.json` that disagrees with its lockfile fails the build rather than resolving to whatever the registry serves.
 
 ## Ports (README is stale on this)
 
@@ -216,8 +217,10 @@ is in git history.
 - **`/summary/rolling` serialises every transaction in the window twice** and
   aggregates in Node rather than SQL. That cost is per user and per request, so
   it is the gate on offering an *All time* period.
-- **The frontend has no test runner**, so `lib/date.ts` is unguarded. Its
-  backend twin, `utils/dates.ts`, is covered by `test/dates.test.ts`.
+- **A break-even total can print as `-$0.00`, in red.** The summary sums
+  amounts as floating point, so income 0.30 against expenses 0.10 + 0.20 nets
+  about -5.6e-17, and `formatCurrency` keeps the sign of a negative that rounds
+  to zero. `frontend/test/formatters.test.ts` pins the current output.
 - **Phone OCR speed is unmeasured.** On a laptop (M-series Mac, Chrome,
   visible tab) screenshot import takes about 1–2 s per image; Chrome throttles
   a hidden tab to 8–15 s. A mid-range phone may be several times slower than
