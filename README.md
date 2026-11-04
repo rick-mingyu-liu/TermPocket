@@ -285,7 +285,7 @@ backend/                        Express + PostgreSQL API (TypeScript)
 ├── test/                       unit + opt-in database tests, node --test
 └── dist/                       tsc output (CommonJS) — gitignored; what production runs
 
-frontend/                       Next.js 15, Pages Router, TypeScript
+frontend/                       Next.js 16, Pages Router, TypeScript
 ├── pages/                      one file per screen (import.tsx, settings.tsx, …)
 ├── components/ui/              Radix primitives, shadcn-style
 ├── lib/
@@ -615,7 +615,7 @@ Verified locally on 2026-10-18 with **Codex CLI 0.162.1**: authenticated discove
 
 Current production setup: [STATUS.md](STATUS.md). To self-host you need a Node 22 host for the backend, a Next.js host for the frontend, and PostgreSQL 15+.
 
-The frontend is built with `next build`, which first downloads the OCR model from a pinned commit and verifies its checksums; set `NEXT_PUBLIC_API_URL` to the backend's public URL. [`frontend/vercel.json`](frontend/vercel.json) deploys only `main` automatically (no preview deployment per branch or pull request; run `vercel` in `frontend/` for one by hand), and makes the hosted build skip when nothing under `frontend/` changed (`git diff --quiet HEAD^ HEAD -- .`, run from the project's root directory, `frontend`); to change anything the frontend build reads from outside `frontend/`, widen the command first.
+The frontend is built with `npm run build` (`next build --webpack`), which first downloads the OCR model from a pinned commit and verifies its checksums; set `NEXT_PUBLIC_API_URL` to the backend's public URL. [`frontend/vercel.json`](frontend/vercel.json) deploys only `main` automatically (no preview deployment per branch or pull request; run `vercel` in `frontend/` for one by hand), and makes the hosted build skip when nothing under `frontend/` changed (`git diff --quiet HEAD^ HEAD -- .`, run from the project's root directory, `frontend`); to change anything the frontend build reads from outside `frontend/`, widen the command first.
 
 The backend is built with `tsc` during the host's build (`npm ci --include=dev`, which runs the `prepare` script), and `npm start` runs `node dist/app.js`. Set `DATABASE_URL`, `JWT_SECRET` and `CORS_ORIGIN` (see [Configure](#configure)). In production, database connections use SSL (`ssl: { rejectUnauthorized: false }`). Every query names tables unqualified, so `db/connection.ts` issues `SET search_path` on each new connection. Use a direct (non-pooled) connection for `pg_dump`/restore and migrations.
 
@@ -703,7 +703,7 @@ The order constraints: **frontend, then backend, then 014** (the previous fronte
 
 **Backend** — TypeScript, Express 4, PostgreSQL via `pg`, JWT auth with `bcryptjs`, `express-validator`, `helmet`, `express-rate-limit`, `morgan`, `node-cron`, `nodemailer`.
 
-**Frontend** — Next.js 15 (Pages Router), React 18, TypeScript, Tailwind CSS, Radix UI, Recharts, React Hook Form, `next-i18next`, SweetAlert2, react-hot-toast, Lucide icons.
+**Frontend** — Next.js 16 (Pages Router), React 18, TypeScript, Tailwind CSS, Radix UI, Recharts, React Hook Form, `next-i18next`, SweetAlert2, react-hot-toast, Lucide icons.
 
 **On-device OCR** — [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) PP-OCRv6 small through [`ppu-paddle-ocr`](https://www.npmjs.com/package/ppu-paddle-ocr) and ONNX Runtime Web (single-threaded WASM, in a Web Worker); the benchmark uses `onnxruntime-node` and `@napi-rs/canvas`.
 
