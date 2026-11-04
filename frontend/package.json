@@ -4,10 +4,10 @@
   "description": "TermPocket web app (Next.js)",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint --ext .js,.mjs,.cjs,.jsx,.ts,.mts,.cts,.tsx pages components lib",
     "check:locales": "node scripts/check-locales.js",
     "ocr-assets": "node scripts/ocr-assets.js",
     "voice-assets": "node scripts/voice-assets.js",

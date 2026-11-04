@@ -78,7 +78,11 @@ export default function ImportPage() {
   const updateShot = (id: number, patch: Partial<Shot>) =>
     setShots((current) => current.map((shot) => (shot.id === id ? { ...shot, ...patch } : shot)))
 
-  const process = useCallback(async (shot: Shot) => {
+  // Not `process`: Next 16's server build rewrites this component's
+  // useEffect calls into `process.env.… && useEffect(…)`, and a local named
+  // `process` captures that reference before it is initialised, failing the
+  // prerender with "Cannot access 'P' before initialization".
+  const readShot = useCallback(async (shot: Shot) => {
     updateShot(shot.id, { status: 'reading', error: undefined })
     try {
       const ocr = await recognize(shot.file)
@@ -117,7 +121,7 @@ export default function ImportPage() {
     }))
     setShots((current) => [...current, ...added])
     // recognize() runs one image at a time, so these queue behind each other.
-    added.forEach((shot) => { void process(shot) })
+    added.forEach((shot) => { void readShot(shot) })
   }
 
   const removeShot = (id: number) => {
@@ -212,7 +216,7 @@ export default function ImportPage() {
                             && ` · ${t('Read in {{seconds}} s', { seconds: (shot.durationMs / 1000).toFixed(1) })}`}
                         </span>
                         {shot.status === 'failed' && (
-                          <Button size="sm" variant="outline" onClick={() => { void process(shot) }}>{t('Try again')}</Button>
+                          <Button size="sm" variant="outline" onClick={() => { void readShot(shot) }}>{t('Try again')}</Button>
                         )}
                         <Button
                           size="icon"
