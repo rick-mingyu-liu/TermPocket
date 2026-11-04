@@ -13,9 +13,9 @@
     "voice:benchmark": "node voice/run.mjs"
   },
   "dependencies": {
-    "@huggingface/transformers": "4.3.1",
-    "@napi-rs/canvas": "1.0.13",
-    "onnxruntime-node": "1.30.0",
+    "@huggingface/transformers": "4.3.2",
+    "@napi-rs/canvas": "1.1.0",
+    "onnxruntime-node": "1.31.1",
     "ppu-paddle-ocr": "6.6.1"
   }
 }
