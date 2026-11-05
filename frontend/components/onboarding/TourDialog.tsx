@@ -51,9 +51,15 @@ export default function TourDialog({ open, steps, onClose, finish, onCloseAutoFo
   const nextRef = useRef<HTMLButtonElement>(null)
   const finishRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  // Every opening starts at the first step. Reset while rendering the opening
+  // (not in an effect), so a reopened tour never shows, or focuses, the step
+  // it was closed on for a frame.
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
     if (open) setStepId(firstId)
-  }, [open, firstId])
+  }
+  const focusFirst = () => (nextRef.current ?? finishRef.current?.querySelector<HTMLElement>('button, a[href]'))?.focus()
 
   const index = Math.max(steps.findIndex((step) => step.id === stepId), 0)
   const step = steps[index]
@@ -83,7 +89,7 @@ export default function TourDialog({ open, steps, onClose, finish, onCloseAutoFo
         ref={contentRef}
         onOpenAutoFocus={(event) => {
           event.preventDefault()
-          nextRef.current?.focus()
+          focusFirst()
         }}
         onCloseAutoFocus={onCloseAutoFocus}
         className="w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-2xl p-0 max-h-[calc(100dvh-2rem)] overflow-y-auto motion-reduce:animate-none sm:rounded-2xl"

@@ -31,6 +31,7 @@ import { useTranslation } from 'next-i18next'
 import { formatDay, formatDayRange } from '@/lib/date';
 import { useGoalTopUp } from '@/lib/useGoalTopUp';
 import { markTourShown, tourSeen } from '@/lib/onboarding';
+import { useTermsSettled } from '@/components/TermsGate';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 interface FinancialSummary {
@@ -308,11 +309,13 @@ export default function Dashboard() {
   }, [router, fetchDashboardData])
 
   // The first-run tour opens by itself once per account, for new accounts only.
+  // It waits for the terms check, whose card would otherwise end up beneath it.
+  const termsSettled = useTermsSettled()
   useEffect(() => {
-    if (loading || !isNewUser || tourSeen()) return
+    if (loading || !isNewUser || !termsSettled || tourSeen()) return
     markTourShown()
     setTourOpen(true)
-  }, [loading, isNewUser])
+  }, [loading, isNewUser, termsSettled])
 
   // Settings' "Show tour again" links here with ?tour=1.
   useEffect(() => {

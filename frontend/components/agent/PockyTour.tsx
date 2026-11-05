@@ -10,8 +10,8 @@ interface PockyTourProps {
   open: boolean
   /** However it closes: Skip, Esc, the close button or Start writing. */
   onClose: () => void
-  /** After Start writing has closed it: focus the composer. */
-  onStart: () => void
+  /** After Start writing has closed it: focus the composer; false if it cannot take focus. */
+  onStart: () => boolean
   enterSends: boolean
   canDictate: boolean
   /** The conversation settings as they are now, shown on the settings step. */
@@ -213,8 +213,8 @@ export default function PockyTour({ open, onClose, onStart, enterSends, canDicta
       onCloseAutoFocus={(event) => {
         if (!starting.current) return
         starting.current = false
-        event.preventDefault()
-        onStart()
+        // Otherwise the dialog returns focus to whatever opened it.
+        if (onStart()) event.preventDefault()
       }}
       finish={
         <div className="space-y-2">

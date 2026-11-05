@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Swal from 'sweetalert2'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
@@ -354,9 +354,9 @@ export default function Login() {
           <div className="space-y-7">
             <section aria-labelledby="intro-student-life" className="space-y-4">
               <h3 id="intro-student-life" className="sr-only">{t('Built for student life')}</h3>
-              <p className="max-w-prose leading-relaxed text-foreground/80">
+              <DialogDescription className="max-w-prose text-base leading-relaxed text-foreground/80">
                 {t('A study term spends and a co-op term earns. TermPocket helps university and college students in Canada follow their money the way they live it: one four-month term at a time, through study terms, co-op placements, internships and summer breaks.')}
-              </p>
+              </DialogDescription>
               {/* One year as TermPocket sees it: what each term did to the balance. Illustrative, so hidden from screen readers; the paragraph says it. */}
               <div aria-hidden="true" className="grid grid-cols-3 overflow-hidden rounded-lg border bg-muted/40">
                 {([['Winter', 'study', 0.55], ['Spring', 'coop', 0.9], ['Fall', 'study', 0.7]] as const).map(([term, kind, size], i) => (

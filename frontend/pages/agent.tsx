@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { BookOpen, Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, SlidersHorizontal, Square, Trash2 } from 'lucide-react'
+import { BookOpen, ChevronDown, Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, SlidersHorizontal, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ import GoalProposalCard from '@/components/agent/GoalProposalCard'
 import MemoryProposalCard from '@/components/agent/MemoryProposalCard'
 import PockyTour from '@/components/agent/PockyTour'
 import { pockyTour } from '@/lib/onboarding'
+import { useTermsSettled } from '@/components/TermsGate'
 import { readPreferences } from '@/lib/preferences'
 import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
 import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MemoryConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
@@ -177,12 +178,14 @@ export default function AgentPage() {
   const [enterSends, setEnterSends] = useState(false)
   // The how-to lives in a tour, not on the page: it opens by itself on this
   // account's first visit once Pocky can answer, and from "How it works" later.
+  // It waits for the terms check, whose card would otherwise end up beneath it.
   const [tourOpen, setTourOpen] = useState(false)
+  const termsSettled = useTermsSettled()
   useEffect(() => {
-    if (available !== true || pockyTour.seen()) return
+    if (available !== true || !termsSettled || pockyTour.seen()) return
     pockyTour.shown()
     setTourOpen(true)
-  }, [available])
+  }, [available, termsSettled])
   const closeTour = () => { pockyTour.markSeen(); setTourOpen(false) }
   useEffect(() => { setEnterSends(!window.matchMedia('(pointer: coarse)').matches) }, [])
   const pendingDraft = state?.draft?.status === 'pending'
@@ -437,7 +440,13 @@ export default function AgentPage() {
         <div><h1 className="flex items-center gap-2 text-2xl font-bold"><MessageSquare className="h-6 w-6" />{t('agent.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{t('agent.subtitle')}</p></div>
         <Button variant="outline" size="sm" className="shrink-0" aria-label={t('agent.tour.open')} onClick={() => setTourOpen(true)}><BookOpen /><span className="hidden sm:inline">{t('agent.tour.open')}</span></Button>
       </div></header>
-      <PockyTour open={tourOpen} onClose={closeTour} onStart={() => composer.current?.focus()} enterSends={enterSends} canDictate={canDictate}
+      <PockyTour open={tourOpen} onClose={closeTour} onStart={() => {
+        // A disabled composer (a run in progress) cannot take focus; let the dialog return it to its trigger.
+        const box = composer.current
+        if (!box || box.disabled) return false
+        box.focus()
+        return true
+      }} enterSends={enterSends} canDictate={canDictate}
         settings={[context.currency, context.timezone, context.language === 'auto' ? t('agent.autoLanguage') : context.language === 'zh' ? '中文' : 'English']} />
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
         {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">{error.startsWith('goal:')
@@ -467,7 +476,8 @@ export default function AgentPage() {
                 <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
                   <SlidersHorizontal className="h-4 w-4" aria-hidden />
                   <span className="font-medium text-foreground">{t('agent.settingsSummary')}</span>
-                  <span className="truncate">{[context.currency, context.timezone, context.language === 'auto' ? t('agent.autoLanguage') : context.language === 'zh' ? '中文' : 'English'].join(i18n.language === 'zh' ? '、' : ', ')}</span>
+                  <span className="min-w-0 truncate">{[context.currency, context.timezone, context.language === 'auto' ? t('agent.autoLanguage') : context.language === 'zh' ? '中文' : 'English'].join(i18n.language === 'zh' ? '、' : ', ')}</span>
+                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
                 </summary>
                 <div className="space-y-2 border-t p-3">
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -482,7 +492,7 @@ export default function AgentPage() {
                 {!state?.messages.length && <div className="py-6 text-center"><p className="font-medium">{t('agent.start')}</p><div className="mt-3 flex flex-wrap justify-center gap-2">{(['agent.example', 'agent.exampleQuestion', 'agent.examplePlan'] as const).map(key => {
                   // An example fills the composer for review; it is never sent on its own.
                   const text = t(key).replace(/^[“"「]|[”"」]$/g, '')
-                  return <button key={key} type="button" disabled={locked || unresolved || available !== true || dictating} onClick={() => { setContent(text); composer.current?.focus() }} className="max-w-full rounded-full border bg-background px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50">{text}</button>
+                  return <button key={key} type="button" disabled={locked || unresolved || available !== true || dictating || Boolean(content.trim())} onClick={() => { setContent(text); composer.current?.focus() }} className="max-w-full rounded-full border bg-background px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50">{text}</button>
                 })}</div></div>}
                 {state?.messages.map(message => <div key={message.id} className={`max-w-full whitespace-pre-wrap break-words rounded-lg p-4 text-sm ${message.role === 'user' ? 'ml-4 bg-primary/10 sm:ml-12' : 'mr-4 bg-muted sm:mr-12'}`}><p className="mb-2 text-xs font-semibold text-muted-foreground">{t(message.role === 'user' ? 'agent.you' : 'agent.assistant')}</p>{message.content}{message.status !== 'complete' && <p className="mt-2 text-xs text-muted-foreground">{t(`agent.messageStatus.${message.status}`)}</p>}</div>)}
               </div>
