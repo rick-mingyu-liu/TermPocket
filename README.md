@@ -342,6 +342,7 @@ npm run build            # runs ocr-assets first
 npm start
 npm run lint
 npm run check:locales    # every locale namespace: fails on duplicate keys or keys missing from one locale; warns on unresolved keys
+npm test                 # node --test: unit tests for pure logic in test/
 npm run ocr-assets       # fetch + checksum the OCR model, copy ONNX Runtime
 
 # eval
@@ -395,11 +396,11 @@ TEST_DATABASE_URL=postgresql://user@localhost:5432/termpocket_test npm test
 
 It creates and deletes users, which is why opting in is deliberate. **Never point it at production.**
 
-The frontend has no test runner. Verify UI changes by running the app.
+The frontend's `npm test` covers pure logic only (`frontend/test/`: money formatting so far), with no DOM and no components. Verify UI changes by running the app.
 
 ### CI
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs backend lint and tests against a Postgres service container, plus `check:locales`, lint and `build` for the frontend (which downloads and checksums the OCR model). It uses `npm ci`, so a `package.json` that disagrees with its lockfile fails the build.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs backend lint and tests against a Postgres service container, plus `check:locales`, lint, `npm test` and `build` for the frontend (which downloads and checksums the OCR model). It uses `npm ci`, so a `package.json` that disagrees with its lockfile fails the build.
 
 ### Dependency updates
 

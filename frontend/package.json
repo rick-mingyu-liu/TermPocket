@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "check:locales": "node scripts/check-locales.js",
+    "test": "node --test 'test/**/*.test.ts'",
     "ocr-assets": "node scripts/ocr-assets.js",
     "voice-assets": "node scripts/voice-assets.js",
     "predev": "npm run ocr-assets && npm run voice-assets",
