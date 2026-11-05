@@ -523,7 +523,7 @@
   "Email address validation when configured": "Email address validation when configured",
   "agent": {
     "title": "Record with Pocky",
-    "subtitle": "Record income and spending, ask about what you have recorded, or plan a savings goal. Review every entry and goal before saving.",
+    "subtitle": "Record income and spending, ask about what you have recorded, or plan a savings goal.",
     "example": "“I spent $12.50 on lunch and $3.25 on the bus today.”",
     "exampleQuestion": "“How much did I spend on dining out this term?”",
     "examplePlan": "“If co-op pays $2,400 a month from January, can I save $3,000 by August?”",
@@ -755,7 +755,22 @@
     "additionalSoftware": "Additional software",
     "sdkAcknowledgement": "Pocky reaches its AI provider through Anthropic’s TypeScript SDK, an MIT-licensed HTTP client.",
     "aiProviders": "Current AI providers",
-    "providerAcknowledgement": "AI processing for conversational transaction recording when configured"
+    "providerAcknowledgement": "AI processing for conversational transaction recording when configured",
+    "settingsSummary": "Settings",
+    "guide": {
+      "open": "How it works",
+      "title": "How Pocky works",
+      "recordTitle": "Record",
+      "record": "Tell Pocky what you spent or earned, in English, Chinese or both. It drafts the entries for you to check, edit and save.",
+      "askTitle": "Ask",
+      "ask": "Ask about what you have recorded. Pocky answers from your own transactions and says which period and currency it used.",
+      "planTitle": "Plan",
+      "plan": "Describe income, costs and a target, and Pocky works out whether it adds up. It can suggest a savings goal, which is saved only if you confirm it.",
+      "settingsTitle": "Settings",
+      "voiceTitle": "Voice",
+      "voice": "Tap the microphone to dictate in English. Your speech is turned into text on this device and never uploaded; check the text, especially amounts, before you send.",
+      "keysTitle": "Keyboard"
+    }
   },
   "retention": {
     "heading": "Automatic deletion",

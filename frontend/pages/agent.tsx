@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, Square, Trash2 } from 'lucide-react'
+import { Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, SlidersHorizontal, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import DraftEditor, { currencies, selectClass } from '@/components/agent/DraftEditor'
 import GoalProposalCard from '@/components/agent/GoalProposalCard'
 import MemoryProposalCard from '@/components/agent/MemoryProposalCard'
+import PockyGuide from '@/components/agent/PockyGuide'
 import { readPreferences } from '@/lib/preferences'
 import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
 import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MemoryConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
@@ -422,11 +423,11 @@ export default function AgentPage() {
   return <>
     <Head><title>{`${t('agent.title')} - TermPocket`}</title></Head>
     <AppShell>
-      <header><div className="mx-auto flex max-w-7xl items-center gap-3 px-4 pt-8 sm:px-6 lg:px-8">
+      <header><div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 pt-8 sm:px-6 lg:px-8">
         <div><h1 className="flex items-center gap-2 text-2xl font-bold"><MessageSquare className="h-6 w-6" />{t('agent.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{t('agent.subtitle')}</p></div>
+        <PockyGuide enterSends={enterSends} canDictate={canDictate} />
       </div></header>
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
-        <p className="rounded-lg border bg-card p-3 text-xs leading-relaxed text-muted-foreground">{t('agent.privacy')}{' '}<Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t('agent.privacyLink')}</Link></p>
         {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">{error.startsWith('goal:')
           ? t(`agent.goal.errors.${error.slice(5)}`, { defaultValue: t(`agent.errors.${error.slice(5)}`, { defaultValue: t('agent.errors.generic') }) })
           : error.startsWith('memory:')
@@ -449,14 +450,28 @@ export default function AgentPage() {
           </aside>
           <div className="min-w-0 space-y-5">
             <Card><CardContent className="space-y-4 pt-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label className="space-y-1 text-sm"><span>{t('agent.defaultCurrency')}</span><select className={selectClass} value={context.currency} disabled={locked || unresolved} onChange={e => setContext({ ...context, currency: e.target.value })}>{currencies.map(currency => <option key={currency}>{currency}</option>)}</select></label>
-                <label className="space-y-1 text-sm"><span>{t('agent.timezone')}</span><Input value={context.timezone} disabled={locked || unresolved} onChange={e => setContext({ ...context, timezone: e.target.value })} /></label>
-                <label className="space-y-1 text-sm"><span>{t('agent.replyLanguage')}</span><select className={selectClass} value={context.language} disabled={locked || unresolved} onChange={e => setContext({ ...context, language: e.target.value as ReplyLanguage })}><option value="auto">{t('agent.autoLanguage')}</option><option value="en">English</option><option value="zh">中文</option></select></label>
-              </div>
-              <p className="text-xs text-muted-foreground">{t('agent.contextHint')}</p>
+              {/* Collapsed to one line: these rarely change, and the guide explains them. */}
+              <details className="group rounded-lg border">
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                  <span className="font-medium text-foreground">{t('agent.settingsSummary')}</span>
+                  <span className="truncate">{[context.currency, context.timezone, context.language === 'auto' ? t('agent.autoLanguage') : context.language === 'zh' ? '中文' : 'English'].join(i18n.language === 'zh' ? '、' : ', ')}</span>
+                </summary>
+                <div className="space-y-2 border-t p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="space-y-1 text-sm"><span>{t('agent.defaultCurrency')}</span><select className={selectClass} value={context.currency} disabled={locked || unresolved} onChange={e => setContext({ ...context, currency: e.target.value })}>{currencies.map(currency => <option key={currency}>{currency}</option>)}</select></label>
+                  <label className="space-y-1 text-sm"><span>{t('agent.timezone')}</span><Input value={context.timezone} disabled={locked || unresolved} onChange={e => setContext({ ...context, timezone: e.target.value })} /></label>
+                  <label className="space-y-1 text-sm"><span>{t('agent.replyLanguage')}</span><select className={selectClass} value={context.language} disabled={locked || unresolved} onChange={e => setContext({ ...context, language: e.target.value as ReplyLanguage })}><option value="auto">{t('agent.autoLanguage')}</option><option value="en">English</option><option value="zh">中文</option></select></label>
+                </div>
+                  <p className="text-xs text-muted-foreground">{t('agent.contextHint')}</p>
+                </div>
+              </details>
               <div className="space-y-4" role="log" aria-live="polite" aria-label={t('agent.messages')}>
-                {!state?.messages.length && <div className="rounded-lg bg-muted/50 p-5"><p className="font-medium">{t('agent.start')}</p><p className="mt-2 text-sm text-muted-foreground">{t('agent.example')}</p><p className="mt-1 text-sm text-muted-foreground">{t('agent.exampleQuestion')}</p><p className="mt-1 text-sm text-muted-foreground">{t('agent.examplePlan')}</p></div>}
+                {!state?.messages.length && <div className="py-6 text-center"><p className="font-medium">{t('agent.start')}</p><div className="mt-3 flex flex-wrap justify-center gap-2">{(['agent.example', 'agent.exampleQuestion', 'agent.examplePlan'] as const).map(key => {
+                  // An example fills the composer for review; it is never sent on its own.
+                  const text = t(key).replace(/^[“"「]|[”"」]$/g, '')
+                  return <button key={key} type="button" disabled={locked || unresolved || available !== true || dictating} onClick={() => { setContent(text); composer.current?.focus() }} className="max-w-full rounded-full border bg-background px-3 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50">{text}</button>
+                })}</div></div>}
                 {state?.messages.map(message => <div key={message.id} className={`max-w-full whitespace-pre-wrap break-words rounded-lg p-4 text-sm ${message.role === 'user' ? 'ml-4 bg-primary/10 sm:ml-12' : 'mr-4 bg-muted sm:mr-12'}`}><p className="mb-2 text-xs font-semibold text-muted-foreground">{t(message.role === 'user' ? 'agent.you' : 'agent.assistant')}</p>{message.content}{message.status !== 'complete' && <p className="mt-2 text-xs text-muted-foreground">{t(`agent.messageStatus.${message.status}`)}</p>}</div>)}
               </div>
               {running && <div className="flex flex-wrap items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />{t(cancelling ? 'agent.cancelling' : stillProcessing ? 'agent.stillProcessing' : 'agent.working')}{stillProcessing && !cancelling && <Button variant="outline" size="sm" disabled={busy || dirty} onClick={refresh}><RefreshCw />{t('agent.refreshNow')}</Button>}<Button variant="outline" size="sm" disabled={cancelling} onClick={cancel}>{t('agent.cancel')}</Button></div>}
@@ -479,7 +494,7 @@ export default function AgentPage() {
                 {canDictate && dictation.state.status === 'transcribing' && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />{t('agent.voice.transcribing')}</p>}
                 {canDictate && dictation.error && <p role="alert" className="text-xs text-destructive">{t(`agent.voice.errors.${dictation.error}`)}</p>}
                 {voiced && !dictating && <p className="text-xs text-muted-foreground">{t('agent.voice.review')}</p>}
-                <div className="flex items-center justify-between gap-3"><div className="space-y-1"><p className="text-xs text-muted-foreground">{t('agent.reviewHint')}</p>{enterSends && <p className="text-xs text-muted-foreground">{t('agent.enterHint')}</p>}</div><div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-end justify-between gap-3"><p className="text-xs leading-relaxed text-muted-foreground">{t('agent.privacy')}{' '}<Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t('agent.privacyLink')}</Link></p><div className="flex shrink-0 items-center gap-2">
                   {canDictate && <Button type="button" variant="outline" size="icon" aria-pressed={dictation.state.status === 'recording'}
                     aria-label={t(micLabel)} title={t(micLabel)}
                     // A recording can always be stopped and a download cancelled; starting one needs a usable composer and no pending run.

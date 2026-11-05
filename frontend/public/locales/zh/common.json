@@ -522,7 +522,7 @@
   "Email address validation when configured": "配置后用于验证电子邮箱地址",
   "agent": {
     "title": "和 Pocky 一起记账",
-    "subtitle": "记录收支、询问已记录的账目，或规划储蓄目标。保存前请逐项核对。",
+    "subtitle": "记录收支、询问已记录的账目，或规划储蓄目标。",
     "example": "“今天午餐花了12.50加元，坐公交花了3.25加元。”",
     "exampleQuestion": "“这学期我在外出就餐上花了多少？”",
     "examplePlan": "“如果从一月开始实习每月收入2,400加元，八月前能存下3,000加元吗？”",
@@ -752,7 +752,22 @@
     "additionalSoftware": "其他软件",
     "sdkAcknowledgement": "Pocky 通过 Anthropic 的 TypeScript SDK（MIT 许可的 HTTP 客户端）连接 AI 服务提供方。",
     "aiProviders": "当前 AI 服务商",
-    "providerAcknowledgement": "配置后提供对话记账的 AI 处理服务"
+    "providerAcknowledgement": "配置后提供对话记账的 AI 处理服务",
+    "settingsSummary": "设置",
+    "guide": {
+      "open": "使用说明",
+      "title": "Pocky 怎么用",
+      "recordTitle": "记账",
+      "record": "用中文、英文或混合的方式告诉 Pocky 你花了或赚了多少。它会先生成草稿，供你核对、修改后再保存。",
+      "askTitle": "提问",
+      "ask": "询问你已记录的账目。Pocky 根据你自己的交易回答，并说明所用的时间范围和币种。",
+      "planTitle": "规划",
+      "plan": "说出收入、开销和目标，Pocky 会帮你算算是否可行。它可以建议一个储蓄目标，只有你确认后才会保存。",
+      "settingsTitle": "设置",
+      "voiceTitle": "语音",
+      "voice": "点击麦克风用英语口述。语音只在本机转为文字，不会上传；发送前请检查文字，尤其是金额。",
+      "keysTitle": "键盘"
+    }
   },
   "retention": {
     "heading": "自动删除",
