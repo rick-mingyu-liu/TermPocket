@@ -6,6 +6,7 @@
 
 @layer base {
   html {
+    scroll-padding-top: 5rem;
     font-family: 'Inter', system-ui, sans-serif;
   }
   
@@ -204,6 +205,103 @@
       0 0 20px rgba(34, 197, 94, 0.3),
       0 0 40px rgba(59, 130, 246, 0.2),
       0 0 60px rgba(168, 85, 247, 0.1);
+  }
+
+  /*
+   * The sign-in pages' backdrop: a faint dot grid fading out from the centre,
+   * with a soft brand-green glow behind the card. Static, unlike aurora.
+   */
+  .auth-backdrop {
+    position: relative;
+    overflow: clip;
+    isolation: isolate;
+  }
+
+  .auth-backdrop::before,
+  .auth-backdrop::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .auth-backdrop::before {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.09) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+  }
+
+  .auth-backdrop::after {
+    background:
+      radial-gradient(ellipse 40% 30% at 50% 38%, rgba(22, 163, 74, 0.13), transparent 70%),
+      radial-gradient(ellipse 30% 25% at 50% 80%, rgba(134, 224, 158, 0.12), transparent 70%);
+  }
+
+  .dark .auth-backdrop::before {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.07) 1px, transparent 1.2px);
+  }
+
+  .dark .auth-backdrop::after {
+    background:
+      radial-gradient(ellipse 40% 30% at 50% 38%, rgba(34, 197, 94, 0.12), transparent 70%),
+      radial-gradient(ellipse 30% 25% at 50% 80%, rgba(34, 197, 94, 0.06), transparent 70%);
+  }
+
+  /* The sign-in card's top edge: a band of the logo's green, and under it the
+     logo's dashed stitch line. */
+  /* The card's top bar: a green gradient that drifts slowly along it, one
+     seamless tile (dark-light-dark) repeated at half the bar's width, and
+     moves faster with a sheen on top while data-busy (a request in flight). */
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background-image: linear-gradient(90deg, #023a25, #16a34a 30%, #86e09e 50%, #16a34a 70%, #023a25);
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    animation: auth-flow 8s linear infinite;
+    pointer-events: none;
+  }
+
+  .auth-card[data-busy='true']::before {
+    background-image:
+      linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent),
+      linear-gradient(90deg, #023a25, #16a34a 30%, #86e09e 50%, #16a34a 70%, #023a25);
+    background-size: 30% 100%, 50% 100%;
+    background-repeat: no-repeat, repeat-x;
+    animation: auth-sheen 1s linear infinite;
+  }
+
+  @keyframes auth-flow {
+    from { background-position: 0 0; }
+    to { background-position: 100% 0; }
+  }
+
+  @keyframes auth-sheen {
+    from { background-position: -43% 0, 0 0; }
+    to { background-position: 143% 0, 100% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-card::before,
+    .auth-card[data-busy='true']::before { animation: none; }
+  }
+
+  .auth-card::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    right: 20px;
+    border-top: 1.5px dashed rgba(22, 163, 74, 0.35);
+    pointer-events: none;
+  }
+
+  .dark .auth-card::after {
+    border-top-color: rgba(134, 224, 158, 0.3);
   }
 
   .aurora-particles {

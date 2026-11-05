@@ -70,7 +70,7 @@
   "That password is incorrect. Enter your TermPocket password to create a connection.": "密码不正确。请输入你的 TermPocket 密码以创建连接。",
   "Too many wrong passwords. Wait a few minutes, then try again.": "密码错误次数过多。请等几分钟后再试。",
   "Enter your TermPocket password.": "请输入你的 TermPocket 密码。",
-  "The demo account cannot create AI connections. Sign up to connect your own.": "演示账户无法创建 AI 连接。注册后即可连接你自己的服务。",
+  "The demo account is shared by everyone trying TermPocket, so it cannot create AI connections. Sign up to connect your own.": "演示账户由所有试用 TermPocket 的人共用，因此无法创建 AI 连接。注册后即可连接你自己的服务。",
   "Give the connection a name of 1 to 60 characters.": "请为连接输入 1 至 60 个字符的名称。",
   "Could not create the connection. Please try again.": "无法创建连接，请重试。",
   "Active connections": "有效连接",
@@ -522,7 +522,7 @@
   "Email address validation when configured": "配置后用于验证电子邮箱地址",
   "agent": {
     "title": "和 Pocky 一起记账",
-    "subtitle": "记录收支、询问已记录的账目，或规划储蓄目标。保存前请逐项核对。",
+    "subtitle": "记录收支、询问已记录的账目，或规划储蓄目标。",
     "example": "“今天午餐花了12.50加元，坐公交花了3.25加元。”",
     "exampleQuestion": "“这学期我在外出就餐上花了多少？”",
     "examplePlan": "“如果从一月开始实习每月收入2,400加元，八月前能存下3,000加元吗？”",
@@ -752,7 +752,36 @@
     "additionalSoftware": "其他软件",
     "sdkAcknowledgement": "Pocky 通过 Anthropic 的 TypeScript SDK（MIT 许可的 HTTP 客户端）连接 AI 服务提供方。",
     "aiProviders": "当前 AI 服务商",
-    "providerAcknowledgement": "配置后提供对话记账的 AI 处理服务"
+    "providerAcknowledgement": "配置后提供对话记账的 AI 处理服务",
+    "settingsSummary": "设置",
+    "tour": {
+      "open": "使用说明",
+      "start": "开始输入",
+      "record": {
+        "title": "说出你的收支",
+        "body": "像平时说话一样写，中文、英文或混着说都行。Pocky 会生成草稿，你核对后点保存才会记账。"
+      },
+      "ask": {
+        "title": "问问你的账",
+        "body": "询问你已记录的账目。Pocky 根据你自己的交易回答，并说明所用的时间范围和币种。"
+      },
+      "plan": {
+        "title": "规划储蓄目标",
+        "body": "说出收入、开销和目标，Pocky 会帮你算算是否可行。它可以建议一个储蓄目标，只有你确认后才会保存。"
+      },
+      "settings": {
+        "title": "先确认默认设置"
+      },
+      "voice": {
+        "title": "也可以直接说",
+        "body": "点击麦克风用英语口述。语音只在本机转为文字，不会上传；发送前请检查文字，尤其是金额。"
+      },
+      "art": {
+        "save": "保存",
+        "question": "这学期外出就餐花了多少？",
+        "answer": "外出就餐，本学期"
+      }
+    }
   },
   "retention": {
     "heading": "自动删除",
@@ -767,7 +796,7 @@
     "onHint": "日期早于 {{date}} 的交易会被自动删除。{{term}}及之后的学期（包括当前学期）会被保留。",
     "scope": "只删除交易记录。储蓄目标、Pocky 对话和 AI 连接不受影响。",
     "notAvailable": "自动删除暂不可用。",
-    "demo": "演示账户不能使用自动删除。",
+    "demo": "演示账户由所有试用 TermPocket 的人共用，因此这里的自动删除保持关闭。你可以在自己的账户中开启。",
     "confirmTitle": "永久删除较早的交易？",
     "confirmBody": "保留最近 {{terms}} 个学期将永久删除所有日期早于 {{date}} 的交易（即{{term}}之前的全部记录）。此后，每个学期移出保留范围时，其交易也会被删除。此操作无法撤销。",
     "confirmCount": "现在将被删除的交易：{{count}} 笔。删除会在大约一小时内开始。",
@@ -811,5 +840,21 @@
     "claudeDetails": "展开下方的连接信息，将端点作为连接器网址，并填入包含你令牌的请求头。",
     "otherDetails": "在支持远程 HTTP MCP 和自定义请求头的应用中，添加下方连接信息中的端点和请求头，并将 <token> 替换为你的令牌。",
     "tryQuestion": "试着问：“这个学期我花了多少钱？”"
+  },
+  "nav": {
+    "main": "主导航",
+    "overview": "概览",
+    "goals": "目标",
+    "pocky": "Pocky",
+    "import": "导入"
+  },
+  "auth": {
+    "fillDemo": "填入",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "intro": {
+      "studyTerm": "学习学期",
+      "coopTerm": "Co-op 学期"
+    }
   }
 }

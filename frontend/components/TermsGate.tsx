@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
@@ -8,6 +8,27 @@ import { logout, termsAPI } from '@/utils/api'
 
 // Pages a signed-out visitor can see, and the two documents the card links to.
 const OPEN_PATHS = ['/login', '/register', '/verify-email', '/privacy', '/terms']
+
+// For dialogs that open by themselves (the tours). One that mounted after the
+// card would take the focus trap from beneath its overlay and leave neither
+// usable, so they wait until the check has answered and no card is up. It
+// starts as checking: the answer can land in the same render as whatever the
+// tour waits for, before this module has heard of it.
+let settled = false
+const listeners = new Set<() => void>()
+function setSettled(next: boolean) {
+  if (next === settled) return
+  settled = next
+  listeners.forEach((listener) => listener())
+}
+/** True once the terms check has answered (or failed) and the card is not up. */
+export function useTermsSettled(): boolean {
+  return useSyncExternalStore(
+    (listener) => { listeners.add(listener); return () => { listeners.delete(listener) } },
+    () => settled,
+    () => false,
+  )
+}
 
 /**
  * Asks a signed-in user to accept the Terms of Service and Privacy Policy when
@@ -28,22 +49,27 @@ export default function TermsGate() {
   const checkedToken = useRef<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(false)
+  // Until the first check answers; a page without one (no token, a public page) has nothing to wait for.
+  const [checking, setChecking] = useState(true)
 
   const path = router.pathname
   useEffect(() => {
-    if (OPEN_PATHS.includes(path)) return
+    if (OPEN_PATHS.includes(path)) { setChecking(false); return }
     let token: string | null = null
     try {
       token = localStorage.getItem('token')
     } catch {
+      setChecking(false)
       return
     }
-    if (!token || token === checkedToken.current) return
+    if (!token) { setChecking(false); return }
+    if (token === checkedToken.current) return
     checkedToken.current = token
     termsAPI.status()
       .then(({ data }) => setVersion(data.required ? data.currentVersion : null))
       // Forget the token so the next navigation asks again (a cold backend, say).
       .catch(() => { checkedToken.current = null })
+      .finally(() => setChecking(false))
   }, [path])
 
   const accept = async () => {
@@ -64,6 +90,9 @@ export default function TermsGate() {
   }
 
   const open = version !== null && !OPEN_PATHS.includes(path)
+  useEffect(() => {
+    setSettled(!checking && !open)
+  }, [checking, open])
   const link = 'font-medium underline underline-offset-2 hover:text-foreground'
 
   return (

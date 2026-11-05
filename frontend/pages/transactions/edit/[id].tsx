@@ -6,6 +6,7 @@ import axios from 'axios'
 import { api } from '@/utils/api'
 import { categories } from '../new'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -180,10 +181,10 @@ export default function EditTransaction() {
         <meta name="description" content="Edit your transaction" />
       </Head>
 
-      <div className="min-h-screen bg-background">
+      <AppShell>
         {/* Header */}
-        <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-6">
+        <div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Button
@@ -205,7 +206,7 @@ export default function EditTransaction() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
           <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
@@ -344,7 +345,7 @@ export default function EditTransaction() {
             </Card>
           </div>
         </div>
-      </div>
+      </AppShell>
     </>
   )
 } 

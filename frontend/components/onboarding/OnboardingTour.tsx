@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
-import { ArrowLeft, ArrowRight, Check, LayoutDashboard, Lock, MessageCircle, Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { ArrowRight, Check, LayoutDashboard, Lock, MessageCircle, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { agentAPI } from '@/utils/agentApi'
 import { markTourSeen } from '@/lib/onboarding'
 import { cn } from '@/lib/utils'
+import TourDialog, { TourPocky as Pocky, tourDelay as delay, type TourStep } from './TourDialog'
 import s from './OnboardingTour.module.css'
 
 type StepId = 'welcome' | 'add' | 'pocky' | 'goals' | 'done'
@@ -16,18 +15,6 @@ interface OnboardingTourProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
-
-/** The app icon, light and dark, switched by Tailwind's `dark` class like BrandLogo. */
-function Pocky({ className }: { className?: string }) {
-  return (
-    <span className={cn('relative inline-block', className)}>
-      <Image src="/brand/termpocket-icon.svg" alt="" width={100} height={100} className="h-full w-full dark:hidden" />
-      <Image src="/brand/termpocket-icon-dark.svg" alt="" width={100} height={100} className="hidden h-full w-full dark:block" />
-    </span>
-  )
-}
-
-const delay = (ms: number) => ({ animationDelay: `${ms}ms` })
 
 function WelcomeArt() {
   const { t } = useTranslation('common')
@@ -218,14 +205,9 @@ export default function OnboardingTour({ open, onOpenChange }: OnboardingTourPro
   const { t } = useTranslation('common')
   const router = useRouter()
   const [pocky, setPocky] = useState(false)
-  const [stepId, setStepId] = useState<StepId>('welcome')
-  const contentRef = useRef<HTMLDivElement>(null)
-  const nextRef = useRef<HTMLButtonElement>(null)
-  const ctaRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
-    setStepId('welcome')
     let live = true
     // Steps are only ever added once the answer arrives, never removed, so the
     // step on screen always stays in the list.
@@ -233,28 +215,15 @@ export default function OnboardingTour({ open, onOpenChange }: OnboardingTourPro
     return () => { live = false }
   }, [open])
 
-  const steps = useMemo<StepId[]>(
-    () => (pocky ? ['welcome', 'add', 'pocky', 'goals', 'done'] : ['welcome', 'add', 'goals', 'done']),
-    [pocky],
+  const steps = useMemo<TourStep[]>(
+    () => (pocky ? ['welcome', 'add', 'pocky', 'goals', 'done'] as const : ['welcome', 'add', 'goals', 'done'] as const).map((id: StepId) => ({
+      id,
+      Art: ART[id],
+      title: t(`onboarding.${id}.title`),
+      body: id === 'done' && !pocky ? t('onboarding.done.bodyNoPocky') : t(`onboarding.${id}.body`),
+    })),
+    [pocky, t],
   )
-  const index = Math.max(steps.indexOf(stepId), 0)
-  const step = steps[index] ?? 'welcome'
-  const last = index === steps.length - 1
-  const Art = ART[step]
-
-  // When the button that had focus disappears (Back on the first step, Next on
-  // the last), keep focus inside the dialog on the obvious next control.
-  useEffect(() => {
-    if (!open) return
-    const id = window.requestAnimationFrame(() => {
-      const content = contentRef.current
-      const active = document.activeElement
-      // Radix parks focus on the content itself when the focused button goes.
-      if (content && active && active !== content && content.contains(active)) return
-      ;(last ? ctaRef.current : nextRef.current)?.focus()
-    })
-    return () => window.cancelAnimationFrame(id)
-  }, [open, step, last])
 
   const close = () => {
     markTourSeen()
@@ -265,97 +234,29 @@ export default function OnboardingTour({ open, onOpenChange }: OnboardingTourPro
     router.push(path)
   }
 
-  const handleOpenChange = (next: boolean) => {
-    if (!next) close()
-    else onOpenChange(true)
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        ref={contentRef}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          nextRef.current?.focus()
-        }}
-        className="w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-2xl p-0 max-h-[calc(100dvh-2rem)] overflow-y-auto motion-reduce:animate-none sm:rounded-2xl"
-      >
-        <div className={s.stage} aria-hidden="true">
-          <Art key={step} />
-        </div>
-
-        <div className="px-5 pb-5 pt-4 sm:px-6">
-          <div className="mb-3 flex items-center gap-1.5" role="group" aria-label={t('onboarding.progress', { current: index + 1, total: steps.length })}>
-            {steps.map((id, i) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setStepId(id)}
-                aria-label={t('onboarding.goTo', { n: i + 1 })}
-                aria-current={i === index ? 'step' : undefined}
-                className={cn(
-                  s.dot,
-                  'h-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                  i === index ? 'w-6 bg-[#1e7a4e] dark:bg-[#87e09e]' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50',
-                )}
-              />
-            ))}
-            <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-              {t('onboarding.progress', { current: index + 1, total: steps.length })}
-            </span>
-          </div>
-
-          <div key={step} className={cn(s.fadeUp, !last && 'min-h-[6.5rem]')} aria-live="polite">
-            <DialogTitle className="text-xl font-semibold leading-tight tracking-tight">
-              {t(`onboarding.${step}.title`)}
-            </DialogTitle>
-            <DialogDescription className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {step === 'done' && !pocky ? t('onboarding.done.bodyNoPocky') : t(`onboarding.${step}.body`)}
-            </DialogDescription>
-          </div>
-
-          {last && (
-            <div className="mt-4 grid gap-2">
-              <Button ref={ctaRef} onClick={() => go('/transactions/new')}>
-                <Plus />
-                {t('onboarding.actions.add')}
-              </Button>
-              {pocky && (
-                <Button variant="outline" onClick={() => go('/agent')}>
-                  <MessageCircle />
-                  {t('onboarding.actions.pocky')}
-                </Button>
-              )}
-              <Button variant="ghost" onClick={close}>
-                <LayoutDashboard />
-                {t('onboarding.actions.explore')}
-              </Button>
-            </div>
+    <TourDialog
+      open={open}
+      steps={steps}
+      onClose={close}
+      finish={
+        <div className="grid gap-2">
+          <Button onClick={() => go('/transactions/new')}>
+            <Plus />
+            {t('onboarding.actions.add')}
+          </Button>
+          {pocky && (
+            <Button variant="outline" onClick={() => go('/agent')}>
+              <MessageCircle />
+              {t('onboarding.actions.pocky')}
+            </Button>
           )}
-
-          <div className="mt-5 flex items-center gap-2">
-            {!last && (
-              <Button variant="ghost" size="sm" className="-ml-3 text-muted-foreground" onClick={close}>
-                {t('onboarding.skip')}
-              </Button>
-            )}
-            <div className="ml-auto flex gap-2">
-              {index > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setStepId(steps[index - 1]!)}>
-                  <ArrowLeft />
-                  {t('onboarding.back')}
-                </Button>
-              )}
-              {!last && (
-                <Button ref={nextRef} size="sm" onClick={() => setStepId(steps[index + 1]!)}>
-                  {t('onboarding.next')}
-                  <ArrowRight />
-                </Button>
-              )}
-            </div>
-          </div>
+          <Button variant="ghost" onClick={close}>
+            <LayoutDashboard />
+            {t('onboarding.actions.explore')}
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      }
+    />
   )
 }

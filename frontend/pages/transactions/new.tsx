@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useForm } from 'react-hook-form'
-import { ArrowLeft, Save, Calendar, DollarSign } from 'lucide-react'
+import { Save, Calendar, DollarSign } from 'lucide-react'
 import { api } from '@/utils/api'
 import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -113,20 +114,12 @@ export default function NewTransaction() {
         <meta name="description" content="Add a new transaction" />
       </Head>
 
-      <div className="min-h-screen bg-background">
+      <AppShell>
         {/* Header */}
-        <header className="border-b bg-card">
+        <header>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-6">
+            <div className="flex items-center justify-between pt-8">
               <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/')}
-                  className="mr-4 flex items-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-                </Button>
                 <div>
                   <h1 className="text-3xl font-bold">{t('Add Transaction')}</h1>
                   <p className="text-muted-foreground">{t('Record a new income or expense')}</p>
@@ -136,7 +129,7 @@ export default function NewTransaction() {
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
           <Card>
             <CardHeader>
               <CardTitle>{t('Transaction Details')}</CardTitle>
@@ -315,7 +308,7 @@ export default function NewTransaction() {
             </CardContent>
           </Card>
         </main>
-      </div>
+      </AppShell>
     </>
   )
 } 

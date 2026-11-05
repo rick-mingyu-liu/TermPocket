@@ -13,8 +13,7 @@ import {
   PlayCircle,
   Info,
   Edit,
-  Settings as SettingsIcon,
-  ScanText } from 'lucide-react'
+} from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts'
 import { api } from '@/utils/api'
 import { formatCurrency, formatCompactCurrency, moneySign } from '@/utils/formatters'
@@ -22,8 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { BrandLogo } from '@/components/BrandLogo'
+import { AppShell } from '@/components/AppShell'
 import AgentPanel from '@/components/agent/AgentPanel'
 import OnboardingTour from '@/components/onboarding/OnboardingTour'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -33,6 +31,7 @@ import { useTranslation } from 'next-i18next'
 import { formatDay, formatDayRange } from '@/lib/date';
 import { useGoalTopUp } from '@/lib/useGoalTopUp';
 import { markTourShown, tourSeen } from '@/lib/onboarding';
+import { useTermsSettled } from '@/components/TermsGate';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 interface FinancialSummary {
@@ -310,11 +309,13 @@ export default function Dashboard() {
   }, [router, fetchDashboardData])
 
   // The first-run tour opens by itself once per account, for new accounts only.
+  // It waits for the terms check, whose card would otherwise end up beneath it.
+  const termsSettled = useTermsSettled()
   useEffect(() => {
-    if (loading || !isNewUser || tourSeen()) return
+    if (loading || !isNewUser || !termsSettled || tourSeen()) return
     markTourShown()
     setTourOpen(true)
-  }, [loading, isNewUser])
+  }, [loading, isNewUser, termsSettled])
 
   // Settings' "Show tour again" links here with ?tour=1.
   useEffect(() => {
@@ -488,9 +489,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
     )
   }
 
@@ -501,60 +504,9 @@ export default function Dashboard() {
         <meta name="description" content="Your personal finance dashboard" />
       </Head>
 
-      <div className="min-h-screen bg-background relative">
-        {/* Header */}
-        <header className="border-b bg-card">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center gap-4 py-6">
-              <div className="shrink-0">
-                <h1 className="mb-1 leading-none">
-                  <BrandLogo className="h-10 sm:h-12" priority />
-                </h1>
-                <p className="text-muted-foreground">{t('Your financial overview')}</p>
-              </div>
-              {/* Desktop actions */}
-              <div className="hidden sm:flex gap-2 flex-wrap">
-                <ThemeToggle />
-                <Button
-                  onClick={() => router.push('/transactions/new')}
-                  className="aurora-glow"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t('Add Transaction')}
-                </Button>
-                <Button variant="outline" onClick={() => router.push('/import')}>
-                  <ScanText className="w-4 h-4 mr-2" />
-                  {t('Import from screenshot')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/settings')}
-                >
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  {t('Settings')}
-                </Button>
-              </div>
-              {/* Mobile actions: FAB + settings */}
-              <div className="sm:hidden flex items-center gap-2">
-                <button
-                  className="fixed bottom-6 right-6 z-50 flex sm:hidden items-center justify-center w-16 h-16 rounded-full bg-primary text-white shadow-lg fab-add-transaction"
-                  onClick={() => router.push('/transactions/new')}
-                  aria-label={t('Add Transaction')}
-                >
-                  <Plus className="w-8 h-8" />
-                </button>
-                <Button variant="outline" size="icon" onClick={() => router.push('/import')} aria-label={t('Import from screenshot')}>
-                  <ScanText className="w-6 h-6" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => router.push('/settings')} aria-label={t('Settings')}>
-                  <SettingsIcon className="w-6 h-6" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
+      <AppShell>
         <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+          <h1 className="sr-only">{t('Your financial overview')}</h1>
           {/* Getting started: new accounts only; reopens the first-run tour */}
           {isNewUser && (
             <Card className="mb-8 overflow-hidden">
@@ -1014,7 +966,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </main>
-      </div>
+      </AppShell>
     </>
   )
 }

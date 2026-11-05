@@ -70,7 +70,7 @@
   "That password is incorrect. Enter your TermPocket password to create a connection.": "That password is incorrect. Enter your TermPocket password to create a connection.",
   "Too many wrong passwords. Wait a few minutes, then try again.": "Too many wrong passwords. Wait a few minutes, then try again.",
   "Enter your TermPocket password.": "Enter your TermPocket password.",
-  "The demo account cannot create AI connections. Sign up to connect your own.": "The demo account cannot create AI connections. Sign up to connect your own.",
+  "The demo account is shared by everyone trying TermPocket, so it cannot create AI connections. Sign up to connect your own.": "The demo account is shared by everyone trying TermPocket, so it cannot create AI connections. Sign up to connect your own.",
   "Give the connection a name of 1 to 60 characters.": "Give the connection a name of 1 to 60 characters.",
   "Could not create the connection. Please try again.": "Could not create the connection. Please try again.",
   "Active connections": "Active connections",
@@ -523,7 +523,7 @@
   "Email address validation when configured": "Email address validation when configured",
   "agent": {
     "title": "Record with Pocky",
-    "subtitle": "Record income and spending, ask about what you have recorded, or plan a savings goal. Review every entry and goal before saving.",
+    "subtitle": "Record income and spending, ask about what you have recorded, or plan a savings goal.",
     "example": "“I spent $12.50 on lunch and $3.25 on the bus today.”",
     "exampleQuestion": "“How much did I spend on dining out this term?”",
     "examplePlan": "“If co-op pays $2,400 a month from January, can I save $3,000 by August?”",
@@ -755,7 +755,36 @@
     "additionalSoftware": "Additional software",
     "sdkAcknowledgement": "Pocky reaches its AI provider through Anthropic’s TypeScript SDK, an MIT-licensed HTTP client.",
     "aiProviders": "Current AI providers",
-    "providerAcknowledgement": "AI processing for conversational transaction recording when configured"
+    "providerAcknowledgement": "AI processing for conversational transaction recording when configured",
+    "settingsSummary": "Settings",
+    "tour": {
+      "open": "How it works",
+      "start": "Start writing",
+      "record": {
+        "title": "Say what you spent or earned",
+        "body": "Write it the way you would say it, in English, Chinese or both. Pocky drafts the entries, and nothing is saved until you check them and press save."
+      },
+      "ask": {
+        "title": "Ask about your money",
+        "body": "Ask about what you have recorded. Pocky answers from your own transactions and says which period and currency it used."
+      },
+      "plan": {
+        "title": "Plan toward a goal",
+        "body": "Describe income, costs and a target, and Pocky works out whether it adds up. It can suggest a savings goal, which is saved only if you confirm it."
+      },
+      "settings": {
+        "title": "Check the defaults"
+      },
+      "voice": {
+        "title": "Or say it out loud",
+        "body": "Tap the microphone to dictate in English. Your speech is turned into text on this device and never uploaded; check the text, especially amounts, before you send."
+      },
+      "art": {
+        "save": "Save",
+        "question": "Dining out this term?",
+        "answer": "Dining Out, this term"
+      }
+    }
   },
   "retention": {
     "heading": "Automatic deletion",
@@ -770,7 +799,7 @@
     "onHint": "Transactions dated before {{date}} are deleted automatically. {{term}} and later terms are kept, the current term included.",
     "scope": "Only transactions are deleted. Savings goals, Pocky conversations and AI connections are not affected.",
     "notAvailable": "Automatic deletion is not available yet.",
-    "demo": "Automatic deletion is not available on the demo account.",
+    "demo": "The demo account is shared by everyone trying TermPocket, so automatic deletion stays off here. You can turn it on in your own account.",
     "confirmTitle": "Permanently delete old transactions?",
     "confirmBody": "Keeping the last {{terms}} terms permanently deletes every transaction dated before {{date}} (everything before {{term}}). After that, each term's transactions are deleted once that term falls outside the window. This cannot be undone.",
     "confirmCount": "Transactions that would be deleted now: {{count}}. Deletion starts within about an hour.",
@@ -814,5 +843,21 @@
     "claudeDetails": "Expand Connection details below. Use the endpoint as the connector URL and the request header with your token.",
     "otherDetails": "In an app that supports remote MCP over HTTP with custom headers, add the endpoint and request header from Connection details below. Replace <token> with your token.",
     "tryQuestion": "Try asking: “How much have I spent this term?”"
+  },
+  "nav": {
+    "main": "Main",
+    "overview": "Overview",
+    "goals": "Goals",
+    "pocky": "Pocky",
+    "import": "Import"
+  },
+  "auth": {
+    "fillDemo": "Fill in",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "intro": {
+      "studyTerm": "Study term",
+      "coopTerm": "Co-op term"
+    }
   }
 }
