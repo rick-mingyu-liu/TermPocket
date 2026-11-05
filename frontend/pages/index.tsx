@@ -17,7 +17,7 @@ import {
   ScanText } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from 'recharts'
 import { api } from '@/utils/api'
-import { formatCurrency, formatCompactCurrency } from '@/utils/formatters'
+import { formatCurrency, formatCompactCurrency, moneySign } from '@/utils/formatters'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -641,7 +641,7 @@ export default function Dashboard() {
                   <DollarSign className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${(summary?.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-2xl font-bold ${moneySign(summary?.netIncome || 0) < 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {formatCurrency(summary?.netIncome || 0, summary?.targetCurrency || defaultCurrency)}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -696,7 +696,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-muted-foreground">{t('Avg Net')}</p>
-                      <p className={`text-lg font-bold ${monthlyAverages.net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      <p className={`text-lg font-bold ${moneySign(monthlyAverages.net) < 0 ? 'text-red-600' : 'text-blue-600'}`}>
                         {formatCurrency(monthlyAverages.net, displayCurrency)}
                       </p>
                     </div>
