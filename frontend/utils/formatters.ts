@@ -9,6 +9,20 @@
  * were unused, and leaving them would have handed the next caller the same
  * bug, so they are gone. Use `toDay`/`formatDay` from `lib/date.ts`.
  */
+
+// Any amount that rounds to 0.00 is zero. Totals are summed as floating point,
+// so a month whose income equals its spending can net 0.3 - (0.1 + 0.2), about
+// -5.6e-17. Intl keeps the sign of a negative that rounds to zero, so that
+// printed "-$0.00", and `>= 0` on the raw number coloured it red. Amounts are
+// shown with two decimals and Intl rounds half away from zero, so this is
+// exactly the set that prints as 0.00.
+const roundsToZero = (amount: number): boolean => Math.abs(amount) < 0.005
+
+// The sign of what formatCurrency shows. Pick a net amount's colour with
+// `moneySign(net) < 0`, never `net < 0` or `net >= 0` on the raw number.
+export const moneySign = (amount: number): -1 | 0 | 1 =>
+  roundsToZero(amount) ? 0 : amount < 0 ? -1 : 1
+
 export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
   // For USD and CAD, always use '$' only
   const dollarCurrencies = ['USD', 'CAD'];
@@ -18,7 +32,7 @@ export const formatCurrency = (amount: number, currency: string = 'USD'): string
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(roundsToZero(amount) ? 0 : amount);
   if (dollarCurrencies.includes(currency)) {
     // Remove any country code prefix (e.g., 'CA$', 'US$'), keep only '$'
     return formatted.replace(/[A-Z]*\$/g, '$');
