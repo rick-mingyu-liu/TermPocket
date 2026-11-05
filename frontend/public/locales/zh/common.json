@@ -822,6 +822,10 @@
   "auth": {
     "fillDemo": "填入",
     "showPassword": "显示密码",
-    "hidePassword": "隐藏密码"
+    "hidePassword": "隐藏密码",
+    "intro": {
+      "studyTerm": "学习学期",
+      "coopTerm": "Co-op 学期"
+    }
   }
 }

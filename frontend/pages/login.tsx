@@ -46,7 +46,10 @@ export default function Login() {
   } = useForm<LoginForm>()
 
   const email = watch('email')
+  const password = watch('password')
   const { t } = useTranslation()
+  // The card's top bar fills as the form does (see .auth-card in globals.css).
+  const progress = ([/\S+@\S+\.\S+/.test(email ?? ''), !!password].filter(Boolean).length) / 2
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -162,7 +165,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card data-busy={loading} style={{ '--auth-progress': progress } as React.CSSProperties} className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Welcome back')}</CardTitle>
               <CardDescription className="text-center">
@@ -339,124 +342,77 @@ export default function Login() {
 
       {/* Who are we Modal */}
       <Dialog open={showIntro} onOpenChange={setShowIntro}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border border-yellow-400 dark:border-yellow-500 shadow-2xl text-foreground">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <Image
-                src="/brand/termpocket-icon.svg"
-                alt=""
-                aria-hidden="true"
-                width={60}
-                height={60}
-                className="h-14 w-14 shrink-0 dark:hidden"
-              />
-              <Image
-                src="/brand/termpocket-icon-dark.svg"
-                alt=""
-                aria-hidden="true"
-                width={60}
-                height={60}
-                className="hidden h-14 w-14 shrink-0 dark:block"
-              />
-              <div>
-                <h2 className="text-2xl font-bold text-green-700 dark:text-green-400">{t('Welcome to TermPocket')}</h2>
-                <p className="text-sm text-muted-foreground">{t('Your money, term by term.')}</p>
-              </div>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card text-foreground sm:p-8">
+          <DialogHeader className="text-left">
+            <DialogTitle className="flex items-center gap-3 text-left">
+              <Image src="/brand/termpocket-icon.svg" alt="" aria-hidden="true" width={44} height={44} className="h-11 w-11 shrink-0 dark:hidden" />
+              <Image src="/brand/termpocket-icon-dark.svg" alt="" aria-hidden="true" width={44} height={44} className="hidden h-11 w-11 shrink-0 dark:block" />
+              <span>
+                <span className="block text-xl font-semibold tracking-tight">{t('Welcome to TermPocket')}</span>
+                <span className="block text-sm font-normal text-muted-foreground">{t('Your money, term by term.')}</span>
+              </span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6">
-            <div className="text-center py-4">
-              <h3 className="text-xl font-semibold mb-2 text-green-700 dark:text-green-400">{t('Built for student life')}</h3>
-              <p className="text-muted-foreground">
+          <div className="space-y-7">
+            <section aria-labelledby="intro-student-life" className="space-y-4">
+              <h3 id="intro-student-life" className="sr-only">{t('Built for student life')}</h3>
+              <p className="max-w-prose leading-relaxed text-foreground/80">
                 {t('A study term spends and a co-op term earns. TermPocket helps university and college students in Canada follow their money the way they live it: one four-month term at a time, through study terms, co-op placements, internships and summer breaks.')}
               </p>
-            </div>
+              {/* One year as TermPocket sees it: what each term did to the balance. Illustrative, so hidden from screen readers; the paragraph says it. */}
+              <div aria-hidden="true" className="grid grid-cols-3 overflow-hidden rounded-lg border bg-muted/40">
+                {([['Winter', 'study', 0.55], ['Spring', 'coop', 0.9], ['Fall', 'study', 0.7]] as const).map(([term, kind, size], i) => (
+                  <div key={term} className={'px-3 py-3 sm:px-4 ' + (i > 0 ? 'border-l' : '')}>
+                    <p className="text-sm font-medium leading-tight">{t(term)}</p>
+                    <p className={'text-xs leading-tight ' + (kind === 'coop' ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground')}>
+                      {kind === 'coop' ? t('auth.intro.coopTerm') : t('auth.intro.studyTerm')}
+                    </p>
+                    <div className="relative mt-3 h-14">
+                      <div className="absolute inset-x-0 top-1/2 border-t border-foreground/25" />
+                      <div
+                        className={'absolute inset-x-0 ' + (kind === 'coop' ? 'bottom-1/2 rounded-t-sm bg-green-600 dark:bg-green-500' : 'top-1/2 rounded-b-sm bg-foreground/20')}
+                        style={{ height: `${size * 50}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg shrink-0">
-                  <CalendarRange className="h-5 w-5 text-green-600 dark:text-green-400" aria-hidden="true" />
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {([
+                [CalendarRange, 'Term by term', 'See income, spending and savings for this term, last term or the whole year, so a co-op term and a study term are easy to compare.'],
+                [ScanText, 'Import from a screenshot', 'Add transactions from a screenshot of your banking app, a receipt, Uber, Uber Eats or WeChat Pay. The image is read on your device and never uploaded, and nothing is saved until you confirm.'],
+                [Target, 'Savings goals', 'Set a target amount and a date, and watch your progress toward it.'],
+                [Coins, 'Six currencies', 'Record money in CAD, USD, EUR, GBP, AUD or CNY, and see your totals in the currency you choose.'],
+                [Mail, 'Weekly report', 'Get a summary of your week by email every Sunday evening. Turn it off any time in Settings.'],
+                [Shield, 'Private by design', 'TermPocket never connects to your bank. Passwords are stored hashed, and screenshots stay on your device.'],
+              ] as const).map(([Icon, title, body]) => (
+                <div key={title} className="border-t pt-3">
+                  <dt className="flex items-center gap-2 text-sm font-medium">
+                    <Icon className="h-4 w-4 text-green-700 dark:text-green-400" aria-hidden="true" />
+                    {t(title)}
+                  </dt>
+                  <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(body)}</dd>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Term by term')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('See income, spending and savings for this term, last term or the whole year, so a co-op term and a study term are easy to compare.')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg shrink-0">
-                  <ScanText className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Import from a screenshot')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('Add transactions from a screenshot of your banking app, a receipt, Uber, Uber Eats or WeChat Pay. The image is read on your device and never uploaded, and nothing is saved until you confirm.')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg shrink-0">
-                  <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Savings goals')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('Set a target amount and a date, and watch your progress toward it.')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg shrink-0">
-                  <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Six currencies')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('Record money in CAD, USD, EUR, GBP, AUD or CNY, and see your totals in the currency you choose.')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shrink-0">
-                  <Mail className="h-5 w-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Weekly report')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('Get a summary of your week by email every Sunday evening. Turn it off any time in Settings.')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg shrink-0">
-                  <Shield className="h-5 w-5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-700 dark:text-green-400">{t('Private by design')}</h4>
-                  <p className="text-sm text-muted-foreground">{t('TermPocket never connects to your bank. Passwords are stored hashed, and screenshots stay on your device.')}</p>
-                </div>
+              ))}
+            </dl>
+
+            <div className="flex flex-col gap-4 rounded-lg bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-foreground/80">{t('TermPocket is free. Try the demo account, or create your own.')}</p>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="outline" onClick={() => setShowIntro(false)}>{t('Continue to Login')}</Button>
+                <Button onClick={() => router.push('/register')}>{t('Get Started Free')}</Button>
               </div>
             </div>
 
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                {t('TermPocket is free. Try the demo account, or create your own.')}
-              </p>
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Button onClick={() => router.push('/register')}>
-                  {t('Get Started Free')}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="outline" onClick={() => setShowIntro(false)}>
-                  {t('Continue to Login')}
-                </Button>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-6 text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                {t('Questions, feedback or ideas? We would love to hear from you.')}
-              </p>
-              <a
-                href="mailto:support@termpocket.com"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-green-600 dark:border-green-500 text-green-700 dark:text-green-300 bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-              >
+            <p className="text-sm text-muted-foreground">
+              {t('Questions, feedback or ideas? We would love to hear from you.')}{' '}
+              <a href="mailto:support@termpocket.com" className="font-medium text-green-700 underline underline-offset-4 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">
                 {t('Contact Us')}
-                <Mail className="ml-2 h-4 w-4" aria-hidden="true" />
               </a>
-            </div>
+            </p>
           </div>
         </DialogContent>
       </Dialog>

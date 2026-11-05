@@ -825,6 +825,10 @@
   "auth": {
     "fillDemo": "Fill in",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "intro": {
+      "studyTerm": "Study term",
+      "coopTerm": "Co-op term"
+    }
   }
 }
