@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useForm } from 'react-hook-form'
 import { Plus, Target, Calendar, Edit, Eye } from 'lucide-react'
@@ -55,7 +54,6 @@ function GoalDescriptionPreview({ description }: { description: string }) {
 
 export default function Goals() {
   const { t } = useTranslation('common');
-  const router = useRouter()
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -141,9 +139,11 @@ export default function Goals() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
     )
   }
 

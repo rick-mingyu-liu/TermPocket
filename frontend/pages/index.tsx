@@ -486,9 +486,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
     )
   }
 
@@ -500,8 +502,8 @@ export default function Dashboard() {
       </Head>
 
       <AppShell>
-
         <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+          <h1 className="sr-only">{t('Your financial overview')}</h1>
           {/* Getting started: new accounts only; reopens the first-run tour */}
           {isNewUser && (
             <Card className="mb-8 overflow-hidden">
