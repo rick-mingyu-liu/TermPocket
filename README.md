@@ -342,7 +342,7 @@ npm run build            # runs ocr-assets first
 npm start
 npm run lint
 npm run check:locales    # every locale namespace: fails on duplicate keys or keys missing from one locale; warns on unresolved keys
-npm test                 # node --test through tsx: unit tests for pure logic in test/
+npm test                 # node --test: unit tests for pure logic in test/
 npm run ocr-assets       # fetch + checksum the OCR model, copy ONNX Runtime
 
 # eval

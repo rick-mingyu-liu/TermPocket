@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   toDay, todayDay, formatDay, formatDayRange, daysUntil, previousMonth, formatMonth,
-} from '../lib/date'
+} from '../lib/date.ts'
 
 /**
  * `lib/date.ts` is the frontend twin of the backend's `utils/dates.ts`

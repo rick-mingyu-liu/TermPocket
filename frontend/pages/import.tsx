@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 import toast from 'react-hot-toast'
-import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, ShieldCheck, Upload, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Loader2, ShieldCheck, Upload, X } from 'lucide-react'
 import axios from 'axios'
 import { api } from '@/utils/api'
 import { todayDay } from '@/lib/date'
@@ -15,6 +15,7 @@ import {
   type ParseResponse, type ReviewRow,
 } from '@/lib/import/review'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -169,14 +170,10 @@ export default function ImportPage() {
         <meta name="description" content="Import transactions from bank screenshots and receipts" />
       </Head>
 
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-6">
+      <AppShell>
+        <div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={() => router.push('/transactions')} className="flex items-center">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">{t('Transactions')}</span>
-              </Button>
               <div>
                 <h1 className="text-2xl font-bold sm:text-3xl">{t('Import transactions')}</h1>
                 <p className="text-muted-foreground">{t('From bank screenshots and receipt photos')}</p>
@@ -185,7 +182,7 @@ export default function ImportPage() {
           </div>
         </div>
 
-        <main className="container mx-auto space-y-6 px-2 py-8 sm:px-4">
+        <main className="max-w-7xl mx-auto space-y-6 px-2 pt-6 pb-8 sm:px-6 lg:px-8">
           <EngineBanner state={engine} onRetry={retry} />
 
           <Card>
@@ -302,7 +299,7 @@ export default function ImportPage() {
             </DialogContent>
           </Dialog>
         </main>
-      </div>
+      </AppShell>
     </>
   )
 }

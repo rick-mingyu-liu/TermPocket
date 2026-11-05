@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import {
-  ArrowLeft,
   Trash2,
   AlertTriangle,
   Palette,
@@ -28,6 +27,7 @@ import PockyMemory from '@/components/PockyMemory'
 import OpenSourceAcknowledgements from '@/components/OpenSourceAcknowledgements'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -86,6 +86,10 @@ export default function Settings() {
   // null until the server says, like the weekly report switch.
   const [retention, setRetention] = useState<RetentionSetting | null>(null)
   const [retentionBusy, setRetentionBusy] = useState(false)
+  // The shared demo account: automatic deletion and AI connections are refused
+  // for it, so both say why before anyone tries. From the profile, or from the
+  // retention setting (which reports it too).
+  const [profileDemo, setProfileDemo] = useState(false)
   // What turning it on would delete now, shown before anything is stored.
   const [retentionPreview, setRetentionPreview] = useState<(RetentionWindow & { count: number }) | null>(null)
 
@@ -100,6 +104,7 @@ export default function Settings() {
       .then(({ data }) => {
         const { weekly_reports_enabled: weekly, email_notifications_enabled: email } = data.user
         setWeeklyReports(Boolean(weekly && email))
+        setProfileDemo(data.user.is_demo === true)
       })
       .catch(() => toast.error(t('Could not load your notification setting.')))
 
@@ -107,6 +112,8 @@ export default function Settings() {
       .then(({ data }) => setRetention(data))
       .catch(() => toast.error(t('retention.loadError')))
   }, [router, t])
+
+  const isDemo = profileDemo || retention?.demo === true
 
   // '2024-fall' -> 'Fall 2024' / '2024年秋季', the way the dashboard names a term.
   const termName = (termId: string) => {
@@ -258,20 +265,10 @@ export default function Settings() {
         <meta name="description" content="Manage your app settings and preferences" />
       </Head>
 
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-6">
+      <AppShell>
+        <div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/')}
-                className="flex items-center"
-                aria-label={t('Back to Dashboard')}
-              >
-                <ArrowLeft className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-              </Button>
               <div>
                 <h1 className="text-3xl font-bold">{t('Settings')}</h1>
                 <p className="text-muted-foreground">
@@ -282,7 +279,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
           <div className="max-w-4xl mx-auto space-y-6">
             <Card>
               <CardHeader>
@@ -429,7 +426,7 @@ export default function Settings() {
                   <Select
                     value={retention?.retentionTerms ? String(retention.retentionTerms) : 'off'}
                     onValueChange={changeRetention}
-                    disabled={!retention || !retention.available || retentionBusy || (retention.demo && retention.retentionTerms === null)}
+                    disabled={!retention || !retention.available || retentionBusy || (isDemo && retention.retentionTerms === null)}
                   >
                     <SelectTrigger id="retention">
                       <SelectValue />
@@ -444,8 +441,8 @@ export default function Settings() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {!retention ? null
-                    : !retention.available ? t('retention.notAvailable')
-                      : retention.demo ? t('retention.demo')
+                    : isDemo ? t('retention.demo')
+                      : !retention.available ? t('retention.notAvailable')
                         : retention.window
                           ? t('retention.onHint', { date: formatDay(retention.window.cutoff, i18n.language), term: termName(retention.window.keepFromTerm) })
                           : t('retention.offHint')}
@@ -456,7 +453,7 @@ export default function Settings() {
 
             <PockyMemory />
 
-            <AiConnections />
+            <AiConnections demo={isDemo} />
 
             <Card>
               <CardHeader>
@@ -522,7 +519,7 @@ export default function Settings() {
             </details>
           </div>
         </div>
-      </div>
+      </AppShell>
 
       <Dialog open={clearDialogOpen} onOpenChange={(open) => { if (!clearing) { setClearDialogOpen(open); setDeleteConfirmation('') } }}>
         <DialogContent>

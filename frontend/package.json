@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "check:locales": "node scripts/check-locales.js",
-    "test": "tsx --test 'test/**/*.test.ts'",
+    "test": "node --test 'test/**/*.test.ts'",
     "ocr-assets": "node scripts/ocr-assets.js",
     "voice-assets": "node scripts/voice-assets.js",
     "predev": "npm run ocr-assets && npm run voice-assets",
@@ -53,8 +53,7 @@
   },
   "devDependencies": {
     "eslint": "^8.0.0",
-    "eslint-config-next": "^15.5.28",
-    "tsx": "^4.23.15"
+    "eslint-config-next": "^15.5.28"
   },
   "keywords": [
     "finance",

@@ -68,6 +68,8 @@ interface ProfileRow {
   created_at: Date | null;
   weekly_reports_enabled: boolean;
   email_notifications_enabled: boolean;
+  // Lets Settings explain up front why demo-refused actions are off.
+  is_demo: boolean;
 }
 
 // The columns both UPDATE ... RETURNING variants below name.
@@ -394,7 +396,7 @@ const authController = {
   async getProfile(req: Request, res: Response) {
     try {
       const user = await query<ProfileRow>(
-        'SELECT id, email, first_name, last_name, created_at, weekly_reports_enabled, email_notifications_enabled FROM users WHERE id = $1',
+        'SELECT id, email, first_name, last_name, created_at, weekly_reports_enabled, email_notifications_enabled, is_demo FROM users WHERE id = $1',
         [req.user.userId]
       );
 

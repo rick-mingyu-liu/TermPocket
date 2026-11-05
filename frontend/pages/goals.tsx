@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useForm } from 'react-hook-form'
-import { ArrowLeft, Plus, Target, Calendar, Edit, Eye } from 'lucide-react'
+import { Plus, Target, Calendar, Edit, Eye } from 'lucide-react'
 import { api } from '@/utils/api'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,7 +54,6 @@ function GoalDescriptionPreview({ description }: { description: string }) {
 
 export default function Goals() {
   const { t } = useTranslation('common');
-  const router = useRouter()
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -140,9 +139,11 @@ export default function Goals() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
     )
   }
 
@@ -153,20 +154,12 @@ export default function Goals() {
         <meta name="description" content={t('Manage your savings goals')} />
       </Head>
 
-      <div className="min-h-screen bg-background">
+      <AppShell>
         {/* Header */}
-        <header className="border-b bg-card">
+        <header>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-8 gap-4 sm:gap-0">
               <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/')}
-                  className="mr-4 flex items-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-                </Button>
                 <div>
                   <h1 className="text-3xl font-bold">{t('Savings Goals')}</h1>
                   <p className="text-muted-foreground">{t('Track and manage your financial goals')}</p>
@@ -338,7 +331,7 @@ export default function Goals() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 pb-8">
           <GoalTopUpSuggestion goals={goals} onAdded={fetchGoals} />
           {goals.length === 0 ? (
             <Card>
@@ -431,7 +424,7 @@ export default function Goals() {
             </div>
           )}
         </main>
-      </div>
+      </AppShell>
 
       <Dialog open={!!viewingGoal} onOpenChange={open => { if (!open) setViewingGoal(null) }}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
