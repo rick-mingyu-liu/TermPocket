@@ -66,7 +66,7 @@ function errorStatus(error: unknown): { status?: number, code?: string, paths: s
  * dropped on dismiss, and React discards it with the rest of the state when
  * the page unmounts.
  */
-export default function AiConnections() {
+export default function AiConnections({ demo = false }: { demo?: boolean }) {
   const { t, i18n } = useTranslation('common')
   const locale = i18n.language
 
@@ -192,7 +192,7 @@ export default function AiConnections() {
         setCreateError(t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit }))
         load()
       } else if (code === 'access_token_demo') {
-        setCreateError(t('The demo account cannot create AI connections. Sign up to connect your own.'))
+        setCreateError(t('The demo account is shared by everyone trying TermPocket, so it cannot create AI connections. Sign up to connect your own.'))
       } else if (code === 'access_token_password_incorrect') {
         setPasswordWrong(true)
         setCreateError(t('That password is incorrect. Enter your TermPocket password to create a connection.'))
@@ -331,7 +331,7 @@ export default function AiConnections() {
               onChange={(event) => { setName(event.target.value); setCreateError(null) }}
               maxLength={NAME_MAX}
               placeholder={t('e.g. Claude on my laptop')}
-              disabled={Boolean(secret) || atLimit || creating || tokens === null}
+              disabled={demo || Boolean(secret) || atLimit || creating || tokens === null}
               aria-describedby="ai-connection-hint"
               aria-invalid={createError && !passwordWrong ? true : undefined}
               autoComplete="off"
@@ -343,7 +343,7 @@ export default function AiConnections() {
               onChange={(event) => { setPassword(event.target.value); setCreateError(null); setPasswordWrong(false) }}
               placeholder={t('Your TermPocket password')}
               aria-label={t('Your TermPocket password')}
-              disabled={Boolean(secret) || atLimit || creating || tokens === null}
+              disabled={demo || Boolean(secret) || atLimit || creating || tokens === null}
               aria-invalid={passwordWrong ? true : undefined}
               autoComplete="current-password"
               maxLength={1024}
@@ -351,21 +351,23 @@ export default function AiConnections() {
             <Button
               type="submit"
               className="shrink-0"
-              disabled={Boolean(secret) || !trimmed || !password || atLimit || creating || tokens === null}
+              disabled={demo || Boolean(secret) || !trimmed || !password || atLimit || creating || tokens === null}
             >
               <KeyRound className="w-4 h-4 mr-2" aria-hidden />
               {creating ? t('Creating...') : t('Create token')}
             </Button>
           </div>
           <p id="ai-connection-hint" className="text-sm text-muted-foreground" aria-live="polite">
-            {secret
+            {demo
+              ? t('The demo account is shared by everyone trying TermPocket, so it cannot create AI connections. Sign up to connect your own.')
+              : secret
               ? t('Copy this token and dismiss its panel before creating another connection.')
               : atLimit
               ? t('{{limit}} of {{limit}} connections in use — revoke one to add another.', { limit })
               : t('Name it after the app or device that will use it, and confirm with your password. {{used}} of {{limit}} in use.', { used: active.length, limit })}
           </p>
           {/* At the limit the hint above already says why; don't say it twice. */}
-          {createError && !atLimit && (
+          {createError && !atLimit && !demo && (
             <p role="alert" className="text-sm text-destructive">{createError}</p>
           )}
         </form>
