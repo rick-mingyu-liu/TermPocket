@@ -197,8 +197,8 @@ export default function Transactions() {
 
       <AppShell>
         {/* Header */}
-        <div className="border-b bg-card">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div>
@@ -218,7 +218,7 @@ export default function Transactions() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 pb-8">
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>

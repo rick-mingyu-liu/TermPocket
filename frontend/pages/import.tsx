@@ -171,8 +171,8 @@ export default function ImportPage() {
       </Head>
 
       <AppShell>
-        <div className="border-b bg-card">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div className="flex items-center space-x-4">
               <div>
                 <h1 className="text-2xl font-bold sm:text-3xl">{t('Import transactions')}</h1>
@@ -182,7 +182,7 @@ export default function ImportPage() {
           </div>
         </div>
 
-        <main className="max-w-7xl mx-auto space-y-6 px-2 py-8 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto space-y-6 px-2 pt-6 pb-8 sm:px-6 lg:px-8">
           <EngineBanner state={engine} onRetry={retry} />
 
           <Card>

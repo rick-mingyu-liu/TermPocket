@@ -116,9 +116,9 @@ export default function NewTransaction() {
 
       <AppShell>
         {/* Header */}
-        <header className="border-b bg-card">
+        <header>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-6">
+            <div className="flex items-center justify-between pt-8">
               <div className="flex items-center">
                 <div>
                   <h1 className="text-3xl font-bold">{t('Add Transaction')}</h1>
@@ -129,7 +129,7 @@ export default function NewTransaction() {
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8">
           <Card>
             <CardHeader>
               <CardTitle>{t('Transaction Details')}</CardTitle>

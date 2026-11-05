@@ -156,9 +156,9 @@ export default function Goals() {
 
       <AppShell>
         {/* Header */}
-        <header className="border-b bg-card">
+        <header>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-8 gap-4 sm:gap-0">
               <div className="flex items-center">
                 <div>
                   <h1 className="text-3xl font-bold">{t('Savings Goals')}</h1>
@@ -331,7 +331,7 @@ export default function Goals() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 pb-8">
           <GoalTopUpSuggestion goals={goals} onAdded={fetchGoals} />
           {goals.length === 0 ? (
             <Card>
