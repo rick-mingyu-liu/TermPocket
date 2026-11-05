@@ -757,19 +757,33 @@
     "aiProviders": "Current AI providers",
     "providerAcknowledgement": "AI processing for conversational transaction recording when configured",
     "settingsSummary": "Settings",
-    "guide": {
+    "tour": {
       "open": "How it works",
-      "title": "How Pocky works",
-      "recordTitle": "Record",
-      "record": "Tell Pocky what you spent or earned, in English, Chinese or both. It drafts the entries for you to check, edit and save.",
-      "askTitle": "Ask",
-      "ask": "Ask about what you have recorded. Pocky answers from your own transactions and says which period and currency it used.",
-      "planTitle": "Plan",
-      "plan": "Describe income, costs and a target, and Pocky works out whether it adds up. It can suggest a savings goal, which is saved only if you confirm it.",
-      "settingsTitle": "Settings",
-      "voiceTitle": "Voice",
-      "voice": "Tap the microphone to dictate in English. Your speech is turned into text on this device and never uploaded; check the text, especially amounts, before you send.",
-      "keysTitle": "Keyboard"
+      "start": "Start writing",
+      "record": {
+        "title": "Say what you spent or earned",
+        "body": "Write it the way you would say it, in English, Chinese or both. Pocky drafts the entries, and nothing is saved until you check them and press save."
+      },
+      "ask": {
+        "title": "Ask about your money",
+        "body": "Ask about what you have recorded. Pocky answers from your own transactions and says which period and currency it used."
+      },
+      "plan": {
+        "title": "Plan toward a goal",
+        "body": "Describe income, costs and a target, and Pocky works out whether it adds up. It can suggest a savings goal, which is saved only if you confirm it."
+      },
+      "settings": {
+        "title": "Check the defaults"
+      },
+      "voice": {
+        "title": "Or say it out loud",
+        "body": "Tap the microphone to dictate in English. Your speech is turned into text on this device and never uploaded; check the text, especially amounts, before you send."
+      },
+      "art": {
+        "save": "Save",
+        "question": "Dining out this term?",
+        "answer": "Dining Out, this term"
+      }
     }
   },
   "retention": {

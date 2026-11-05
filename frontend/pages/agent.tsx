@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, SlidersHorizontal, Square, Trash2 } from 'lucide-react'
+import { BookOpen, Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, SlidersHorizontal, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import DraftEditor, { currencies, selectClass } from '@/components/agent/DraftEditor'
 import GoalProposalCard from '@/components/agent/GoalProposalCard'
 import MemoryProposalCard from '@/components/agent/MemoryProposalCard'
-import PockyGuide from '@/components/agent/PockyGuide'
+import PockyTour from '@/components/agent/PockyTour'
+import { pockyTour } from '@/lib/onboarding'
 import { readPreferences } from '@/lib/preferences'
 import { DICTATION_LIMIT_MS, dictationSupported, useDictation } from '@/lib/voice/useDictation'
 import { agentAPI, agentErrorCode, agentOutcomeUnknown, AgentContext, ConfirmRequest, Conversation, ConversationState, DraftRow, GoalConfirmRequest, MemoryConfirmRequest, MessageRequest, ReplyLanguage } from '@/utils/agentApi'
@@ -174,6 +175,15 @@ export default function AgentPage() {
   const sendDisabled = locked || unresolved || dirty || available !== true || !content.trim() || dictating
   // Coarse pointer = phone/tablet: Enter stays a newline there and Send is the button.
   const [enterSends, setEnterSends] = useState(false)
+  // The how-to lives in a tour, not on the page: it opens by itself on this
+  // account's first visit once Pocky can answer, and from "How it works" later.
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    if (available !== true || pockyTour.seen()) return
+    pockyTour.shown()
+    setTourOpen(true)
+  }, [available])
+  const closeTour = () => { pockyTour.markSeen(); setTourOpen(false) }
   useEffect(() => { setEnterSends(!window.matchMedia('(pointer: coarse)').matches) }, [])
   const pendingDraft = state?.draft?.status === 'pending'
   const expired = Boolean(state?.draft && new Date(state.draft.expires_at).getTime() <= now)
@@ -425,8 +435,10 @@ export default function AgentPage() {
     <AppShell>
       <header><div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 pt-8 sm:px-6 lg:px-8">
         <div><h1 className="flex items-center gap-2 text-2xl font-bold"><MessageSquare className="h-6 w-6" />{t('agent.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{t('agent.subtitle')}</p></div>
-        <PockyGuide enterSends={enterSends} canDictate={canDictate} />
+        <Button variant="outline" size="sm" className="shrink-0" aria-label={t('agent.tour.open')} onClick={() => setTourOpen(true)}><BookOpen /><span className="hidden sm:inline">{t('agent.tour.open')}</span></Button>
       </div></header>
+      <PockyTour open={tourOpen} onClose={closeTour} onStart={() => composer.current?.focus()} enterSends={enterSends} canDictate={canDictate}
+        settings={[context.currency, context.timezone, context.language === 'auto' ? t('agent.autoLanguage') : context.language === 'zh' ? '中文' : 'English']} />
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
         {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">{error.startsWith('goal:')
           ? t(`agent.goal.errors.${error.slice(5)}`, { defaultValue: t(`agent.errors.${error.slice(5)}`, { defaultValue: t('agent.errors.generic') }) })
