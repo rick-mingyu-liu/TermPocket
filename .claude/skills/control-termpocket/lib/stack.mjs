@@ -270,7 +270,11 @@ export async function frontendUp({ dev = false, build = false } = {}) {
     const built = existsSync(join(FRONTEND, '.next', 'BUILD_ID')) && existsSync(marker) && JSON.parse(readFileSync(marker, 'utf8')).key === key
     if (build || !built) {
       log('frontend: npm run build (production; prebuild verifies the OCR and voice assets)')
+      // `next build` pretty-prints tsconfig.json; a clean file is put back so the clone stays
+      // clean for the next `gh pr checkout` (a file the user had edited is left alone).
+      const tsconfigClean = run('git', ['diff', '--quiet', '--', 'frontend/tsconfig.json'], { cwd: REPO, quiet: true }).status === 0
       sh('npm', ['run', 'build'], { cwd: FRONTEND, env: { ...env, NODE_ENV: undefined }, quiet: true })
+      if (tsconfigClean) run('git', ['checkout', '--', 'frontend/tsconfig.json'], { cwd: REPO, quiet: true })
       key = buildKey() // recomputed after the build, so files the build touched do not force the next one
       writeFileSync(marker, JSON.stringify({ key, at: new Date().toISOString() }))
     } else log(`frontend: build ${key} is current`)
