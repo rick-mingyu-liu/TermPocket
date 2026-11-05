@@ -41,6 +41,8 @@ export default function Login() {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
+    clearErrors,
   } = useForm<LoginForm>()
 
   const email = watch('email')
@@ -142,15 +144,17 @@ export default function Login() {
         <meta name="description" content="Sign in to your TermPocket account" />
       </Head>
 
-      <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-background aurora-particles">
+      <div className="min-h-screen relative flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background auth-backdrop">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
               <BrandLogo className="h-14 sm:h-16" priority />
             </h1>
+            <p className="text-muted-foreground">{t('Your money, term by term.')}</p>
             <button
+              type="button"
               onClick={() => setShowIntro(true)}
-              className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline cursor-pointer transition-colors"
+              className="mt-2 text-sm font-medium text-green-700 dark:text-green-400 underline underline-offset-4 decoration-green-600/40 hover:decoration-green-600 cursor-pointer transition-colors"
             >
               {t('Who are we?')}
             </button>
@@ -158,7 +162,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Welcome back')}</CardTitle>
               <CardDescription className="text-center">
@@ -253,6 +257,8 @@ export default function Login() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                      aria-pressed={showPassword}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -274,10 +280,10 @@ export default function Login() {
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-yellow-400" />
+                    <div className="w-full border-t border-border" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-card px-2 text-muted-foreground">
                       {t("Don't have an account?")}
                     </span>
                   </div>
@@ -285,7 +291,7 @@ export default function Login() {
 
                 <Button
                   variant="outline"
-                  className="w-full mt-4 border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-300"
+                  className="w-full mt-4 hover:border-green-600/50 hover:text-green-700 dark:hover:text-green-400"
                   onClick={() => router.push('/register')}
                 >
                   {t('Create new account')}
@@ -294,9 +300,24 @@ export default function Login() {
               </div>
 
               {/* Demo credentials */}
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary" className="bg-yellow-400 dark:bg-yellow-500 text-yellow-900 dark:text-yellow-950">{t('Demo Account')}</Badge>
+              <div className="mt-6 rounded-lg border border-dashed border-green-600/40 bg-green-50/70 p-4 dark:border-green-400/30 dark:bg-green-950/30">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/60 dark:text-green-200">{t('Demo Account')}</Badge>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 bg-card px-3 text-xs"
+                    onClick={() => {
+                      setLoginError('')
+                      setVerificationError('')
+                      clearErrors()
+                      setValue('email', 'john.doe@example.com')
+                      setValue('password', 'password123')
+                    }}
+                  >
+                    {t('auth.fillDemo')}
+                  </Button>
                 </div>
                 <div className="space-y-1 text-sm">
                   <p className="text-muted-foreground">

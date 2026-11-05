@@ -814,5 +814,17 @@
     "claudeDetails": "Expand Connection details below. Use the endpoint as the connector URL and the request header with your token.",
     "otherDetails": "In an app that supports remote MCP over HTTP with custom headers, add the endpoint and request header from Connection details below. Replace <token> with your token.",
     "tryQuestion": "Try asking: “How much have I spent this term?”"
+  },
+  "nav": {
+    "main": "Main",
+    "overview": "Overview",
+    "goals": "Goals",
+    "pocky": "Pocky",
+    "import": "Import"
+  },
+  "auth": {
+    "fillDemo": "Fill in",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   }
 }

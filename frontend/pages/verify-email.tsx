@@ -89,7 +89,7 @@ export default function VerifyEmail() {
         <meta name="description" content="Verify your TermPocket account email" />
       </Head>
 
-      <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+      <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 auth-backdrop">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
@@ -99,7 +99,7 @@ export default function VerifyEmail() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1 text-center">
               <div className="flex justify-center mb-4">
                 {getStatusIcon()}
@@ -146,7 +146,7 @@ export default function VerifyEmail() {
                     <Button 
                       onClick={() => router.push('/register')}
                       variant="outline"
-                      className="w-full border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-300"
+                      className="w-full hover:border-green-600/50 hover:text-green-700 dark:hover:text-green-400"
                     >
                       {t('Register New Account')}
                     </Button>

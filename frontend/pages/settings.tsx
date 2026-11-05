@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import {
-  ArrowLeft,
   Trash2,
   AlertTriangle,
   Palette,
@@ -28,6 +27,7 @@ import PockyMemory from '@/components/PockyMemory'
 import OpenSourceAcknowledgements from '@/components/OpenSourceAcknowledgements'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -258,20 +258,10 @@ export default function Settings() {
         <meta name="description" content="Manage your app settings and preferences" />
       </Head>
 
-      <div className="min-h-screen bg-background">
+      <AppShell>
         <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/')}
-                className="flex items-center"
-                aria-label={t('Back to Dashboard')}
-              >
-                <ArrowLeft className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-              </Button>
               <div>
                 <h1 className="text-3xl font-bold">{t('Settings')}</h1>
                 <p className="text-muted-foreground">
@@ -282,7 +272,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-4xl mx-auto space-y-6">
             <Card>
               <CardHeader>
@@ -522,7 +512,7 @@ export default function Settings() {
             </details>
           </div>
         </div>
-      </div>
+      </AppShell>
 
       <Dialog open={clearDialogOpen} onOpenChange={(open) => { if (!clearing) { setClearDialogOpen(open); setDeleteConfirmation('') } }}>
         <DialogContent>

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { Plus, ArrowLeft, Filter, Search, Calendar, DollarSign, Edit, Trash2, ScanText } from 'lucide-react'
+import { Plus, Filter, Search, Calendar, DollarSign, Edit, Trash2, ScanText } from 'lucide-react'
 import { api } from '@/utils/api'
 import { formatCurrency } from '@/utils/formatters'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -192,21 +193,12 @@ export default function Transactions() {
         <meta name="description" content="View and manage your recent transactions" />
       </Head>
 
-      <div className="min-h-screen bg-background relative">
+      <AppShell>
         {/* Header */}
         <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push('/')}
-                  className="flex items-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-                </Button>
                 <div>
                   <h1 className="text-3xl font-bold">{t('Transactions')}</h1>
                   <p className="text-muted-foreground">
@@ -219,29 +211,12 @@ export default function Transactions() {
                   <ScanText className="w-4 h-4 mr-2" />
                   {t('Import from screenshot')}
                 </Button>
-                <Button onClick={() => router.push('/transactions/new')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t('Add Transaction')}
-                </Button>
               </div>
-              {/* Mobile: the FAB adds a transaction; import needs its own button */}
-              <Button variant="outline" size="icon" className="sm:hidden shrink-0" onClick={() => router.push('/import')} aria-label={t('Import from screenshot')}>
-                <ScanText className="w-6 h-6" />
-              </Button>
             </div>
           </div>
         </div>
 
-        {/* FAB for mobile */}
-        <button
-          className="fixed bottom-6 right-6 z-50 flex sm:hidden items-center justify-center w-16 h-16 rounded-full bg-primary text-white shadow-lg fab-add-transaction"
-          onClick={() => router.push('/transactions/new')}
-          aria-label={t('Add Transaction')}
-        >
-          <Plus className="w-8 h-8" />
-        </button>
-
-        <div className="container mx-auto px-2 sm:px-4 py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -393,7 +368,7 @@ export default function Transactions() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppShell>
     </>
   )
 }

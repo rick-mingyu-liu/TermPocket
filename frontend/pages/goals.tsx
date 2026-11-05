@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { useForm } from 'react-hook-form'
-import { ArrowLeft, Plus, Target, Calendar, Edit, Eye } from 'lucide-react'
+import { Plus, Target, Calendar, Edit, Eye } from 'lucide-react'
 import { api } from '@/utils/api'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -153,20 +154,12 @@ export default function Goals() {
         <meta name="description" content={t('Manage your savings goals')} />
       </Head>
 
-      <div className="min-h-screen bg-background">
+      <AppShell>
         {/* Header */}
         <header className="border-b bg-card">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 gap-4 sm:gap-0">
               <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/')}
-                  className="mr-4 flex items-center"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('Back to Dashboard')}</span>
-                </Button>
                 <div>
                   <h1 className="text-3xl font-bold">{t('Savings Goals')}</h1>
                   <p className="text-muted-foreground">{t('Track and manage your financial goals')}</p>
@@ -431,7 +424,7 @@ export default function Goals() {
             </div>
           )}
         </main>
-      </div>
+      </AppShell>
 
       <Dialog open={!!viewingGoal} onOpenChange={open => { if (!open) setViewingGoal(null) }}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">

@@ -171,7 +171,7 @@ export default function Register() {
           <meta name="description" content="Verify your TermPocket account" />
         </Head>
 
-        <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+        <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 auth-backdrop">
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
             <div className="text-center">
               <h1 className="mx-auto mb-4 flex justify-center">
@@ -181,7 +181,7 @@ export default function Register() {
           </div>
 
           <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-            <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+            <Card className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
               <CardHeader className="space-y-1 text-center">
                 <div className="flex justify-center mb-4">
                   <CheckCircle className="h-16 w-16 text-green-500" />
@@ -220,7 +220,7 @@ export default function Register() {
                   <Button 
                     onClick={() => setRegistrationSuccess(false)}
                     variant="outline"
-                    className="w-full border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-300"
+                    className="w-full hover:border-green-600/50 hover:text-green-700 dark:hover:text-green-400"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     {t('Back to Registration')}
@@ -241,18 +241,18 @@ export default function Register() {
         <meta name="description" content="Create your TermPocket account" />
       </Head>
 
-      <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 aurora-particles">
+      <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 auth-backdrop">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <h1 className="mx-auto mb-4 flex justify-center">
               <BrandLogo className="h-14 sm:h-16" priority />
             </h1>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{t('Create your account')}</p>
+            <p className="text-muted-foreground">{t('Your money, term by term.')}</p>
           </div>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Create account')}</CardTitle>
               <CardDescription className="text-center">{t('Enter your information to create your account')}</CardDescription>
@@ -364,6 +364,8 @@ export default function Register() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                      aria-pressed={showPassword}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -400,6 +402,8 @@ export default function Register() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                      aria-pressed={showConfirmPassword}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -451,10 +455,10 @@ export default function Register() {
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-yellow-400" />
+                    <div className="w-full border-t border-border" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-yellow-700 dark:text-yellow-300">
+                    <span className="bg-card px-2 text-muted-foreground">
                       {t('Already have an account?')}
                     </span>
                   </div>
@@ -462,7 +466,7 @@ export default function Register() {
 
                 <Button
                   variant="outline"
-                  className="w-full mt-4 border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-300"
+                  className="w-full mt-4 hover:border-green-600/50 hover:text-green-700 dark:hover:text-green-400"
                   onClick={() => router.push('/login')}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />

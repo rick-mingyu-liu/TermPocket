@@ -811,5 +811,17 @@
     "claudeDetails": "展开下方的连接信息，将端点作为连接器网址，并填入包含你令牌的请求头。",
     "otherDetails": "在支持远程 HTTP MCP 和自定义请求头的应用中，添加下方连接信息中的端点和请求头，并将 <token> 替换为你的令牌。",
     "tryQuestion": "试着问：“这个学期我花了多少钱？”"
+  },
+  "nav": {
+    "main": "主导航",
+    "overview": "概览",
+    "goals": "目标",
+    "pocky": "Pocky",
+    "import": "导入"
+  },
+  "auth": {
+    "fillDemo": "填入",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码"
   }
 }

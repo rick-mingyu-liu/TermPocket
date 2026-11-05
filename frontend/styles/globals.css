@@ -206,6 +206,72 @@
       0 0 60px rgba(168, 85, 247, 0.1);
   }
 
+  /*
+   * The sign-in pages' backdrop: a faint dot grid fading out from the centre,
+   * with a soft brand-green glow behind the card. Static, unlike aurora.
+   */
+  .auth-backdrop {
+    position: relative;
+    overflow: clip;
+    isolation: isolate;
+  }
+
+  .auth-backdrop::before,
+  .auth-backdrop::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .auth-backdrop::before {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.09) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+  }
+
+  .auth-backdrop::after {
+    background:
+      radial-gradient(ellipse 40% 30% at 50% 38%, rgba(22, 163, 74, 0.13), transparent 70%),
+      radial-gradient(ellipse 30% 25% at 50% 80%, rgba(134, 224, 158, 0.12), transparent 70%);
+  }
+
+  .dark .auth-backdrop::before {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.07) 1px, transparent 1.2px);
+  }
+
+  .dark .auth-backdrop::after {
+    background:
+      radial-gradient(ellipse 40% 30% at 50% 38%, rgba(34, 197, 94, 0.12), transparent 70%),
+      radial-gradient(ellipse 30% 25% at 50% 80%, rgba(34, 197, 94, 0.06), transparent 70%);
+  }
+
+  /* The sign-in card's top edge: a band of the logo's green, and under it the
+     logo's dashed stitch line. */
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, #023a25, #16a34a 55%, #86e09e);
+  }
+
+  .auth-card::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    right: 20px;
+    border-top: 1.5px dashed rgba(22, 163, 74, 0.35);
+    pointer-events: none;
+  }
+
+  .dark .auth-card::after {
+    border-top-color: rgba(134, 224, 158, 0.3);
+  }
+
   .aurora-particles {
     /* Only set position if needed for stacking context */
     position: relative;

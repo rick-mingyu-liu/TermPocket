@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
-import { ArrowLeft, Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, Square, Trash2 } from 'lucide-react'
+import { Loader2, MessageSquare, Mic, Plus, RefreshCw, Send, Square, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/AppShell'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -420,12 +421,11 @@ export default function AgentPage() {
 
   return <>
     <Head><title>{`${t('agent.title')} - TermPocket`}</title></Head>
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card"><div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-6">
-        <Button variant="ghost" size="icon" asChild><Link href="/" aria-label={t('agent.back')}><ArrowLeft /></Link></Button>
+    <AppShell>
+      <header className="border-b bg-card"><div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-6 sm:px-6 lg:px-8">
         <div><h1 className="flex items-center gap-2 text-2xl font-bold"><MessageSquare className="h-6 w-6" />{t('agent.title')}</h1><p className="mt-1 text-sm text-muted-foreground">{t('agent.subtitle')}</p></div>
       </div></header>
-      <main className="mx-auto max-w-7xl space-y-4 px-4 py-6">
+      <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
         <p className="rounded-lg border bg-card p-3 text-xs leading-relaxed text-muted-foreground">{t('agent.privacy')}{' '}<Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t('agent.privacyLink')}</Link></p>
         {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">{error.startsWith('goal:')
           ? t(`agent.goal.errors.${error.slice(5)}`, { defaultValue: t(`agent.errors.${error.slice(5)}`, { defaultValue: t('agent.errors.generic') }) })
@@ -532,7 +532,7 @@ export default function AgentPage() {
           </div>
         </div>}
       </main>
-    </div>
+    </AppShell>
     <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}><DialogContent onCloseAutoFocus={event => {
       // The trigger is gone with its conversation; continue at the composer.
       if (!state) { event.preventDefault(); composer.current?.focus() }
