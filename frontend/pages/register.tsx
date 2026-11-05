@@ -109,9 +109,6 @@ export default function Register() {
   } = useForm<RegisterForm>()
 
   const password = watch('password')
-  // The card's top bar fills as the form does (see .auth-card in globals.css).
-  const watched = watch(['first_name', 'last_name', 'email', 'password', 'confirmPassword'])
-  const progress = (watched.filter((v) => !!v && String(v).trim() !== '').length + (acceptedTerms ? 1 : 0)) / 6
 
   const onSubmit = async (data: RegisterForm) => {
     try {
@@ -255,7 +252,7 @@ export default function Register() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card data-busy={loading} style={{ '--auth-progress': progress } as React.CSSProperties} className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card data-busy={loading} className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Create account')}</CardTitle>
               <CardDescription className="text-center">{t('Enter your information to create your account')}</CardDescription>

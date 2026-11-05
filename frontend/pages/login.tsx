@@ -46,10 +46,7 @@ export default function Login() {
   } = useForm<LoginForm>()
 
   const email = watch('email')
-  const password = watch('password')
   const { t } = useTranslation()
-  // The card's top bar fills as the form does (see .auth-card in globals.css).
-  const progress = ([/\S+@\S+\.\S+/.test(email ?? ''), !!password].filter(Boolean).length) / 2
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -165,7 +162,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <Card data-busy={loading} style={{ '--auth-progress': progress } as React.CSSProperties} className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
+          <Card data-busy={loading} className="auth-card relative overflow-hidden shadow-xl dark:shadow-xl bg-card border border-border text-card-foreground">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-green-700 dark:text-green-400">{t('Welcome back')}</CardTitle>
               <CardDescription className="text-center">

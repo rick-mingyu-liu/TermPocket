@@ -251,37 +251,42 @@
 
   /* The sign-in card's top edge: a band of the logo's green, and under it the
      logo's dashed stitch line. */
-  /* The top bar is the form's progress: --auth-progress (0-1, set by the page
-     from how many fields are filled) widens the gradient over a faint track,
-     and data-busy runs a sheen along it while the request is in flight. */
+  /* The card's top bar: a green gradient that drifts slowly along it, one
+     seamless tile (dark-light-dark) repeated at half the bar's width, and
+     moves faster with a sheen on top while data-busy (a request in flight). */
   .auth-card::before {
     content: '';
     position: absolute;
     inset: 0 0 auto 0;
     height: 4px;
-    background-color: rgba(22, 163, 74, 0.14);
-    background-image: linear-gradient(90deg, #023a25, #16a34a 55%, #86e09e);
-    background-repeat: no-repeat;
-    background-size: calc((0.08 + 0.92 * var(--auth-progress, 1)) * 100%) 100%;
-    transition: background-size 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background-image: linear-gradient(90deg, #023a25, #16a34a 30%, #86e09e 50%, #16a34a 70%, #023a25);
+    background-size: 50% 100%;
+    background-repeat: repeat-x;
+    animation: auth-flow 8s linear infinite;
     pointer-events: none;
   }
 
   .auth-card[data-busy='true']::before {
     background-image:
-      linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent),
-      linear-gradient(90deg, #023a25, #16a34a 55%, #86e09e);
-    background-size: 40% 100%, 100% 100%;
-    animation: auth-sheen 1.1s linear infinite;
+      linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent),
+      linear-gradient(90deg, #023a25, #16a34a 30%, #86e09e 50%, #16a34a 70%, #023a25);
+    background-size: 30% 100%, 50% 100%;
+    background-repeat: no-repeat, repeat-x;
+    animation: auth-sheen 1s linear infinite;
+  }
+
+  @keyframes auth-flow {
+    from { background-position: 0 0; }
+    to { background-position: 100% 0; }
   }
 
   @keyframes auth-sheen {
-    from { background-position: -67% 0, 0 0; }
-    to { background-position: 167% 0, 0 0; }
+    from { background-position: -43% 0, 0 0; }
+    to { background-position: 143% 0, 100% 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .auth-card::before { transition: none; }
+    .auth-card::before,
     .auth-card[data-busy='true']::before { animation: none; }
   }
 
