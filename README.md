@@ -396,7 +396,7 @@ TEST_DATABASE_URL=postgresql://user@localhost:5432/termpocket_test npm test
 
 It creates and deletes users, which is why opting in is deliberate. **Never point it at production.**
 
-The frontend's `npm test` covers pure logic only (`frontend/test/`: money formatting so far), with no DOM and no components. Verify UI changes by running the app.
+The frontend's `npm test` covers pure logic only (`frontend/test/`: day and money formatting so far), with no DOM and no components. Verify UI changes by running the app.
 
 ### CI
 
