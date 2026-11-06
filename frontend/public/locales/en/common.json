@@ -859,5 +859,6 @@
       "studyTerm": "Study term",
       "coopTerm": "Co-op term"
     }
-  }
+  },
+  "accountSwitched": "You signed in to a different account in another tab, so this tab switched to it too."
 }

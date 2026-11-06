@@ -203,13 +203,21 @@ type DemoFreshness =
  * value, and after it PostgreSQL reads the zone-less side in the session's
  * zone, which db/connection.ts sets to UTC. No local-time arithmetic anywhere.
  *
+ * It is also stale once a new calendar month (UTC, like the generator's
+ * today on the host) has begun since the last refresh. The generator stops
+ * the current term at today, so without this a refresh on 28 October left the
+ * demo with no November at all until 11 November: an empty "this month", and
+ * the only November rows were whatever visitors had added. This adds at most
+ * one refresh a month, on the first hourly run of the month.
+ *
  * Resolved by `is_demo`, never by email, like the refresh itself. No row means
  * there is no demo account; a demo account with no transactions is stale.
  */
 const DEMO_FRESHNESS_SQL = `
   SELECT u.id,
          to_char(MIN(t.created_at), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS refreshed_at,
-         COALESCE(MIN(t.created_at) < (now() AT TIME ZONE 'UTC') - make_interval(days => $1::int), TRUE) AS stale
+         COALESCE(MIN(t.created_at) < (now() AT TIME ZONE 'UTC') - make_interval(days => $1::int)
+                  OR MIN(t.created_at) < date_trunc('month', now() AT TIME ZONE 'UTC'), TRUE) AS stale
     FROM users u
     LEFT JOIN transactions t ON t.user_id = u.id
    WHERE u.is_demo = TRUE
