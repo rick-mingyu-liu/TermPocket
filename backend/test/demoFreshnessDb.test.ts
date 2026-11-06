@@ -45,9 +45,12 @@ describe('demo staleness against the database', { skip: !enabled }, () => {
   }
 
   // created_at is a zone-less UTC timestamp; build it the same way.
-  const insertRow = (userId: number, createdDaysAgo: number | null, date = 'CURRENT_DATE'): Promise<unknown> => client.query(
-    `INSERT INTO transactions(user_id,amount,description,category,type,date,currency${createdDaysAgo === null ? '' : ',created_at'})
-     VALUES($1,'1.00','Fictional','Groceries','expense',${date},'CAD'${createdDaysAgo === null ? '' : `,(now() AT TIME ZONE 'UTC') - make_interval(days => ${createdDaysAgo})`})`,
+  const daysAgo = (n: number): string => `(now() AT TIME ZONE 'UTC') - make_interval(days => ${n})`;
+  // n days ago, but never before this month began, so the month rule stays out of the way.
+  const daysAgoThisMonth = (n: number): string => `GREATEST(${daysAgo(n)}, date_trunc('month', now() AT TIME ZONE 'UTC'))`;
+  const insertRow = (userId: number, created: number | string | null, date = 'CURRENT_DATE'): Promise<unknown> => client.query(
+    `INSERT INTO transactions(user_id,amount,description,category,type,date,currency${created === null ? '' : ',created_at'})
+     VALUES($1,'1.00','Fictional','Groceries','expense',${date},'CAD'${created === null ? '' : `,${typeof created === 'number' ? daysAgo(created) : created}`})`,
     [userId],
   );
 
@@ -64,8 +67,16 @@ describe('demo staleness against the database', { skip: !enabled }, () => {
 
   test('a refresh older than the limit is stale, one inside it is not', async () => {
     assert.equal((await scenario(async (id) => { await insertRow(id, 15); })).stale, true);
-    assert.equal((await scenario(async (id) => { await insertRow(id, 13); })).stale, false);
+    assert.equal((await scenario(async (id) => { await insertRow(id, daysAgoThisMonth(13)); })).stale, false);
     assert.equal((await scenario(async (id) => { await insertRow(id, 8); }, 7)).stale, true);
+  });
+
+  test('a refresh in an earlier calendar month is stale, however recent', async () => {
+    // An hour before this month began: inside any limit, but last month.
+    const lastMonth = `date_trunc('month', now() AT TIME ZONE 'UTC') - interval '1 hour'`;
+    assert.equal((await scenario(async (id) => { await insertRow(id, lastMonth); })).stale, true);
+    // A visitor row added this month does not make it fresh again.
+    assert.equal((await scenario(async (id) => { await insertRow(id, lastMonth); await insertRow(id, null); })).stale, true);
   });
 
   test('a visitor row added today does not postpone a refresh that is due', async () => {

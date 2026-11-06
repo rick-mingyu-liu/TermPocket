@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { appWithTranslation } from 'next-i18next';
 import { stripUrlQuery } from '@/lib/analytics';
 import TermsGate from '@/components/TermsGate';
+import AccountSwitchGuard from '@/components/AccountSwitchGuard';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -21,6 +22,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <Component {...pageProps} />
       <TermsGate />
+      <AccountSwitchGuard />
       <Analytics beforeSend={stripUrlQuery} />
       <Toaster
         position="top-right"

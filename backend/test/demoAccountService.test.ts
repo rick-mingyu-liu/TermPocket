@@ -209,6 +209,8 @@ describe('how stale the demo account is', () => {
     assert.doesNotMatch(text, /MAX\(/);
     // Compared on the database clock, in UTC.
     assert.match(text, /now\(\) AT TIME ZONE 'UTC'/);
+    // A new calendar month since the last refresh makes it stale too.
+    assert.match(text, /MIN\(t\.created_at\) < date_trunc\('month', now\(\) AT TIME ZONE 'UTC'\)/);
     assert.deepEqual(params, [14]);
   });
 

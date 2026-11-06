@@ -856,5 +856,6 @@
       "studyTerm": "学习学期",
       "coopTerm": "Co-op 学期"
     }
-  }
+  },
+  "accountSwitched": "你在另一个标签页登录了其他账户，此标签页也已切换到该账户。"
 }
