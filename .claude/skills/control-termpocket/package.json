@@ -1,0 +1,13 @@
+{
+  "name": "control-termpocket",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verification skill: runs the real TermPocket app locally and collects proof (screenshots, console, traces, metrics).",
+  "type": "module",
+  "scripts": {
+    "ctl": "node ctl.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  }
+}
